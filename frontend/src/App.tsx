@@ -4,7 +4,7 @@ import { CircularProgress, Box } from '@mui/material';
 
 import { PrivateRoute } from './routes/PrivateRoute';
 import { useAuth } from './store/auth';
-import { useOnlineStatus } from './hooks/useOnlineStatus';
+import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
 import OfflineBanner from './components/OfflineBanner';
 import GlobalSnackbar from './components/GlobalSnackbar';
 
