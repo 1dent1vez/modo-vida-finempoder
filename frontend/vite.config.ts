@@ -1,12 +1,20 @@
+import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import viteCompression from 'vite-plugin-compression';
 import { ViteImageOptimizer } from 'vite-plugin-image-optimizer';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   plugins: [
     react(),
+    tailwindcss(),
     // Optimiza imágenes PNG/WebP en build time (reduce Logo.png y onb*.png)
     ViteImageOptimizer({
       png: { quality: 80 },
@@ -113,6 +121,16 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:4000', // Backend express
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
+  preview: {
+    host: true,
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:4000',
         changeOrigin: true,
         secure: false,
       },
