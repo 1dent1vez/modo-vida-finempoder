@@ -14,11 +14,6 @@ const registerSchema = z
   })
   .strip();
 
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-});
-
 export async function register(req: Request, res: Response) {
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -59,32 +54,3 @@ export async function register(req: Request, res: Response) {
   });
 }
 
-export async function login(req: Request, res: Response) {
-  const parsed = loginSchema.safeParse(req.body);
-  if (!parsed.success) {
-    return res.status(400).json({ error: 'Datos inválidos' });
-  }
-  const { email, password } = parsed.data;
-
-  const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (error || !authData.session) {
-    return res.status(401).json({ error: 'Credenciales inválidas' });
-  }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('name')
-    .eq('id', authData.user.id)
-    .single();
-
-  return res.json({
-    token: authData.session.access_token,
-    refreshToken: authData.session.refresh_token,
-    user: {
-      _id: authData.user.id,
-      email: authData.user.email,
-      name: profile?.name ?? null,
-    },
-  });
-}

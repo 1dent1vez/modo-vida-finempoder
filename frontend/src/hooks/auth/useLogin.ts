@@ -1,26 +1,30 @@
-// frontend/src/hooks/auth/useLogin.ts
 import { useMutation } from '@tanstack/react-query';
-import authApi, { type LoginDTO } from '../../api/auth/auth.api';
-import { useAuth } from '../../store/auth';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../store/auth';
+
+type LoginDTO = { email: string; password: string };
 
 export function useLogin() {
   const setAuth = useAuth((s) => s.setAuth);
 
   return useMutation({
-    mutationFn: (dto: LoginDTO) => authApi.login(dto),
-    onSuccess: async ({ token, refreshToken, user }) => {
-      if (token && refreshToken) {
-        // Persiste la sesión en localStorage para que sobreviva recargas
-        await supabase.auth.setSession({ access_token: token, refresh_token: refreshToken });
-      }
-      if (token) {
-        setAuth(token, {
-          id: user._id,
-          email: user.email,
-          name: user.name ?? undefined,
-        });
-      }
+    mutationFn: async ({ email, password }: LoginDTO) => {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error || !data.session) throw new Error('Credenciales inválidas');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('id', data.user.id)
+        .single();
+
+      return {
+        token: data.session.access_token,
+        user: { id: data.user.id, email: data.user.email ?? '', name: profile?.name ?? undefined },
+      };
+    },
+    onSuccess: ({ token, user }) => {
+      setAuth(token, user);
     },
   });
 }
