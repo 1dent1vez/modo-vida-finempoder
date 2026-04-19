@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import { ThemeProvider } from '@mui/material';
 import { registerSW } from 'virtual:pwa-register';
 import { useNotifications } from './store/notifications';
 import { useAuth } from './store/auth';
@@ -55,8 +55,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <QueryClientProvider client={qc}>
         <BrowserRouter>
+          {/* ThemeProvider requerido para L01-L15 legacy — retirar al completar migración MDX */}
           <ThemeProvider theme={theme}>
-            <CssBaseline />
             <App />
           </ThemeProvider>
         </BrowserRouter>

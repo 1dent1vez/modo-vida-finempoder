@@ -1,5 +1,4 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { Box, Button, Typography } from '@mui/material';
 import { Sentry } from '../lib/sentry';
 
 type Props = { children: ReactNode };
@@ -27,34 +26,23 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.error) {
       return (
-        <Box
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          justifyContent="center"
-          minHeight="100vh"
-          gap={2}
-          p={3}
-          textAlign="center"
-        >
-          <Typography variant="h5" fontWeight={700}>
-            Algo salió mal
-          </Typography>
-          <Typography variant="body2" color="text.secondary" maxWidth={360}>
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6 text-center">
+          <h1 className="text-xl font-bold">Algo salió mal</h1>
+          <p className="max-w-sm text-sm text-[var(--color-text-secondary)]">
             Ocurrió un error inesperado. Puedes intentar regresar al inicio.
-          </Typography>
+          </p>
           {import.meta.env.DEV && (
-            <Box
-              component="pre"
-              sx={{ fontSize: 11, textAlign: 'left', bgcolor: 'grey.100', p: 2, borderRadius: 1, maxWidth: '100%', overflow: 'auto' }}
-            >
+            <pre className="max-w-full overflow-auto rounded-lg bg-[var(--color-neutral-100)] p-3 text-left text-xs">
               {this.state.error.message}
-            </Box>
+            </pre>
           )}
-          <Button variant="contained" onClick={this.handleReset}>
+          <button
+            onClick={this.handleReset}
+            className="rounded-xl bg-[var(--color-brand-primary)] px-6 py-3 text-sm font-semibold text-white hover:bg-[var(--color-brand-primary-dark)] transition-colors"
+          >
             Volver al inicio
-          </Button>
-        </Box>
+          </button>
+        </div>
       );
     }
 

@@ -1,61 +1,48 @@
-// FinEmpoder — AuthLayout
-// Shell compartido para Login y SignUp: logo + header + contenedor centrado + footer legal.
-
-import { Box, Link, Stack, Typography } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import logo from '../../assets/Logo.png';
 
 interface AuthLayoutProps {
-  /** Enlace alternativo a la derecha del header (ej. "Registrarse" o "Acceder") */
   headerLink?: ReactNode;
   children: ReactNode;
 }
 
 export default function AuthLayout({ headerLink, children }: AuthLayoutProps) {
   return (
-    <Box
-      sx={{
-        bgcolor: 'common.white',
-        minHeight: '100svh',
-        display: 'grid',
+    <div
+      className="grid min-h-svh bg-white px-4"
+      style={{
         gridTemplateRows: 'auto 1fr auto',
-        px: 3,
-        pt: `calc(12px + env(safe-area-inset-top))`,
-        pb: `calc(12px + env(safe-area-inset-bottom))`,
+        paddingTop: 'calc(12px + env(safe-area-inset-top))',
+        paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
       }}
     >
-      {/* ── Header: logo + enlace alternativo ── */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between">
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Box
-            component="img"
-            src={logo}
-            alt="FinEmpoder"
-            sx={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
-          />
-          <Typography fontWeight={700}>FinEmpoder</Typography>
-        </Stack>
+      {/* Header */}
+      <div className="flex items-center justify-between py-2">
+        <div className="flex items-center gap-2">
+          <img src={logo} alt="FinEmpoder" className="h-7 w-7 rounded-full object-cover" />
+          <span className="font-bold">FinEmpoder</span>
+        </div>
         {headerLink}
-      </Stack>
+      </div>
 
-      {/* ── Contenido (formulario) ── */}
-      <Stack spacing={2} sx={{ maxWidth: 420, mx: 'auto', width: '100%', mt: 3 }}>
+      {/* Contenido */}
+      <div className="mx-auto mt-6 w-full max-w-md space-y-4">
         {children}
-      </Stack>
+      </div>
 
-      {/* ── Footer legal ── */}
-      <Typography variant="caption" color="text.secondary" textAlign="center" sx={{ mt: 2 }}>
+      {/* Footer legal */}
+      <p className="mt-4 text-center text-xs text-[var(--color-text-secondary)]">
         Al usar FinEmpoder aceptas los{' '}
-        <Link component={RouterLink} to="/terms" underline="none" sx={{ color: 'warning.dark' }}>
+        <Link to="/terms" className="font-semibold text-[var(--color-brand-secondary-dark)] hover:underline">
           Términos y Condiciones
         </Link>{' '}
         y la{' '}
-        <Link component={RouterLink} to="/privacy" underline="none" sx={{ color: 'warning.dark' }}>
+        <Link to="/privacy" className="font-semibold text-[var(--color-brand-secondary-dark)] hover:underline">
           Política de Privacidad
         </Link>
         .
-      </Typography>
-    </Box>
+      </p>
+    </div>
   );
 }

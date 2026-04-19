@@ -1,7 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { CircularProgress, Box } from '@mui/material';
-
+import { Spinner } from '@/shared/components/Spinner';
 import { PrivateRoute } from './routes/PrivateRoute';
 import { useAuth } from './store/auth';
 import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
@@ -36,9 +35,9 @@ const InversionOverview   = lazy(() => import('./pages/modules/inversion/Overvie
 
 function PageLoader() {
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-      <CircularProgress />
-    </Box>
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <Spinner size="lg" />
+    </div>
   );
 }
 

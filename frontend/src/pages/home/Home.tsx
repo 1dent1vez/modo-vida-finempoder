@@ -1,28 +1,16 @@
 import { useMemo } from 'react';
-import {
-  Box,
-  Grid,
-  Stack,
-  Typography,
-  LinearProgress,
-  Button,
-  Avatar,
-} from '@mui/material';
-import SavingsIcon from '@mui/icons-material/Savings';
-import SchoolIcon from '@mui/icons-material/School';
-import ShowChartIcon from '@mui/icons-material/ShowChart';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import LightbulbIcon from '@mui/icons-material/Lightbulb';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
+import { BookOpen, Flame, Trophy, Lightbulb, Play, PiggyBank, TrendingUp, School } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { useProgress } from '../../store/progress';
 import { useAuth } from '../../store/auth';
 import { useGamification } from '../../hooks/gamification/useGamification';
-import FECard from '../../components/FECard';
-import { StatCard } from '../../components/shared/StatCard';
-import { XPChip, StreakBadge } from '../../components/gamification';
+import FECard from '../../shared/components/FECard';
+import { StatCard } from '../../shared/components/StatCard';
+import { XPChip } from '../../shared/components/gamification/XPChip';
+import { StreakBadge } from '../../shared/components/gamification/StreakBadge';
+import { Button } from '../../shared/components/ui/button';
+import { Progress } from '../../shared/components/ui/progress';
 import {
   getLessonPath,
   getProgressPercent,
@@ -32,7 +20,6 @@ import { BUDGET_MODULE_CONFIG } from '../modules/presupuesto/lessonFlow';
 import { SAVINGS_MODULE_CONFIG } from '../modules/ahorro/lessonFlow';
 import { INVESTMENT_MODULE_CONFIG } from '../modules/inversion/lessonFlow';
 
-/* ─── Tips diarios ───────────────────────────────────────── */
 const DAILY_TIPS = [
   'Separa el 10% de tu ingreso antes de gastar. Paga primero a tu yo futuro.',
   'El gasto hormiga suma más de lo que crees: un café diario = $1,500 al mes.',
@@ -56,7 +43,6 @@ function getDailyTip(): string {
   return DAILY_TIPS[dayOfYear % DAILY_TIPS.length];
 }
 
-/* ─── Helpers de continuación ────────────────────────────── */
 type ModuleContinue = {
   path: string;
   lessonTitle: string;
@@ -66,16 +52,11 @@ type ModuleContinue = {
 };
 
 function computeContinueCards(): ModuleContinue[] {
-  const modules: Array<{
-    config: typeof BUDGET_MODULE_CONFIG | typeof SAVINGS_MODULE_CONFIG | typeof INVESTMENT_MODULE_CONFIG;
-    moduleTitle: string;
-    color: 'warning' | 'success' | 'info';
-  }> = [
-    { config: BUDGET_MODULE_CONFIG, moduleTitle: 'Presupuestación', color: 'warning' },
-    { config: SAVINGS_MODULE_CONFIG, moduleTitle: 'Ahorro', color: 'success' },
-    { config: INVESTMENT_MODULE_CONFIG, moduleTitle: 'Inversión', color: 'info' },
+  const modules = [
+    { config: BUDGET_MODULE_CONFIG, moduleTitle: 'Presupuestación', color: 'warning' as const },
+    { config: SAVINGS_MODULE_CONFIG, moduleTitle: 'Ahorro', color: 'success' as const },
+    { config: INVESTMENT_MODULE_CONFIG, moduleTitle: 'Inversión', color: 'info' as const },
   ];
-
   const results: ModuleContinue[] = [];
   for (const { config, moduleTitle, color } of modules) {
     const snapshot = loadModuleProgressSnapshot(config);
@@ -83,27 +64,38 @@ function computeContinueCards(): ModuleContinue[] {
     const next = (config.lessons as ReadonlyArray<{ id: string; title: string; kind: string }>)
       .find((l) => snapshot.lessons[l.id] !== 'completed');
     if (!next) continue;
-    results.push({
-      path: getLessonPath(config, next.id),
-      lessonTitle: next.title,
-      moduleTitle,
-      color,
-      progress,
-    });
+    results.push({ path: getLessonPath(config, next.id), lessonTitle: next.title, moduleTitle, color, progress });
   }
-  return results.sort((a, b) => b.progress - a.progress); // módulo más avanzado primero
+  return results.sort((a, b) => b.progress - a.progress);
 }
 
 function computeTotalCompleted(): number {
-  const configs = [BUDGET_MODULE_CONFIG, SAVINGS_MODULE_CONFIG, INVESTMENT_MODULE_CONFIG];
-  return configs.reduce((total, config) => {
+  return [BUDGET_MODULE_CONFIG, SAVINGS_MODULE_CONFIG, INVESTMENT_MODULE_CONFIG].reduce((total, config) => {
     const snapshot = loadModuleProgressSnapshot(config);
-    const completed = Object.values(snapshot.lessons).filter((s) => s === 'completed').length;
-    return total + completed;
+    return total + Object.values(snapshot.lessons).filter((s) => s === 'completed').length;
   }, 0);
 }
 
-/* ─── Sub-componentes ────────────────────────────────────── */
+const MODULE_BAR: Record<string, string> = {
+  warning: 'bg-[var(--color-brand-warning)]',
+  success: 'bg-[var(--color-brand-success)]',
+  info: 'bg-[var(--color-brand-info)]',
+};
+const MODULE_TEXT: Record<string, string> = {
+  warning: 'text-[var(--color-brand-warning)]',
+  success: 'text-[var(--color-brand-success)]',
+  info: 'text-[var(--color-brand-info)]',
+};
+const MODULE_BG: Record<string, string> = {
+  warning: 'bg-[var(--color-brand-warning-bg)] border-[var(--color-brand-warning)]',
+  success: 'bg-[var(--color-brand-success-bg)] border-[var(--color-brand-success)]',
+  info: 'bg-[var(--color-brand-info-bg)] border-[var(--color-brand-info)]',
+};
+const MODULE_BTN: Record<string, string> = {
+  warning: 'bg-[var(--color-brand-warning)] hover:bg-[var(--color-brand-secondary-dark)] text-white',
+  success: 'bg-[var(--color-brand-success)] hover:opacity-90 text-white',
+  info: '',
+};
 
 type ModuleCardProps = {
   title: string;
@@ -116,39 +108,24 @@ type ModuleCardProps = {
 
 function ModuleCard({ title, subtitle, progress, color, icon, onOpen }: ModuleCardProps) {
   return (
-    <FECard variant="elevated" clickable sx={{ p: 3 }}>
-      <Stack direction="row" alignItems="center" spacing={3} sx={{ mb: 2 }}>
-        <Box
-          sx={{
-            p: 2,
-            borderRadius: 2,
-            bgcolor: `${color}.light`,
-            color: `${color}.main`,
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
+    <FECard variant="elevated" clickable onClick={onOpen}>
+      <div className="flex items-center gap-3 mb-3">
+        <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl [&_svg]:h-5 [&_svg]:w-5', MODULE_BG[color])}>
           {icon}
-        </Box>
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="h4" fontWeight={700}>{title}</Typography>
-          <Typography variant="caption" color="text.secondary">{subtitle}</Typography>
-        </Box>
-      </Stack>
-      <LinearProgress variant="determinate" value={progress} color={color} sx={{ mb: 1 }} />
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="caption" color="text.secondary">
-          {progress}% completado
-        </Typography>
-        <Button variant="contained" size="small" color={color} onClick={onOpen}>
-          Ir
-        </Button>
-      </Stack>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-sm">{title}</p>
+          <p className="text-xs text-[var(--color-text-secondary)]">{subtitle}</p>
+        </div>
+      </div>
+      <Progress value={progress} barClassName={MODULE_BAR[color]} className="mb-2" />
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-[var(--color-text-secondary)]">{progress}% completado</span>
+        <Button size="sm" className={cn(MODULE_BTN[color])}>Ir</Button>
+      </div>
     </FECard>
   );
 }
-
-/* ─── Home principal ─────────────────────────────────────── */
 
 export default function Home() {
   const nav = useNavigate();
@@ -166,160 +143,68 @@ export default function Home() {
     : user?.email?.split('@')[0] ?? 'Estudiante';
 
   const today = new Date().toLocaleDateString('es-MX', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
+    weekday: 'long', day: 'numeric', month: 'long',
   });
 
   return (
-    <Box sx={{ p: { xs: 4, md: 6 }, pb: 20, bgcolor: 'background.default', minHeight: '100vh' }}>
+    <div className="min-h-screen pb-24 bg-[var(--color-bg-app)] px-4 pt-5">
 
-      {/* ── 1. Greeting Header ──────────────────────────────── */}
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        justifyContent="space-between"
-        alignItems={{ xs: 'flex-start', sm: 'center' }}
-        spacing={2}
-        sx={{ mb: 5 }}
-      >
-        <Stack direction="row" spacing={3} alignItems="center">
-          <Avatar
-            sx={{
-              width: 48,
-              height: 48,
-              bgcolor: 'primary.main',
-              color: 'primary.contrastText',
-              fontWeight: 700,
-              fontSize: 20,
-            }}
-          >
+      {/* Greeting Header */}
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-xl font-bold text-white">
             {displayName[0]?.toUpperCase() ?? 'U'}
-          </Avatar>
-          <Box>
-            <Typography variant="h2" fontWeight={800}>
-              Hola, {displayName}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
-              {today}
-            </Typography>
-          </Box>
-        </Stack>
-        <Stack direction="row" spacing={1} alignItems="center">
+          </div>
+          <div>
+            <h1 className="text-lg font-extrabold">Hola, {displayName}</h1>
+            <p className="text-xs capitalize text-[var(--color-text-secondary)]">{today}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
           {gamification && <XPChip xp={gamification.xp} />}
           <StreakBadge streak={streak.current} />
-        </Stack>
-      </Stack>
+        </div>
+      </div>
 
-      {/* ── 2. ContinueCard (módulo más avanzado) ───────────── */}
+      {/* ContinueCard */}
       {primaryContinue && (
-        <FECard
-          variant="hero"
-          sx={{
-            mb: 5,
-            bgcolor: `${primaryContinue.color}.light`,
-            border: 2,
-            borderColor: `${primaryContinue.color}.main`,
-          }}
-        >
-          <Typography variant="overline" color={`${primaryContinue.color}.dark`}>
+        <FECard variant="hero" className={cn('mb-6 border-2', MODULE_BG[primaryContinue.color])}>
+          <p className={cn('text-xs font-bold uppercase tracking-wide mb-1', MODULE_TEXT[primaryContinue.color])}>
             {primaryContinue.moduleTitle} · {primaryContinue.progress}% completado
-          </Typography>
-          <Typography variant="h3" fontWeight={700} sx={{ mt: 0.5, mb: 3 }} noWrap>
-            {primaryContinue.lessonTitle}
-          </Typography>
-          <Button
-            variant="contained"
-            color={primaryContinue.color}
-            size="large"
-            fullWidth
-            startIcon={<PlayArrowIcon />}
-            onClick={() => nav(primaryContinue.path)}
-          >
+          </p>
+          <h2 className="font-bold mb-4 truncate">{primaryContinue.lessonTitle}</h2>
+          <Button className={cn('w-full min-h-11', MODULE_BTN[primaryContinue.color])} onClick={() => nav(primaryContinue.path)}>
+            <Play className="h-4 w-4" />
             Ir ahora
           </Button>
         </FECard>
       )}
 
-      {/* ── 3. Tus módulos ──────────────────────────────────── */}
-      <Typography variant="h3" fontWeight={700} sx={{ mb: 3 }}>
-        Tus módulos
-      </Typography>
-      <Grid container spacing={3} sx={{ mb: 5 }}>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <ModuleCard
-            title="Presupuestación"
-            subtitle="Organiza ingresos y gastos"
-            progress={mod.presupuesto?.progress ?? 0}
-            color="warning"
-            icon={<SavingsIcon />}
-            onOpen={() => nav('/app/presupuesto')}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <ModuleCard
-            title="Ahorro"
-            subtitle="Crea hábitos de ahorro"
-            progress={mod.ahorro?.progress ?? 0}
-            color="success"
-            icon={<SchoolIcon />}
-            onOpen={() => nav('/app/ahorro')}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <ModuleCard
-            title="Inversión"
-            subtitle="Haz crecer tu dinero"
-            progress={mod.inversion?.progress ?? 0}
-            color="info"
-            icon={<ShowChartIcon />}
-            onOpen={() => nav('/app/inversion')}
-          />
-        </Grid>
-      </Grid>
+      {/* Tus módulos */}
+      <h2 className="text-base font-bold mb-3">Tus módulos</h2>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+        <ModuleCard title="Presupuestación" subtitle="Organiza ingresos y gastos" progress={mod.presupuesto?.progress ?? 0} color="warning" icon={<PiggyBank />} onOpen={() => nav('/app/presupuesto')} />
+        <ModuleCard title="Ahorro" subtitle="Crea hábitos de ahorro" progress={mod.ahorro?.progress ?? 0} color="success" icon={<School />} onOpen={() => nav('/app/ahorro')} />
+        <ModuleCard title="Inversión" subtitle="Haz crecer tu dinero" progress={mod.inversion?.progress ?? 0} color="info" icon={<TrendingUp />} onOpen={() => nav('/app/inversion')} />
+      </div>
 
-      {/* ── 4. Stats Row ────────────────────────────────────── */}
-      <Grid container spacing={3} sx={{ mb: 5 }}>
-        <Grid size={{ xs: 4 }}>
-          <StatCard
-            icon={<MenuBookIcon />}
-            label="Lecciones"
-            value={totalCompleted}
-            color="primary"
-          />
-        </Grid>
-        <Grid size={{ xs: 4 }}>
-          <StatCard
-            icon={<LocalFireDepartmentIcon />}
-            label="Racha"
-            value={`${streak.current}d`}
-            color="warning"
-          />
-        </Grid>
-        <Grid size={{ xs: 4 }}>
-          <StatCard
-            icon={<EmojiEventsIcon />}
-            label="XP"
-            value={gamification?.xp ?? 0}
-            color="success"
-          />
-        </Grid>
-      </Grid>
+      {/* Stats Row */}
+      <div className="grid grid-cols-3 gap-2 mb-6">
+        <StatCard icon={<BookOpen />} label="Lecciones" value={totalCompleted} color="primary" size="sm" />
+        <StatCard icon={<Flame />} label="Racha" value={`${streak.current}d`} color="warning" size="sm" />
+        <StatCard icon={<Trophy />} label="XP" value={gamification?.xp ?? 0} color="success" size="sm" />
+      </div>
 
-      {/* ── 5. Daily Tip ────────────────────────────────────── */}
+      {/* Daily Tip */}
       <FECard variant="flat">
-        <Stack direction="row" spacing={3} alignItems="flex-start">
-          <LightbulbIcon color="warning" sx={{ mt: 0.5, flexShrink: 0 }} />
-          <Box>
-            <Typography variant="body2" fontWeight={700} sx={{ mb: 0.5 }}>
-              Tip del día
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {getDailyTip()}
-            </Typography>
-          </Box>
-        </Stack>
+        <div className="flex gap-3 items-start">
+          <Lightbulb className="h-5 w-5 shrink-0 mt-0.5 text-[var(--color-brand-warning)]" />
+          <div>
+            <p className="text-sm font-bold mb-1">Tip del día</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">{getDailyTip()}</p>
+          </div>
+        </div>
       </FECard>
-
-    </Box>
+    </div>
   );
 }

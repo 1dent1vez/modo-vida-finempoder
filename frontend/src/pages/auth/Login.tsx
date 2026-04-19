@@ -1,22 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useLogin } from '../../hooks/auth/useLogin';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import {
-  Alert,
-  Button,
-  IconButton,
-  InputAdornment,
-  Link,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material';
-import { Email, Lock, Visibility, VisibilityOff } from '@mui/icons-material';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import AuthLayout from './AuthLayout';
-import { gradientButtonSx } from './authStyles';
+import { Input } from '../../shared/components/ui/input';
+import { gradientButtonClass } from './authStyles';
 
 const schema = z.object({
   email: z.string().email('Correo inválido'),
@@ -50,84 +41,61 @@ export default function LoginPage() {
   return (
     <AuthLayout
       headerLink={
-        <Link
-          component={RouterLink}
-          to="/signup"
-          underline="none"
-          sx={{ color: 'warning.dark', fontWeight: 700 }}
-        >
+        <Link to="/signup" className="text-sm font-bold text-[var(--color-brand-secondary-dark)] hover:underline">
           Registrarse
         </Link>
       }
     >
-      <Typography variant="h6" fontWeight={800} sx={{ color: 'warning.dark', textAlign: 'center' }}>
+      <h1 className="text-center text-lg font-extrabold text-[var(--color-brand-secondary-dark)]">
         Bienvenido de nuevo
-      </Typography>
-      <Typography variant="body2" color="text.secondary" textAlign="center">
+      </h1>
+      <p className="text-center text-sm text-[var(--color-text-secondary)]">
         Inicia sesión para continuar tu aprendizaje y sincronizar tu progreso.
-      </Typography>
+      </p>
 
       {login.isError && (
-        <Alert severity="error">
+        <div role="alert" className="rounded-xl bg-[var(--color-brand-error-bg)] border border-[var(--color-brand-error)] px-4 py-3 text-sm text-[var(--color-brand-error)]">
           {(login.error as Error)?.message ?? 'Error al iniciar sesión'}
-        </Alert>
+        </div>
       )}
 
-      <Stack component="form" noValidate onSubmit={handleSubmit(onSubmit)} spacing={1.5}>
-        <TextField
+      <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+        <Input
           label="Email"
           type="email"
           autoComplete="email"
-          fullWidth
+          leftIcon={<Mail />}
+          error={errors.email?.message}
           {...register('email')}
-          error={!!errors.email}
-          helperText={errors.email?.message}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Email />
-              </InputAdornment>
-            ),
-          }}
         />
 
-        <TextField
+        <Input
           label="Contraseña"
           type={showPass ? 'text' : 'password'}
           autoComplete="current-password"
-          fullWidth
+          leftIcon={<Lock />}
+          error={errors.password?.message}
+          rightElement={
+            <button
+              type="button"
+              onClick={() => setShowPass((v) => !v)}
+              aria-label="mostrar u ocultar contraseña"
+              className="text-[var(--color-neutral-400)] hover:text-[var(--color-neutral-600)]"
+            >
+              {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          }
           {...register('password')}
-          error={!!errors.password}
-          helperText={errors.password?.message}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Lock />
-              </InputAdornment>
-            ),
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  edge="end"
-                  onClick={() => setShowPass((v) => !v)}
-                  aria-label="mostrar u ocultar contraseña"
-                >
-                  {showPass ? <VisibilityOff /> : <Visibility />}
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
         />
 
-        <Button
+        <button
           type="submit"
-          size="large"
           disabled={login.isPending || !isValid}
-          sx={gradientButtonSx}
+          className={gradientButtonClass}
         >
           {login.isPending ? 'Conectando…' : 'Iniciar sesión'}
-        </Button>
-      </Stack>
+        </button>
+      </form>
     </AuthLayout>
   );
 }
