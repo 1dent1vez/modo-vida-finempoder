@@ -37,12 +37,26 @@ export interface PendingAction {
   lastTriedAt?: string;   // ISO
 }
 
+export type SyncType = 'lesson_progress' | 'xp_update' | 'streak_update';
+
+export interface SyncQueueItem {
+  id?: number;
+  userId: string;
+  type: SyncType;
+  payload: Record<string, unknown>;
+  createdAt: string;      // ISO
+  retries: number;
+  status: 'pending' | 'failed';
+  lastTriedAt?: string;   // ISO
+}
+
 // BASE DE DATOS DEXIE
 export class FinempoderDB extends Dexie {
   lessonProgress!: Table<LessonProgress, number>;
   streaks!: Table<Streak, number>;
   pendingActions!: Table<PendingAction, number>;
   userLessonData!: Table<UserLessonData, number>;
+  syncQueue!: Table<SyncQueueItem, number>;
 
   constructor() {
     super('FinempoderDB');
@@ -111,6 +125,15 @@ export class FinempoderDB extends Dexie {
       streaks: '++id, date',
       pendingActions: '++id, userId, type, resource, createdAt, retryCount, lastTriedAt',
       userLessonData: '++id, userId, moduleId, key',
+    });
+
+    // v6: syncQueue — formal singleton-managed sync queue
+    this.version(6).stores({
+      lessonProgress: '++id, userId, moduleId, lessonId, completed, completedAt',
+      streaks: '++id, date',
+      pendingActions: '++id, userId, type, resource, createdAt, retryCount, lastTriedAt',
+      userLessonData: '++id, userId, moduleId, key',
+      syncQueue: '++id, userId, type, status, createdAt',
     });
   }
 }

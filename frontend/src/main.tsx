@@ -11,8 +11,10 @@ import { supabase } from './lib/supabase';
 import { theme } from './theme';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { initSentry } from './lib/sentry';
+import { SyncManager } from './lib/sync/SyncManager';
 
 initSentry();
+SyncManager.init();
 
 const qc = new QueryClient();
 
