@@ -1,14 +1,13 @@
-// FinEmpoder — ModuleOverview unificado
-// Reemplaza los 3 Overview.tsx por módulo. Recibe config + color + título.
-
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Box, Button, LinearProgress, Stack, Typography } from '@mui/material';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import { Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import FECard from '../../components/FECard';
-import { PageHeader } from '../../components/shared/PageHeader';
-import { XPChip, StreakBadge } from '../../components/gamification';
+import FECard from '../../shared/components/FECard';
+import { PageHeader } from '../../shared/components/PageHeader';
+import { XPChip } from '../../shared/components/gamification/XPChip';
+import { StreakBadge } from '../../shared/components/gamification/StreakBadge';
+import { Button } from '../../shared/components/ui/button';
+import { Progress } from '../../shared/components/ui/progress';
 import { lessonProgressRepository } from '../../db/lessonProgress.repository';
 import { useGamification } from '../../hooks/gamification/useGamification';
 import { useLessons } from '../../store/lessons';
@@ -27,6 +26,30 @@ import {
 } from '../moduleFlow';
 import { ModuleLessonList } from './ModuleLessonList';
 
+const MODULE_COLOR_MAP: Record<string, 'warning' | 'success' | 'info'> = {
+  presupuesto: 'warning',
+  ahorro: 'success',
+  inversion: 'info',
+};
+
+const MODULE_BAR_CLASS: Record<string, string> = {
+  warning: 'bg-[var(--color-brand-warning)]',
+  success: 'bg-[var(--color-brand-success)]',
+  info: 'bg-[var(--color-brand-info)]',
+};
+
+const MODULE_TEXT_CLASS: Record<string, string> = {
+  warning: 'text-[var(--color-brand-warning)]',
+  success: 'text-[var(--color-brand-success)]',
+  info: 'text-[var(--color-brand-info)]',
+};
+
+const MODULE_BUTTON_CLASS: Record<string, string> = {
+  warning: 'bg-[var(--color-brand-warning)] hover:bg-[var(--color-brand-secondary-dark)] text-white',
+  success: 'bg-[var(--color-brand-success)] hover:opacity-90 text-white',
+  info: '',
+};
+
 export interface ModuleOverviewProps {
   config: ModuleFlowConfig;
   moduleColor: 'warning' | 'success' | 'info';
@@ -34,9 +57,10 @@ export interface ModuleOverviewProps {
   moduleIcon?: ReactNode;
 }
 
-export function ModuleOverview({ config, moduleColor, moduleTitle }: ModuleOverviewProps) {
+export function ModuleOverview({ config, moduleTitle }: ModuleOverviewProps) {
   const nav = useNavigate();
   const moduleId = config.moduleId as ModKey;
+  const moduleColor = MODULE_COLOR_MAP[moduleId] ?? 'info';
 
   const { data: gamification } = useGamification();
   const setModuleProgress = useProgress((s) => s.setModuleProgress);
@@ -96,7 +120,6 @@ export function ModuleOverview({ config, moduleColor, moduleTitle }: ModuleOverv
     [config, completedMap]
   );
 
-  // Primera lección activa (in_progress o available) para el botón Continuar
   const nextActiveLessonId = useMemo(() => {
     const found = config.lessons.find(
       (l) => moduleState.lessons[l.id] === 'in_progress' || moduleState.lessons[l.id] === 'available'
@@ -105,93 +128,71 @@ export function ModuleOverview({ config, moduleColor, moduleTitle }: ModuleOverv
   }, [config.lessons, moduleState.lessons]);
 
   const handleContinue = () => {
-    if (nextActiveLessonId) {
-      nav(getLessonPath(config, nextActiveLessonId));
-    }
+    if (nextActiveLessonId) nav(getLessonPath(config, nextActiveLessonId));
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+    <div className="min-h-screen bg-[var(--color-bg-app)]">
       <PageHeader
         title={moduleTitle}
         onBack={() => nav('/app')}
         moduleColor={moduleColor}
         rightSlot={
-          <Stack direction="row" spacing={1} alignItems="center">
+          <div className="flex items-center gap-1">
             {gamification && <XPChip xp={gamification.xp} />}
             <StreakBadge streak={streak} />
-          </Stack>
+          </div>
         }
       />
 
-      <Box sx={{ p: 4, pb: 20 }}>
+      <div className="p-4 pb-24 space-y-4">
         {/* Hero: porcentaje + barra de progreso */}
-        <FECard variant="hero" sx={{ mb: 4 }}>
-          <Typography variant="h3" sx={{ mb: 1, color: `${moduleColor}.dark` }}>
-            Avance del módulo
-          </Typography>
-          <Stack direction="row" alignItems="center" spacing={4} sx={{ mb: 2 }}>
-            <Typography
-              sx={{
-                fontSize: '2rem',
-                fontWeight: 900,
-                color: `${moduleColor}.main`,
-                minWidth: 72,
-                fontVariantNumeric: 'tabular-nums',
-              }}
-            >
+        <FECard variant="hero">
+          <h2 className="text-base font-bold mb-3">Avance del módulo</h2>
+          <div className="flex items-center gap-4 mb-3">
+            <span className={`text-4xl font-black tabular-nums min-w-[72px] ${MODULE_TEXT_CLASS[moduleColor]}`}>
               {progressPercent}%
-            </Typography>
-            <Box sx={{ flex: 1 }}>
-              <LinearProgress
-                variant="determinate"
+            </span>
+            <div className="flex-1">
+              <Progress
                 value={progressPercent}
-                color={moduleColor}
-                sx={{ mb: 0.5 }}
+                barClassName={MODULE_BAR_CLASS[moduleColor]}
+                className="mb-1"
               />
-              <Typography variant="caption" color="text.secondary">
+              <p className="text-xs text-[var(--color-text-secondary)]">
                 Completa las lecciones en orden para avanzar.
-              </Typography>
-            </Box>
-          </Stack>
+              </p>
+            </div>
+          </div>
 
-          {/* Botón Continuar */}
           {nextActiveLessonId && (
             <Button
-              variant="contained"
-              color={moduleColor}
-              size="large"
-              fullWidth
-              startIcon={<PlayArrowIcon />}
+              className={`w-full min-h-11 mt-1 ${MODULE_BUTTON_CLASS[moduleColor]}`}
               onClick={handleContinue}
-              sx={{ mt: 1 }}
             >
+              <Play className="h-4 w-4" />
               Continuar: {nextActiveLessonId}
             </Button>
           )}
 
           {progressPercent === 100 && (
-            <Typography variant="body2" color="success.main" fontWeight={700} sx={{ mt: 1, textAlign: 'center' }}>
+            <p className="mt-2 text-center text-sm font-bold text-[var(--color-brand-success)]">
               ¡Módulo completado!
-            </Typography>
+            </p>
           )}
         </FECard>
 
         {/* Error de carga */}
         {loadError && (
-          <FECard variant="flat" sx={{ mb: 3, borderColor: 'error.main' }}>
-            <Typography color="error.main" fontWeight={700}>
-              {loadError}
-            </Typography>
+          <FECard variant="flat" className="border-[var(--color-brand-error)]">
+            <p className="font-bold text-[var(--color-brand-error)]">{loadError}</p>
           </FECard>
         )}
 
         {/* Skeleton de carga */}
         {loading && (
-          <FECard variant="flat" sx={{ mb: 3 }}>
-            <Typography variant="body2" color="text.secondary">
-              Cargando progreso...
-            </Typography>
+          <FECard variant="flat">
+            <p className="text-sm text-[var(--color-text-secondary)]">Cargando progreso...</p>
           </FECard>
         )}
 
@@ -204,7 +205,7 @@ export function ModuleOverview({ config, moduleColor, moduleTitle }: ModuleOverv
             onOpenLesson={(lessonId) => nav(getLessonPath(config, lessonId))}
           />
         </FECard>
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }
