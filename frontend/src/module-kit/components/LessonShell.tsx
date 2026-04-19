@@ -1,17 +1,11 @@
-// FinEmpoder — LessonShell unificado
-// Versión única que reemplaza las 3 copias por módulo.
-// Cada módulo provee su config; la lógica de acceso y persistencia es idéntica.
-
-import { Box, Stack, Typography, Fade, Button } from '@mui/material';
-import type { ReactNode } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import HomeIcon from '@mui/icons-material/Home';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowRight, ArrowLeft, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import FECard from '../../components/FECard';
-import FinniMessage from '../../components/FinniMessage';
-import { PageHeader } from '../../components/shared/PageHeader';
+import FECard from '../../shared/components/FECard';
+import FinniMessage from '../../shared/components/FinniMessage';
+import { PageHeader } from '../../shared/components/PageHeader';
+import { Button } from '../../shared/components/ui/button';
+import { cn } from '@/lib/utils';
 import { lessonProgressRepository } from '../../db/lessonProgress.repository';
 import { resolveLessonCompletion, type LessonCompletion } from '../lessonContract';
 import { LockedLessonScreen } from './LockedLessonScreen';
@@ -30,9 +24,19 @@ import {
   toCompletionMap,
   type ModuleFlowConfig,
 } from '../moduleFlow';
-import { MODULE_COLORS } from '../../theme';
 
-/** Props que las lecciones (L01…L15) usan directamente — sin moduleId ni config */
+const MODULE_COLOR_MAP: Record<string, 'warning' | 'success' | 'info'> = {
+  presupuesto: 'warning',
+  ahorro: 'success',
+  inversion: 'info',
+};
+
+const MODULE_BUTTON_CLASS: Record<string, string> = {
+  warning: 'bg-[var(--color-brand-warning)] hover:bg-[var(--color-brand-secondary-dark)] text-white',
+  success: 'bg-[var(--color-brand-success)] hover:opacity-90 text-white',
+  info: '',
+};
+
 export type LessonShellCoreProps = {
   id: string;
   title: string;
@@ -42,7 +46,6 @@ export type LessonShellCoreProps = {
   completion?: LessonCompletion;
 };
 
-/** Props completas del shell unificado */
 export type LessonShellProps = LessonShellCoreProps & {
   moduleId: ModKey;
   config: ModuleFlowConfig;
@@ -86,7 +89,6 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
     setIsLocked(requiredId !== null && !lessonCompleted);
   }, [config, hydrateLessons, moduleId, props.id, setModuleProgress]);
 
-  // Hidratación inicial al montar
   useEffect(() => {
     let cancelled = false;
     const init = async () => {
@@ -102,7 +104,6 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
     return () => { cancelled = true; };
   }, [hydrateFromRepository, moduleId]);
 
-  // Persistencia de completitud cuando completeWhen se activa
   useEffect(() => {
     if (checkingAccess || !completion.ready || completed || isLocked || once.current) return;
 
@@ -114,7 +115,6 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
       try {
         await lessonProgressRepository.setCompleted(moduleId, props.id);
 
-        // Legacy store: evitar duplicados
         const alreadyLegacy = useLessons
           .getState()
           .lessons.some((l) => l.id === props.id && l.completed);
@@ -154,7 +154,8 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
   const previousPath = useMemo(() => getPreviousLessonPath(config, props.id), [config, props.id]);
   const nextPath = useMemo(() => getNextLessonPath(config, props.id), [config, props.id]);
   const nextLessonId = getNextLessonId(config, props.id);
-  const moduleColor = MODULE_COLORS[moduleId];
+  const moduleColor = MODULE_COLOR_MAP[moduleId] ?? 'info';
+  const nextBtnClass = MODULE_BUTTON_CLASS[moduleColor] ?? '';
 
   const goNext = () => {
     if (nextPath) { nav(nextPath); return; }
@@ -167,13 +168,11 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
     return (
       <>
         <PageHeader title={props.title} onBack={goOverview} moduleColor={moduleColor} />
-        <Box sx={{ p: 4, pb: 20 }}>
-          <FECard variant="flat" sx={{ mt: 3 }}>
-            <Typography variant="body2" color="text.secondary">
-              Validando acceso y progreso...
-            </Typography>
+        <div className="p-4 pb-20">
+          <FECard variant="flat" className="mt-3">
+            <p className="text-sm text-[var(--color-text-secondary)]">Validando acceso y progreso...</p>
           </FECard>
-        </Box>
+        </div>
       </>
     );
   }
@@ -182,13 +181,13 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
     return (
       <>
         <PageHeader title={props.title} onBack={goOverview} moduleColor={moduleColor} />
-        <Box sx={{ p: 4, pb: 20 }}>
+        <div className="p-4 pb-20">
           <LockedLessonScreen
             requiredLessonId={requiredLessonId}
             onGoRequiredLesson={(lessonId) => nav(getLessonPath(config, lessonId))}
             onGoOverview={goOverview}
           />
-        </Box>
+        </div>
       </>
     );
   }
@@ -196,68 +195,46 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
   return (
     <>
       <PageHeader title={props.title} onBack={goOverview} moduleColor={moduleColor} />
-      <Box sx={{ p: 4, pb: 20 }}>
-        <FECard variant="flat" sx={{ mt: 3 }}>
+      <div className="p-4 pb-20">
+        <FECard variant="flat" className="mt-3">
           {props.children}
         </FECard>
 
         {completed && (
-          <Fade in>
-            <Box sx={{ mt: 4 }}>
-              <FinniMessage
-                variant="success"
-                title="Leccion completada"
-                message={
-                  nextLessonId
-                    ? `Desbloqueaste ${nextLessonId}. Puedes continuar cuando quieras.`
-                    : 'Completaste este bloque del modulo.'
-                }
-              />
-              {persisting && (
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>
-                  Guardando progreso...
-                </Typography>
-              )}
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={2}
-                justifyContent="center"
-                sx={{ mt: 3 }}
-              >
-                {previousPath && (
-                  <Button
-                    variant="outlined"
-                    startIcon={<ArrowBackIcon />}
-                    onClick={() => nav(previousPath)}
-                    sx={{ minHeight: 44, minWidth: { sm: 140 } }}
-                  >
-                    Anterior
-                  </Button>
-                )}
-                {nextPath && (
-                  <Button
-                    variant="contained"
-                    color={moduleColor}
-                    startIcon={<ArrowForwardIcon />}
-                    onClick={goNext}
-                    sx={{ minHeight: 44, minWidth: { sm: 140 } }}
-                  >
-                    Siguiente
-                  </Button>
-                )}
-                <Button
-                  variant="outlined"
-                  startIcon={<HomeIcon />}
-                  onClick={goOverview}
-                  sx={{ minHeight: 44, minWidth: { sm: 160 } }}
-                >
-                  Menu del modulo
+          <div className="mt-6 animate-[fadeIn_200ms_ease-in]">
+            <FinniMessage
+              variant="success"
+              title="Lección completada"
+              message={
+                nextLessonId
+                  ? `Desbloqueaste ${nextLessonId}. Puedes continuar cuando quieras.`
+                  : 'Completaste este bloque del módulo.'
+              }
+            />
+            {persisting && (
+              <p className="mt-2 text-xs text-[var(--color-text-secondary)]">Guardando progreso...</p>
+            )}
+            <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-center">
+              {previousPath && (
+                <Button variant="outline" className="min-h-11 sm:min-w-36" onClick={() => nav(previousPath)}>
+                  <ArrowLeft className="h-4 w-4" />
+                  Anterior
                 </Button>
-              </Stack>
-            </Box>
-          </Fade>
+              )}
+              {nextPath && (
+                <Button className={cn('min-h-11 sm:min-w-36', nextBtnClass)} onClick={goNext}>
+                  <ArrowRight className="h-4 w-4" />
+                  Siguiente
+                </Button>
+              )}
+              <Button variant="outline" className="min-h-11 sm:min-w-40" onClick={goOverview}>
+                <Home className="h-4 w-4" />
+                Menú del módulo
+              </Button>
+            </div>
+          </div>
         )}
-      </Box>
+      </div>
     </>
   );
 }
