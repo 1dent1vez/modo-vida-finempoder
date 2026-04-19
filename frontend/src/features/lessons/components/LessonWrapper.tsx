@@ -1,7 +1,7 @@
 import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { Box, CircularProgress } from '@mui/material';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { Spinner } from '@/shared/components/Spinner';
 import { MODULE_REGISTRY } from '@/content';
 
 // Vite resolves these globs at build time — must be static strings
@@ -28,9 +28,9 @@ function getCachedLesson(
 
 function PageLoader() {
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-      <CircularProgress />
-    </Box>
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <Spinner size="lg" />
+    </div>
   );
 }
 
