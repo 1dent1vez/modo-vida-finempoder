@@ -3,12 +3,11 @@ import { Sentry } from './lib/sentry.js';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import pinoHttp from 'pino-http';
+import { pinoHttp } from 'pino-http';
 import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
 import { authRouter } from './routes/auth.js';
 import { progressRouter } from './routes/progress.js';
-import { gamificationRouter } from './routes/gamification.js';
 import { questionnaireRouter } from './routes/questionnaire.js';
 import { researchRouter } from './routes/research.js';
 import { budgetRouter } from './routes/budget.js';
@@ -81,7 +80,6 @@ app.get('/api/health', (_req, res) => {
 // ── Rutas ──────────────────────────────────────────────
 app.use('/api/auth', authLimiter, authRouter);
 app.use('/api/progress', progressRouter);
-app.use('/api/gamification', gamificationRouter);
 app.use('/api/questionnaire', questionnaireRouter);
 app.use('/api/research', researchRouter);
 app.use('/api/budget', budgetRouter);
