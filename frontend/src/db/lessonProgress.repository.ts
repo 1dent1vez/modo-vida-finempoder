@@ -1,57 +1,40 @@
 // src/db/lessonProgress.repository.ts
 
-import client from '../api/client';
 import { useAuth } from '../store/auth';
 import type { ModKey } from '../store/progress';
 import { db } from './finempoderDb';
 import type { LessonProgress } from './finempoderDb';
-import { pendingActionsRepository } from './pendingActions.repository';
-import { trackLessonCompleted, trackModuleCompleted } from '../utils/analytics';
-import { useNotifications } from '../store/notifications';
+import { trackModuleCompleted } from '@/shared/utils/analytics';
 
 const currentUserId = () => useAuth.getState().user?.id ?? 'local';
 
 export const lessonProgressRepository = {
-  async setCompleted(moduleId: ModKey, lessonId: string) {
+  /** Write completion to Dexie only — no network call. Use SyncManager to sync. */
+  async setCompletedLocal(moduleId: ModKey, lessonId: string): Promise<void> {
     const userId = currentUserId();
     const existing = await db.lessonProgress.where({ userId, moduleId, lessonId }).first();
     const now = new Date().toISOString();
 
     if (existing) {
-      await db.lessonProgress.update(existing.id!, {
-        userId,
-        completed: true,
-        completedAt: now
-      });
+      await db.lessonProgress.update(existing.id!, { completed: true, completedAt: now });
     } else {
-      const record: LessonProgress = {
-        userId,
-        moduleId,
-        lessonId,
-        completed: true,
-        completedAt: now
-      };
+      const record: LessonProgress = { userId, moduleId, lessonId, completed: true, completedAt: now };
       await db.lessonProgress.add(record);
     }
+  },
 
-    // Intentar sincronizar con backend (offline-first)
-    try {
-      await client.post('/progress/lesson-completed', {
+  /** Legacy: write local + direct API call (kept for existing LessonShell usage) */
+  async setCompleted(moduleId: ModKey, lessonId: string): Promise<void> {
+    await this.setCompletedLocal(moduleId, lessonId);
+    // SyncManager handles the backend sync — imported lazily to avoid circular deps
+    const { SyncManager } = await import('../lib/sync/SyncManager');
+    const userId = currentUserId();
+    if (userId !== 'local') {
+      await SyncManager.enqueue('lesson_progress', userId, {
         moduleId,
         lessonId,
-        completedAt: now
+        completedAt: new Date().toISOString(),
       });
-      trackLessonCompleted(moduleId, lessonId);
-    } catch (err) {
-      console.warn('[progress] no se pudo sincronizar con backend; queda en local', err);
-      if (userId !== 'local') {
-        await pendingActionsRepository.addLessonCompleted(userId, {
-          moduleId,
-          lessonId,
-          completedAt: now
-        });
-        useNotifications.getState().enqueue('Sin conexión: se sincronizará cuando vuelva la red.', 'warning');
-      }
     }
   },
 
