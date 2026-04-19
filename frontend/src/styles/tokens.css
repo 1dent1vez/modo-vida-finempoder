@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+/* ── Tailwind v4 brand tokens ─────────────────────────────────────────────── */
+@theme {
+  /* Typography */
+  --font-sans: "Plus Jakarta Sans", "Nunito", system-ui, -apple-system, sans-serif;
+  --font-display: "Plus Jakarta Sans", "Nunito", system-ui, sans-serif;
+
+  /* Brand colors */
+  --color-brand-primary:       #1B4FD8;
+  --color-brand-primary-light: #4B73F0;
+  --color-brand-primary-dark:  #0F2F8A;
+  --color-brand-secondary:     #F59E0B;
+  --color-brand-secondary-light: #FCD34D;
+  --color-brand-secondary-dark:  #B45309;
+
+  /* Status colors */
+  --color-brand-success:       #10B981;
+  --color-brand-success-bg:    #D1FAE5;
+  --color-brand-warning:       #F59E0B;
+  --color-brand-warning-bg:    #FEF3C7;
+  --color-brand-error:         #EF4444;
+  --color-brand-error-bg:      #FEE2E2;
+  --color-brand-info:          #4B73F0;
+  --color-brand-info-bg:       #EEF2FF;
+
+  /* Module accent colors */
+  --color-module-presupuesto:  #F59E0B;
+  --color-module-ahorro:       #10B981;
+  --color-module-inversion:    #4B73F0;
+
+  /* Neutrals */
+  --color-text-primary:   #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-muted:     #94A3B8;
+  --color-bg-app:         #F8FAFC;
+  --color-bg-surface:     #FFFFFF;
+  --color-border:         #E5E7EB;
+  --color-border-subtle:  #F3F4F6;
+
+  /* Neutral scale */
+  --color-neutral-50:  #F8FAFC;
+  --color-neutral-100: #F1F5F9;
+  --color-neutral-200: #E2E8F0;
+  --color-neutral-300: #CBD5E1;
+  --color-neutral-400: #94A3B8;
+  --color-neutral-500: #64748B;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1E293B;
+  --color-neutral-900: #0F172A;
+
+  /* Status aliases */
+  --color-status-success:   var(--color-brand-success);
+  --color-status-successBg: var(--color-brand-success-bg);
+  --color-status-warning:   var(--color-brand-warning);
+  --color-status-warningBg: var(--color-brand-warning-bg);
+  --color-status-error:     var(--color-brand-error);
+  --color-status-errorBg:   var(--color-brand-error-bg);
+  --color-status-info:      var(--color-brand-info);
+  --color-status-infoBg:    var(--color-brand-info-bg);
+
+  /* Brand accent (coach/finni) */
+  --color-brand-accent:   #8B5CF6;
+  --color-brand-accentBg: #EDE9FE;
+
+  /* Border radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 350ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── shadcn/ui semantic CSS variables ─────────────────────────────────────── */
+:root {
+  --background:   var(--color-bg-app);
+  --foreground:   var(--color-text-primary);
+  --card:         var(--color-bg-surface);
+  --card-foreground: var(--color-text-primary);
+  --primary:      var(--color-brand-primary);
+  --primary-foreground: #ffffff;
+  --secondary:    var(--color-brand-secondary);
+  --secondary-foreground: #000000;
+  --muted:        var(--color-border-subtle);
+  --muted-foreground: var(--color-text-muted);
+  --accent:       var(--color-brand-info-bg);
+  --accent-foreground: var(--color-brand-primary);
+  --destructive:  var(--color-brand-error);
+  --destructive-foreground: #ffffff;
+  --border:       var(--color-border);
+  --input:        var(--color-border);
+  --ring:         var(--color-brand-primary);
+  --radius:       var(--radius-md);
+}
