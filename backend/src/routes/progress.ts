@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { recordLessonCompletion, getModuleProgress } from '../controllers/progress.controller.js';
+import { recordLessonCompletion } from '../controllers/progress.controller.js';
 import { authGuard } from '../middlewares/auth.js';
 
 export const progressRouter = Router();
@@ -8,4 +8,3 @@ export const progressRouter = Router();
 progressRouter.use(authGuard);
 
 progressRouter.post('/lesson-completed', recordLessonCompletion);
-progressRouter.get('/:moduleId', getModuleProgress);
