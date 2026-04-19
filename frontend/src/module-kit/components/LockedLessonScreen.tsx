@@ -1,8 +1,7 @@
-import { Box, Button, Stack } from '@mui/material';
-import HomeIcon from '@mui/icons-material/Home';
-import LockIcon from '@mui/icons-material/Lock';
-import FECard from '../../components/FECard';
-import FinniMessage from '../../components/FinniMessage';
+import { Home, Lock } from 'lucide-react';
+import FECard from '../../shared/components/FECard';
+import FinniMessage from '../../shared/components/FinniMessage';
+import { Button } from '../../shared/components/ui/button';
 
 type LockedLessonScreenProps = {
   requiredLessonId: string | null;
@@ -16,39 +15,32 @@ export function LockedLessonScreen({
   onGoOverview,
 }: LockedLessonScreenProps) {
   return (
-    <FECard variant="flat" sx={{ mt: 3 }}>
+    <FECard variant="flat" className="mt-3">
       <FinniMessage
         variant="warning"
-        title="Leccion bloqueada"
+        title="Lección bloqueada"
         message={
           requiredLessonId
-            ? `Primero completa ${requiredLessonId} para desbloquear esta leccion.`
-            : 'Primero completa la leccion anterior para desbloquear esta leccion.'
+            ? `Primero completa ${requiredLessonId} para desbloquear esta lección.`
+            : 'Primero completa la lección anterior para desbloquear esta lección.'
         }
       />
-      <Box sx={{ mt: 3 }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
-          {requiredLessonId && (
-            <Button
-              variant="contained"
-              color="warning"
-              startIcon={<LockIcon />}
-              onClick={() => onGoRequiredLesson(requiredLessonId)}
-              sx={{ minHeight: 44, minWidth: { sm: 140 } }}
-            >
-              Ir a {requiredLessonId}
-            </Button>
-          )}
+      <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-center">
+        {requiredLessonId && (
           <Button
-            variant="outlined"
-            startIcon={<HomeIcon />}
-            onClick={onGoOverview}
-            sx={{ minHeight: 44, minWidth: { sm: 160 } }}
+            variant="default"
+            className="min-h-11 sm:min-w-36 bg-[var(--color-brand-warning)] hover:bg-[var(--color-brand-secondary-dark)]"
+            onClick={() => onGoRequiredLesson(requiredLessonId)}
           >
-            Menu del modulo
+            <Lock className="h-4 w-4" />
+            Ir a {requiredLessonId}
           </Button>
-        </Stack>
-      </Box>
+        )}
+        <Button variant="outline" className="min-h-11 sm:min-w-40" onClick={onGoOverview}>
+          <Home className="h-4 w-4" />
+          Menú del módulo
+        </Button>
+      </div>
     </FECard>
   );
 }
