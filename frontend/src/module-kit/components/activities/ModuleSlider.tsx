@@ -1,11 +1,6 @@
-// FinEmpoder — ModuleSlider
-// Wrapper de Slider MUI con chip de resultado reactivo.
-// Para ejercicios de porcentaje (presupuesto, ahorro, inversión).
+import { cn } from '@/lib/utils';
 
-import { Box, Chip, Slider, Stack, Typography } from '@mui/material';
-import type { ModuleColorValue } from '../../../theme';
-
-export type SliderColor = ModuleColorValue | 'primary';
+export type SliderColor = 'warning' | 'success' | 'info' | 'primary';
 
 export interface ModuleSliderProps {
   label: string;
@@ -14,13 +9,24 @@ export interface ModuleSliderProps {
   step?: number;
   value: number;
   onChange: (value: number) => void;
-  /** Unidad mostrada junto al valor, ej. "%" o "$" */
   unit?: string;
-  /** Etiqueta dinámica calculada externamente según el valor */
   resultLabel?: string;
-  /** Color del Slider y el Chip (default: 'primary') */
   color?: SliderColor;
 }
+
+const chipClass: Record<SliderColor, string> = {
+  primary: 'bg-[var(--color-brand-primary)] text-white',
+  warning: 'bg-[var(--color-brand-warning-bg)] text-[var(--color-brand-warning)]',
+  success: 'bg-[var(--color-brand-success-bg)] text-[var(--color-brand-success)]',
+  info: 'bg-[var(--color-brand-info-bg)] text-[var(--color-brand-info)]',
+};
+
+const accentVar: Record<SliderColor, string> = {
+  primary: 'var(--color-brand-primary)',
+  warning: 'var(--color-brand-warning)',
+  success: 'var(--color-brand-success)',
+  info: 'var(--color-brand-info)',
+};
 
 export function ModuleSlider({
   label,
@@ -31,57 +37,43 @@ export function ModuleSlider({
   onChange,
   unit = '',
   resultLabel,
-  color = 'primary' as SliderColor,
+  color = 'primary',
 }: ModuleSliderProps) {
-  const isPrimary = color === 'primary';
+  const pct = ((value - min) / (max - min)) * 100;
+  const accent = accentVar[color];
 
   return (
-    <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-        <Typography variant="body2" fontWeight={600}>
-          {label}
-        </Typography>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Chip
-            label={`${value}${unit}`}
-            color={isPrimary ? 'primary' : color}
-            size="small"
-            sx={{ fontWeight: 700, minWidth: 56, justifyContent: 'center' }}
-          />
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-semibold">{label}</span>
+        <div className="flex items-center gap-2">
+          <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold min-w-[52px] justify-center', chipClass[color])}>
+            {value}{unit}
+          </span>
           {resultLabel && (
-            <Typography variant="caption" color="text.secondary">
-              {resultLabel}
-            </Typography>
+            <span className="text-xs text-[var(--color-text-secondary)]">{resultLabel}</span>
           )}
-        </Stack>
-      </Stack>
+        </div>
+      </div>
 
-      <Slider
+      <input
+        type="range"
         min={min}
         max={max}
         step={step}
         value={value}
-        onChange={(_, v) => onChange(v as number)}
-        color="primary"
-        sx={
-          !isPrimary
-            ? {
-                color: `${color}.main`,
-                '& .MuiSlider-thumb': { bgcolor: `${color}.main` },
-                '& .MuiSlider-track': { bgcolor: `${color}.main` },
-              }
-            : undefined
-        }
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full h-2 rounded-full appearance-none cursor-pointer bg-[var(--color-neutral-200)]"
+        style={{
+          backgroundImage: `linear-gradient(to right, ${accent} ${pct}%, var(--color-neutral-200) ${pct}%)`,
+          accentColor: accent,
+        }}
       />
 
-      <Stack direction="row" justifyContent="space-between">
-        <Typography variant="caption" color="text.disabled">
-          {min}{unit}
-        </Typography>
-        <Typography variant="caption" color="text.disabled">
-          {max}{unit}
-        </Typography>
-      </Stack>
-    </Box>
+      <div className="flex justify-between mt-1">
+        <span className="text-xs text-[var(--color-text-muted)]">{min}{unit}</span>
+        <span className="text-xs text-[var(--color-text-muted)]">{max}{unit}</span>
+      </div>
+    </div>
   );
 }
