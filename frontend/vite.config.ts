@@ -1,6 +1,9 @@
 import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import mdx from '@mdx-js/rollup';
+import remarkFrontmatter from 'remark-frontmatter';
+import remarkMdxFrontmatter from 'remark-mdx-frontmatter';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import viteCompression from 'vite-plugin-compression';
@@ -13,6 +16,8 @@ export default defineConfig({
     },
   },
   plugins: [
+    // MDX must come before react() so JSX transform applies correctly
+    { enforce: 'pre', ...mdx({ remarkPlugins: [remarkFrontmatter, remarkMdxFrontmatter] }) },
     react(),
     tailwindcss(),
     // Optimiza imágenes PNG/WebP en build time (reduce Logo.png y onb*.png)
