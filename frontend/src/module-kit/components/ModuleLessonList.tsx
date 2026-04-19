@@ -1,18 +1,6 @@
-import {
-  Avatar,
-  Chip,
-  List,
-  ListItemAvatar,
-  ListItemButton,
-  ListItemText,
-  Stack,
-  Typography,
-} from '@mui/material';
-import LockIcon from '@mui/icons-material/Lock';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import QuizIcon from '@mui/icons-material/Quiz';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import SportsScoreIcon from '@mui/icons-material/SportsScore';
+import { Lock, CheckCircle, HelpCircle, Play, Flag } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Badge } from '../../shared/components/ui/badge';
 import type { LessonStatus, ModuleLesson } from '../moduleFlow';
 
 type ModuleLessonListProps = {
@@ -23,10 +11,9 @@ type ModuleLessonListProps = {
 };
 
 function KindIcon({ kind }: { kind: string }) {
-  if (kind === 'quiz') return <QuizIcon />;
-  if (kind === 'simulator') return <PlayArrowIcon />;
-  if (kind === 'challenge') return <SportsScoreIcon />;
-  return <PlayArrowIcon />;
+  if (kind === 'quiz') return <HelpCircle className="h-4 w-4" />;
+  if (kind === 'challenge') return <Flag className="h-4 w-4" />;
+  return <Play className="h-4 w-4" />;
 }
 
 const statusText = (status: LessonStatus, requiredLessonId: string | null): string => {
@@ -36,12 +23,12 @@ const statusText = (status: LessonStatus, requiredLessonId: string | null): stri
   return requiredLessonId ? `Bloqueada: completa ${requiredLessonId}` : 'Bloqueada';
 };
 
-const statusChip = (status: LessonStatus) => {
-  if (status === 'completed') return <Chip color="success" size="small" label="Listo" />;
-  if (status === 'in_progress') return <Chip size="small" label="Continuar" color="warning" />;
-  if (status === 'available') return <Chip size="small" label="Empezar" sx={{ bgcolor: 'warning.light' }} />;
-  return <Chip size="small" icon={<LockIcon />} label="Bloqueada" variant="outlined" />;
-};
+function StatusBadge({ status }: { status: LessonStatus }) {
+  if (status === 'completed') return <Badge variant="success">Listo</Badge>;
+  if (status === 'in_progress') return <Badge variant="warning">Continuar</Badge>;
+  if (status === 'available') return <Badge variant="warning">Empezar</Badge>;
+  return <Badge variant="outline">Bloqueada</Badge>;
+}
 
 export function ModuleLessonList({
   lessons,
@@ -50,54 +37,51 @@ export function ModuleLessonList({
   onOpenLesson,
 }: ModuleLessonListProps) {
   return (
-    <List disablePadding>
-      {lessons.map((lesson, idx) => {
+    <ul className="divide-y divide-[var(--color-neutral-200)]">
+      {lessons.map((lesson) => {
         const status = lessonStatuses[lesson.id] ?? 'locked';
         const completed = status === 'completed';
         const locked = status === 'locked';
 
         return (
-          <ListItemButton
-            key={lesson.id}
-            onClick={() => onOpenLesson(lesson.id)}
-            sx={{
-              py: 3,
-              minHeight: 56,
-              opacity: locked ? 0.72 : 1,
-              borderBottom: idx < lessons.length - 1 ? '1px solid' : 'none',
-              borderColor: 'divider',
-            }}
-          >
-            <ListItemAvatar>
-              <Avatar
-                sx={{
-                  bgcolor: completed ? 'success.light' : locked ? 'grey.200' : 'warning.light',
-                  color: completed ? 'success.main' : locked ? 'text.secondary' : 'warning.main',
-                  fontWeight: 800,
-                }}
+          <li key={lesson.id}>
+            <button
+              onClick={() => onOpenLesson(lesson.id)}
+              className={cn(
+                'w-full flex items-center gap-3 py-4 text-left transition-colors hover:bg-[var(--color-neutral-50)]',
+                locked && 'opacity-70'
+              )}
+            >
+              {/* Avatar icono */}
+              <div
+                className={cn(
+                  'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+                  completed
+                    ? 'bg-[var(--color-brand-success-bg)] text-[var(--color-brand-success)]'
+                    : locked
+                    ? 'bg-[var(--color-neutral-100)] text-[var(--color-neutral-400)]'
+                    : 'bg-[var(--color-brand-warning-bg)] text-[var(--color-brand-warning)]'
+                )}
               >
-                {completed ? <CheckCircleIcon /> : <KindIcon kind={lesson.kind} />}
-              </Avatar>
-            </ListItemAvatar>
+                {completed ? <CheckCircle className="h-5 w-5" /> : locked ? <Lock className="h-4 w-4" /> : <KindIcon kind={lesson.kind} />}
+              </div>
 
-            <ListItemText
-              primary={
-                <Stack direction="row" alignItems="center" spacing={2}>
-                  <Chip label={lesson.id} size="small" variant="outlined" />
-                  <Typography fontWeight={700}>{lesson.title}</Typography>
-                </Stack>
-              }
-              secondary={
-                <Typography variant="caption" color="text.secondary">
+              {/* Texto */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline" className="text-xs shrink-0">{lesson.id}</Badge>
+                  <span className="font-bold text-sm truncate">{lesson.title}</span>
+                </div>
+                <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
                   {statusText(status, requiredLessonById[lesson.id] ?? null)}
-                </Typography>
-              }
-            />
+                </p>
+              </div>
 
-            {statusChip(status)}
-          </ListItemButton>
+              <StatusBadge status={status} />
+            </button>
+          </li>
         );
       })}
-    </List>
+    </ul>
   );
 }
