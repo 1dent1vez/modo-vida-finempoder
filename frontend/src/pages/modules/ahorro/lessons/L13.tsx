@@ -1,7 +1,4 @@
 import { useState, useEffect } from 'react';
-import {
-  Box, Stack, Typography, Button, LinearProgress, Fade, Chip, TextField,
-} from '@mui/material';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -10,7 +7,6 @@ import { lessonDataRepository } from '../../../../db/lessonData.repository';
 type MetaData = { nombre?: string; monto?: number; aportacionMensual?: number } | null;
 type PlanData = { totalPlanado?: number; horizon?: number } | null;
 type RetoData = { totalAcumulado?: number; dayAmounts?: number[] } | null;
-
 type IndicadorColor = 'success' | 'warning' | 'error';
 
 type Indicador = {
@@ -18,6 +14,12 @@ type Indicador = {
   valor: string;
   color: IndicadorColor;
   comentario: string;
+};
+
+const COLOR_MAP: Record<IndicadorColor, { main: string; bg: string; dark: string }> = {
+  success: { main: 'var(--color-brand-success)', bg: 'var(--color-brand-success-bg)', dark: '#059669' },
+  warning: { main: 'var(--color-brand-warning)', bg: 'var(--color-brand-warning-bg)', dark: '#B45309' },
+  error:   { main: 'var(--color-brand-error)',   bg: 'var(--color-brand-error-bg)',   dark: '#DC2626' },
 };
 
 function buildIndicadores(meta: MetaData, plan: PlanData, reto: RetoData): Indicador[] {
@@ -38,45 +40,25 @@ function buildIndicadores(meta: MetaData, plan: PlanData, reto: RetoData): Indic
       label: 'Consistencia',
       valor: `${dayAmounts.length} dias registrados`,
       color: consistencia,
-      comentario:
-        consistencia === 'success'
-          ? 'Completaste los 3 dias del micro-reto. Excelente consistencia.'
-          : consistencia === 'warning'
-          ? 'Has empezado. Sigue registrando para consolidar el habito.'
-          : 'Aun no has registrado ahorro. ¿Que necesita cambiar para que funcione?',
+      comentario: consistencia === 'success' ? 'Completaste los 3 dias del micro-reto. Excelente consistencia.' : consistencia === 'warning' ? 'Has empezado. Sigue registrando para consolidar el habito.' : 'Aun no has registrado ahorro. ¿Que necesita cambiar para que funcione?',
     },
     {
       label: 'Progreso hacia la meta',
       valor: `${pct.toFixed(0)}% de "${meta?.nombre ?? 'tu meta'}"`,
       color: progreso,
-      comentario:
-        progreso === 'success'
-          ? '¡Vas en tiempo! Un ajuste pequeño y lo logras.'
-          : progreso === 'warning'
-          ? 'Has avanzado. Con constancia llegas.'
-          : 'Aun no has acumulado ahorro hacia la meta. Cada peso cuenta.',
+      comentario: progreso === 'success' ? '¡Vas en tiempo! Un ajuste pequeño y lo logras.' : progreso === 'warning' ? 'Has avanzado. Con constancia llegas.' : 'Aun no has acumulado ahorro hacia la meta. Cada peso cuenta.',
     },
     {
       label: 'Monto promedio',
       valor: promedio > 0 ? `$${promedio.toFixed(0)}/dia` : 'Sin datos',
       color: promedioColor,
-      comentario:
-        promedioColor === 'success'
-          ? 'Tu promedio esta cerca o supera lo planeado. ¡Sigue asi!'
-          : promedioColor === 'warning'
-          ? 'Tu promedio es menor al planeado pero ya hay avance.'
-          : 'Comienza a registrar ahorros diarios para ver tu promedio.',
+      comentario: promedioColor === 'success' ? 'Tu promedio esta cerca o supera lo planeado. ¡Sigue asi!' : promedioColor === 'warning' ? 'Tu promedio es menor al planeado pero ya hay avance.' : 'Comienza a registrar ahorros diarios para ver tu promedio.',
     },
     {
       label: 'Tendencia',
       valor: tendenciaColor === 'success' ? 'Al alza' : tendenciaColor === 'warning' ? 'Estable' : 'Sin registro',
       color: tendenciaColor,
-      comentario:
-        tendenciaColor === 'success'
-          ? 'Tu ritmo de ahorro se mantiene o mejora. Excelente.'
-          : tendenciaColor === 'warning'
-          ? 'Hay avance pero puedes acelerar el ritmo.'
-          : 'Empieza el reto de 3 dias para ver tu tendencia.',
+      comentario: tendenciaColor === 'success' ? 'Tu ritmo de ahorro se mantiene o mejora. Excelente.' : tendenciaColor === 'warning' ? 'Hay avance pero puedes acelerar el ritmo.' : 'Empieza el reto de 3 dias para ver tu tendencia.',
     },
   ];
 }
@@ -124,137 +106,106 @@ export default function L13() {
   if (loading) {
     return (
       <LessonShell id="L13" title="Finni dice: como vas con tu ahorro" completion={{ ready: false }}>
-        <Typography variant="body2" color="text.secondary">Cargando tu progreso...</Typography>
+        <p className="text-sm text-[var(--color-text-secondary)]">Cargando tu progreso...</p>
       </LessonShell>
     );
   }
 
   return (
-    <LessonShell
-      id="L13"
-      title="Finni dice: como vas con tu ahorro"
-      completion={{ ready: allViewed && answered }}
-    >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={progress}
-          color="success"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+    <LessonShell id="L13" title="Finni dice: como vas con tu ahorro" completion={{ ready: allViewed && answered }}>
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: 'var(--color-brand-success)' }} />
+        </div>
 
         {/* Pantalla 0 — Dashboard de progreso */}
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="Revision de habito"
-                message="Es momento de ver como vas con tu habito de ahorro. No para juzgar, sino para ayudarte a llegar a tu meta."
-              />
-              <Typography variant="body1" fontWeight={700}>
-                4 indicadores — toca cada uno para ver el analisis:
-              </Typography>
-              <Stack spacing={2}>
-                {indicadores.map((ind, i) => (
+          <div className="space-y-6">
+            <FinniMessage variant="coach" title="Revision de habito" message="Es momento de ver como vas con tu habito de ahorro. No para juzgar, sino para ayudarte a llegar a tu meta." />
+            <p className="text-base font-bold">4 indicadores — toca cada uno para ver el analisis:</p>
+            <div className="space-y-4">
+              {indicadores.map((ind, i) => {
+                const c = COLOR_MAP[ind.color];
+                return (
                   <FECard
                     key={i}
                     variant="flat"
-                    sx={{
-                      border: 2,
-                      borderColor: `${ind.color}.main`,
-                      bgcolor: expanded.has(i) ? `${ind.color}.light` : 'background.paper',
-                      cursor: 'pointer',
+                    className="border-2 cursor-pointer"
+                    style={{
+                      borderColor: c.main,
+                      backgroundColor: expanded.has(i) ? c.bg : 'white',
                     }}
                     onClick={() => toggleExpanded(i)}
                     role="button"
                     tabIndex={0}
                   >
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <Typography variant="body2" fontWeight={700}>{ind.label}</Typography>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Chip label={ind.valor} color={ind.color} size="small" sx={{ fontWeight: 700 }} />
-                        <Typography variant="caption">{expanded.has(i) ? '▲' : '▼'}</Typography>
-                      </Stack>
-                    </Stack>
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm font-bold">{ind.label}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: c.main }}>{ind.valor}</span>
+                        <span className="text-xs">{expanded.has(i) ? '▲' : '▼'}</span>
+                      </div>
+                    </div>
                     {expanded.has(i) && (
-                      <Fade in>
-                        <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic', color: `${ind.color}.dark` }}>
-                          {ind.comentario}
-                        </Typography>
-                      </Fade>
+                      <p className="text-sm mt-2 italic" style={{ color: c.dark }}>{ind.comentario}</p>
                     )}
                   </FECard>
-                ))}
-              </Stack>
-              {(allViewed || expanded.size >= 4) && (
-                <Fade in>
-                  <Button fullWidth variant="contained" color="success" size="large" onClick={() => setStep(1)}>
-                    Responder la pregunta de Finni →
-                  </Button>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+                );
+              })}
+            </div>
+            {(allViewed || expanded.size >= 4) && (
+              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: 'var(--color-brand-success)' }} onClick={() => setStep(1)}>
+                Responder la pregunta de Finni →
+              </button>
+            )}
+          </div>
         )}
 
-        {/* Pantalla 1 — Pregunta abierta + ajuste */}
+        {/* Pantalla 1 — Pregunta abierta */}
         {step === 1 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="Una pregunta honesta"
-                message="¿Hay algo que te este dificultando ahorrar esta semana? No te preguntes por que fallaste — preguntate que necesita cambiar para que funcione."
-              />
-              <TextField
-                label="Tu respuesta (privada, solo para ti)"
-                multiline
-                rows={4}
+          <div className="space-y-6">
+            <FinniMessage variant="coach" title="Una pregunta honesta" message="¿Hay algo que te este dificultando ahorrar esta semana? No te preguntes por que fallaste — preguntate que necesita cambiar para que funcione." />
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-[var(--color-text-primary)]">Tu respuesta (privada, solo para ti)</label>
+              <textarea
                 value={dificultad}
                 onChange={(e) => setDificultad(e.target.value)}
-                fullWidth
+                rows={4}
                 placeholder="Puede ser un gasto inesperado, un cambio de rutina, o simplemente que olvidaste..."
+                className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm resize-none"
               />
-              <Button
-                fullWidth
-                variant="contained"
-                color="success"
-                size="large"
-                onClick={() => void handleSave()}
-                disabled={dificultad.trim().length < 3}
-              >
-                Guardar y cerrar la revision →
-              </Button>
-            </Stack>
-          </Fade>
+            </div>
+            <button
+              className="w-full min-h-11 text-white rounded-xl font-semibold text-sm disabled:opacity-50"
+              style={{ backgroundColor: 'var(--color-brand-success)' }}
+              onClick={() => void handleSave()}
+              disabled={dificultad.trim().length < 3}
+            >
+              Guardar y cerrar la revision →
+            </button>
+          </div>
         )}
 
         {/* Pantalla 2 — Cierre */}
         {step === 2 && answered && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="success"
-                title="Revision completada"
-                message="Conoces donde estas. Eso ya es un paso enorme. El siguiente paso es hacer un ajuste, por pequeño que sea."
-              />
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'success.main', bgcolor: 'success.light' }}>
-                <Typography variant="body2" fontWeight={700} sx={{ mb: 0.5 }}>
-                  Estado general:
-                </Typography>
-                <Stack spacing={0.5}>
-                  {indicadores.map((ind, i) => (
-                    <Stack key={i} direction="row" spacing={1} alignItems="center">
-                      <Chip label={ind.label} color={ind.color} size="small" />
-                    </Stack>
-                  ))}
-                </Stack>
-              </FECard>
-            </Stack>
-          </Fade>
+          <div className="space-y-6">
+            <FinniMessage variant="success" title="Revision completada" message="Conoces donde estas. Eso ya es un paso enorme. El siguiente paso es hacer un ajuste, por pequeño que sea." />
+            <FECard variant="flat" className="border" style={{ borderColor: 'var(--color-brand-success)', backgroundColor: 'var(--color-brand-success-bg)' }}>
+              <p className="text-sm font-bold mb-2">Estado general:</p>
+              <div className="space-y-2">
+                {indicadores.map((ind, i) => {
+                  const c = COLOR_MAP[ind.color];
+                  return (
+                    <div key={i} className="flex gap-2 items-center">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: c.main }}>{ind.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </FECard>
+          </div>
         )}
-      </Box>
+      </div>
     </LessonShell>
   );
 }

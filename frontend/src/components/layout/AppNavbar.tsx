@@ -1,22 +1,15 @@
-import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
-import HomeIcon from '@mui/icons-material/Home';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-import PersonIcon from '@mui/icons-material/Person';
-import SettingsIcon from '@mui/icons-material/Settings';
+import { Home, Trophy, User, Settings } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
+import { cn } from '@/lib/utils';
 
-type NavItem = {
-  label: string;
-  icon: React.ReactElement;
-  path: string;
-};
+type NavItem = { label: string; icon: React.ReactNode; path: string };
 
 const items: NavItem[] = [
-  { label: 'Inicio', icon: <HomeIcon />, path: '/app' },
-  { label: 'Logros', icon: <EmojiEventsIcon />, path: '/app/achievements' },
-  { label: 'Perfil', icon: <PersonIcon />, path: '/app/profile' },
-  { label: 'Ajustes', icon: <SettingsIcon />, path: '/app/settings' },
+  { label: 'Inicio',  icon: <Home size={22} />,    path: '/app' },
+  { label: 'Logros',  icon: <Trophy size={22} />,  path: '/app/achievements' },
+  { label: 'Perfil',  icon: <User size={22} />,    path: '/app/profile' },
+  { label: 'Ajustes', icon: <Settings size={22} />, path: '/app/settings' },
 ];
 
 export function AppNavbar() {
@@ -29,37 +22,30 @@ export function AppNavbar() {
   }, [location.pathname]);
 
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 1200,
-        boxShadow: (t) => t.shadows[8],
-      }}
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-[1200] bg-white border-t border-[var(--color-neutral-200)] shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
       role="navigation"
       aria-label="Navegación principal"
     >
-      <BottomNavigation
-        showLabels
-        value={current}
-        onChange={(_e, idx) => {
-          const item = items[idx];
-          if (item) navigate(item.path);
-        }}
-      >
-        {items.map((item) => (
-          <BottomNavigationAction
+      <div className="flex items-stretch">
+        {items.map((item, idx) => (
+          <button
             key={item.path}
-            label={item.label}
-            icon={item.icon}
+            onClick={() => navigate(item.path)}
             aria-label={item.label}
-          />
+            aria-current={current === idx ? 'page' : undefined}
+            className={cn(
+              'flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs font-medium transition-colors',
+              current === idx
+                ? 'text-[var(--color-brand-primary)]'
+                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+            )}
+          >
+            {item.icon}
+            {item.label}
+          </button>
         ))}
-      </BottomNavigation>
-    </Paper>
+      </div>
+    </nav>
   );
 }
-

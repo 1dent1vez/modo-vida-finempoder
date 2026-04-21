@@ -1,7 +1,4 @@
 import { useState } from 'react';
-import {
-  Box, Stack, Typography, Button, LinearProgress, Fade,
-} from '@mui/material';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -26,9 +23,10 @@ const BALANCE = TOTAL_INGRESOS - TOTAL_GASTOS;
 
 export default function L06() {
   const [step, setStep] = useState(0);
-  const [pasoRoberto, setPasoRoberto] = useState(0); // 0=ingresos 1=gastos 2=balance
+  const [pasoRoberto, setPasoRoberto] = useState(0);
 
   const allStepsDone = pasoRoberto >= 3;
+  const progressValue = step === 0 ? 0 : step === 1 ? 40 : 100;
 
   return (
     <LessonShell
@@ -36,174 +34,168 @@ export default function L06() {
       title="¿Quedaste en números rojos? Calcula tu balance mensual"
       completion={{ ready: allStepsDone }}
     >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={step === 0 ? 0 : step === 1 ? 40 : 100}
-          color="warning"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
+        </div>
 
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="Finni con calculadora 🧮"
-                message="¿Sabes si este mes gastaste más de lo que ganaste? No asumir, calcular. Esa es la diferencia entre saber y creer que sabes."
-              />
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'warning.main' }}>
-                <Typography variant="body1" fontWeight={700} sx={{ mb: 1 }}>Conceptos clave:</Typography>
-                <Stack spacing={1}>
-                  <Typography variant="body2">
-                    📊 <b>Balance mensual</b> = Ingresos totales − Gastos totales
-                  </Typography>
-                  <Typography variant="body2" color="success.main" fontWeight={600}>
-                    ✅ Superávit: sobra dinero → ¿lo estás ahorrando o gastando después?
-                  </Typography>
-                  <Typography variant="body2" color="error.main" fontWeight={600}>
-                    ❌ Déficit: gastaste más de lo que entraste → ¿es temporal o tu patrón normal?
-                  </Typography>
-                </Stack>
-              </FECard>
-              <FinniMessage
-                variant="coach"
-                title="Clave"
-                message="Ninguno de los dos es bueno o malo por sí solo. Lo importante es saberlo y actuar."
-              />
-              <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setStep(1)}>
-                ¡Calcular con Roberto! →
-              </Button>
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <FinniMessage
+              variant="coach"
+              title="Finni con calculadora 🧮"
+              message="¿Sabes si este mes gastaste más de lo que ganaste? No asumir, calcular. Esa es la diferencia entre saber y creer que sabes."
+            />
+            <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
+              <p className="font-bold mb-2">Conceptos clave:</p>
+              <div className="space-y-2">
+                <p className="text-sm">
+                  📊 <b>Balance mensual</b> = Ingresos totales − Gastos totales
+                </p>
+                <p className="text-sm font-semibold text-[var(--color-brand-success)]">
+                  ✅ Superávit: sobra dinero → ¿lo estás ahorrando o gastando después?
+                </p>
+                <p className="text-sm font-semibold text-[var(--color-brand-error)]">
+                  ❌ Déficit: gastaste más de lo que entraste → ¿es temporal o tu patrón normal?
+                </p>
+              </div>
+            </FECard>
+            <FinniMessage
+              variant="coach"
+              title="Clave"
+              message="Ninguno de los dos es bueno o malo por sí solo. Lo importante es saberlo y actuar."
+            />
+            <button
+              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+              onClick={() => setStep(1)}
+            >
+              ¡Calcular con Roberto! →
+            </button>
+          </div>
         )}
 
         {step === 1 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FECard variant="flat" sx={{ bgcolor: 'warning.light', textAlign: 'center', py: 1.5 }}>
-                <Typography variant="h4">El mes de Roberto 🎓</Typography>
-                <Typography variant="body2" color="text.secondary">Estudiante de 3er semestre</Typography>
-              </FECard>
+          <div className="space-y-3">
+            <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 text-center py-3">
+              <p className="font-bold text-base">El mes de Roberto 🎓</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">Estudiante de 3er semestre</p>
+            </FECard>
 
-              {/* Paso 1 — Ingresos */}
-              {pasoRoberto === 0 && (
-                <Fade in>
-                  <Stack spacing={2}>
-                    <Typography variant="body1" fontWeight={700}>Paso 1: Suma los ingresos de Roberto</Typography>
-                    <Stack spacing={1}>
-                      {INGRESOS_ROBERTO.map((i, idx) => (
-                        <FECard key={idx} variant="flat" sx={{ border: 1, borderColor: 'success.light' }}>
-                          <Stack direction="row" justifyContent="space-between">
-                            <Typography variant="body2">{i.label}</Typography>
-                            <Typography variant="body2" fontWeight={700} color="success.main">+${i.monto.toLocaleString()}</Typography>
-                          </Stack>
-                        </FECard>
-                      ))}
-                    </Stack>
-                    <FECard variant="flat" sx={{ bgcolor: 'success.light', border: 2, borderColor: 'success.main' }}>
-                      <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="body1" fontWeight={700}>Total ingresos</Typography>
-                        <Typography variant="body1" fontWeight={700} color="success.main">${TOTAL_INGRESOS.toLocaleString()}</Typography>
-                      </Stack>
+            {pasoRoberto === 0 && (
+              <div className="space-y-2">
+                <p className="font-bold">Paso 1: Suma los ingresos de Roberto</p>
+                <div className="space-y-2">
+                  {INGRESOS_ROBERTO.map((i, idx) => (
+                    <FECard key={idx} variant="flat" className="border border-[var(--color-brand-success)]/30">
+                      <div className="flex justify-between">
+                        <p className="text-sm">{i.label}</p>
+                        <p className="font-bold text-sm text-[var(--color-brand-success)]">+${i.monto.toLocaleString()}</p>
+                      </div>
                     </FECard>
-                    <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setPasoRoberto(1)}>
-                      Ver gastos →
-                    </Button>
-                  </Stack>
-                </Fade>
-              )}
+                  ))}
+                </div>
+                <FECard variant="flat" className="bg-[var(--color-brand-success)]/10 border-2 border-[var(--color-brand-success)]">
+                  <div className="flex justify-between">
+                    <p className="font-bold">Total ingresos</p>
+                    <p className="font-bold text-[var(--color-brand-success)]">${TOTAL_INGRESOS.toLocaleString()}</p>
+                  </div>
+                </FECard>
+                <button
+                  className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+                  onClick={() => setPasoRoberto(1)}
+                >
+                  Ver gastos →
+                </button>
+              </div>
+            )}
 
-              {/* Paso 2 — Gastos */}
-              {pasoRoberto === 1 && (
-                <Fade in>
-                  <Stack spacing={2}>
-                    <Typography variant="body1" fontWeight={700}>Paso 2: Suma los gastos del mes</Typography>
-                    <Stack spacing={1}>
-                      {GASTOS_ROBERTO.map((g, idx) => (
-                        <FECard key={idx} variant="flat" sx={{ border: 1, borderColor: 'error.light' }}>
-                          <Stack direction="row" justifyContent="space-between">
-                            <Typography variant="body2">{g.label}</Typography>
-                            <Typography variant="body2" fontWeight={700} color="error.main">-${g.monto.toLocaleString()}</Typography>
-                          </Stack>
-                        </FECard>
-                      ))}
-                    </Stack>
-                    <FECard variant="flat" sx={{ bgcolor: 'error.light', border: 2, borderColor: 'error.main' }}>
-                      <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="body1" fontWeight={700}>Total gastos</Typography>
-                        <Typography variant="body1" fontWeight={700} color="error.main">${TOTAL_GASTOS.toLocaleString()}</Typography>
-                      </Stack>
+            {pasoRoberto === 1 && (
+              <div className="space-y-2">
+                <p className="font-bold">Paso 2: Suma los gastos del mes</p>
+                <div className="space-y-2">
+                  {GASTOS_ROBERTO.map((g, idx) => (
+                    <FECard key={idx} variant="flat" className="border border-[var(--color-brand-error)]/30">
+                      <div className="flex justify-between">
+                        <p className="text-sm">{g.label}</p>
+                        <p className="font-bold text-sm text-[var(--color-brand-error)]">-${g.monto.toLocaleString()}</p>
+                      </div>
                     </FECard>
-                    <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setPasoRoberto(2)}>
-                      Calcular balance →
-                    </Button>
-                  </Stack>
-                </Fade>
-              )}
+                  ))}
+                </div>
+                <FECard variant="flat" className="bg-[var(--color-brand-error)]/10 border-2 border-[var(--color-brand-error)]">
+                  <div className="flex justify-between">
+                    <p className="font-bold">Total gastos</p>
+                    <p className="font-bold text-[var(--color-brand-error)]">${TOTAL_GASTOS.toLocaleString()}</p>
+                  </div>
+                </FECard>
+                <button
+                  className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+                  onClick={() => setPasoRoberto(2)}
+                >
+                  Calcular balance →
+                </button>
+              </div>
+            )}
 
-              {/* Paso 3 — Balance */}
-              {pasoRoberto === 2 && (
-                <Fade in>
-                  <Stack spacing={2}>
-                    <Typography variant="body1" fontWeight={700}>Paso 3: Balance de Roberto</Typography>
-                    <FECard variant="flat" sx={{ border: 1, borderColor: 'divider' }}>
-                      <Stack spacing={1}>
-                        <Stack direction="row" justifyContent="space-between">
-                          <Typography variant="body2">Ingresos</Typography>
-                          <Typography variant="body2" color="success.main" fontWeight={700}>+${TOTAL_INGRESOS.toLocaleString()}</Typography>
-                        </Stack>
-                        <Stack direction="row" justifyContent="space-between">
-                          <Typography variant="body2">Gastos</Typography>
-                          <Typography variant="body2" color="error.main" fontWeight={700}>-${TOTAL_GASTOS.toLocaleString()}</Typography>
-                        </Stack>
-                      </Stack>
-                    </FECard>
-                    <FECard variant="flat" sx={{ bgcolor: 'success.light', border: 2, borderColor: 'success.main', textAlign: 'center', py: 2 }}>
-                      <Typography variant="h3" color="success.dark">${BALANCE.toLocaleString()}</Typography>
-                      <Typography variant="body1" fontWeight={700} color="success.dark">Superávit ✓</Typography>
-                    </FECard>
-                    <FinniMessage
-                      variant="success"
-                      title="¡Bien Roberto!"
-                      message="Tiene $720 de superávit. Finni le recomienda destinarlo a su fondo de ahorro o meta financiera."
-                    />
-                    <Button fullWidth variant="contained" color="warning" size="large" onClick={() => { setPasoRoberto(3); setStep(2); }}>
-                      Ver mi propio balance →
-                    </Button>
-                  </Stack>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+            {pasoRoberto === 2 && (
+              <div className="space-y-2">
+                <p className="font-bold">Paso 3: Balance de Roberto</p>
+                <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <p className="text-sm">Ingresos</p>
+                      <p className="font-bold text-sm text-[var(--color-brand-success)]">+${TOTAL_INGRESOS.toLocaleString()}</p>
+                    </div>
+                    <div className="flex justify-between">
+                      <p className="text-sm">Gastos</p>
+                      <p className="font-bold text-sm text-[var(--color-brand-error)]">-${TOTAL_GASTOS.toLocaleString()}</p>
+                    </div>
+                  </div>
+                </FECard>
+                <FECard variant="flat" className="bg-[var(--color-brand-success)]/10 border-2 border-[var(--color-brand-success)] text-center py-4">
+                  <p className="text-2xl font-bold text-[var(--color-brand-success)]">${BALANCE.toLocaleString()}</p>
+                  <p className="font-bold text-[var(--color-brand-success)]">Superávit ✓</p>
+                </FECard>
+                <FinniMessage
+                  variant="success"
+                  title="¡Bien Roberto!"
+                  message="Tiene $720 de superávit. Finni le recomienda destinarlo a su fondo de ahorro o meta financiera."
+                />
+                <button
+                  className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+                  onClick={() => { setPasoRoberto(3); setStep(2); }}
+                >
+                  Ver mi propio balance →
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
         {step === 2 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="¿Y tú?"
-                message="¿Quieres calcular tu balance real de este mes? En la lección 12 construiremos tu presupuesto completo con tus datos reales."
-              />
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'warning.main', bgcolor: 'warning.light', p: 2 }}>
-                <Typography variant="body1" fontWeight={700}>Fórmula para tu balance:</Typography>
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  Total de lo que recibiste este mes<br />
-                  <b>menos</b><br />
-                  Total de lo que gastaste este mes<br />
-                  <b>=</b> Tu balance
-                </Typography>
-              </FECard>
-              <FinniMessage
-                variant="success"
-                title="Lección completada"
-                message="Ya sabes cómo calcular tu balance mensual. ¡Ese es el primer paso para tomar control de tu dinero!"
-              />
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <FinniMessage
+              variant="coach"
+              title="¿Y tú?"
+              message="¿Quieres calcular tu balance real de este mes? En la lección 12 construiremos tu presupuesto completo con tus datos reales."
+            />
+            <FECard variant="flat" className="border border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10 p-4">
+              <p className="font-bold">Fórmula para tu balance:</p>
+              <p className="text-sm mt-2">
+                Total de lo que recibiste este mes<br />
+                <b>menos</b><br />
+                Total de lo que gastaste este mes<br />
+                <b>=</b> Tu balance
+              </p>
+            </FECard>
+            <FinniMessage
+              variant="success"
+              title="Lección completada"
+              message="Ya sabes cómo calcular tu balance mensual. ¡Ese es el primer paso para tomar control de tu dinero!"
+            />
+          </div>
         )}
-      </Box>
+      </div>
     </LessonShell>
   );
 }

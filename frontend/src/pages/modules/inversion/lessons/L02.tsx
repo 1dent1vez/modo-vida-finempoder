@@ -1,10 +1,6 @@
+import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
-import {
-  Box, Stack, Typography, Button, LinearProgress, Fade,
-  Chip, TextField, Collapse, Paper,
-} from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -44,37 +40,16 @@ const CRITERIOS = [
 ];
 
 const CASOS = [
-  {
-    texto: '"Quiero $5,000 para un viaje en 2 meses."',
-    respuesta: 'ahorro',
-    razon: 'Plazo muy corto (2 meses). No hay tiempo para riesgo. El ahorro es la respuesta.',
-  },
-  {
-    texto: '"Quiero tener $50,000 en 3 años para mi primer negocio."',
-    respuesta: 'inversion',
-    razon: 'Plazo mediano (3 años) y meta ambiciosa. La inversión puede ayudarte a crecer más que la inflación.',
-  },
-  {
-    texto: '"Necesito tener disponible mi fondo de emergencias."',
-    respuesta: 'ahorro',
-    razon: 'Un fondo de emergencias necesita alta liquidez. No puede estar en riesgo.',
-  },
-  {
-    texto: '"Quiero que mi dinero crezca más que la inflación en 2 años."',
-    respuesta: 'inversion',
-    razon: 'Objetivo claro de superar la inflación con plazo mediano. CETES o fondo conservador.',
-  },
-  {
-    texto: '"Voy a necesitar $3,000 en 6 meses para mi inscripción."',
-    respuesta: 'ahorro',
-    razon: 'Plazo corto y dinero comprometido. No tomes riesgo con dinero que necesitarás pronto.',
-  },
-  {
-    texto: '"Tengo $500 que no necesito en al menos 1 año."',
-    respuesta: 'inversion',
-    razon: 'Plazo mínimo de 1 año y sin urgencia. CETES o fondo conservador son excelentes opciones.',
-  },
+  { texto: '"Quiero $5,000 para un viaje en 2 meses."', respuesta: 'ahorro', razon: 'Plazo muy corto (2 meses). No hay tiempo para riesgo. El ahorro es la respuesta.' },
+  { texto: '"Quiero tener $50,000 en 3 años para mi primer negocio."', respuesta: 'inversion', razon: 'Plazo mediano (3 años) y meta ambiciosa. La inversión puede ayudarte a crecer más que la inflación.' },
+  { texto: '"Necesito tener disponible mi fondo de emergencias."', respuesta: 'ahorro', razon: 'Un fondo de emergencias necesita alta liquidez. No puede estar en riesgo.' },
+  { texto: '"Quiero que mi dinero crezca más que la inflación en 2 años."', respuesta: 'inversion', razon: 'Objetivo claro de superar la inflación con plazo mediano. CETES o fondo conservador.' },
+  { texto: '"Voy a necesitar $3,000 en 6 meses para mi inscripción."', respuesta: 'ahorro', razon: 'Plazo corto y dinero comprometido. No tomes riesgo con dinero que necesitarás pronto.' },
+  { texto: '"Tengo $500 que no necesito en al menos 1 año."', respuesta: 'inversion', razon: 'Plazo mínimo de 1 año y sin urgencia. CETES o fondo conservador son excelentes opciones.' },
 ];
+
+const infoColor = 'var(--color-brand-info)';
+const infoBg   = 'var(--color-brand-info-bg)';
 
 export default function L02() {
   const [step, setStep] = useState(0);
@@ -104,189 +79,209 @@ export default function L02() {
     setRespuestas((prev) => prev.map((r, i) => (i === idx ? valor : r)));
   };
 
+  const progressPct = (step / 3) * 100;
+
   return (
     <LessonShell
       id="L02"
       title="¿Ahorro o inversión? No es lo mismo, aunque se parezcan"
       completion={{ ready: casosCompletos && guardado, score }}
     >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={(step / 3) * 100}
-          color="info"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full transition-all" style={{ width: `${progressPct}%`, backgroundColor: infoColor }} />
+        </div>
 
         {/* Pantalla 0 — Apertura */}
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="¿El dinero en tu cuenta de ahorro está 'invertido'?"
-                message="No exactamente. Hay una diferencia importante entre ahorrar e invertir, y confundirlos puede costarte. Hoy la aclaramos."
-              />
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'divider' }}>
-                <Typography variant="body1" fontWeight={700} sx={{ mb: 2 }}>
-                  Tabla comparativa: Ahorro vs Inversión
-                </Typography>
-                <Stack spacing={1}>
-                  {CRITERIOS.map((c, i) => (
-                    <Paper key={c.criterio} sx={{ borderRadius: 2, overflow: 'hidden' }}>
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        justifyContent="space-between"
-                        sx={{ p: 1.5, cursor: 'pointer', bgcolor: expandido === i ? 'warning.light' : 'grey.50' }}
-                        onClick={() => setExpandido(expandido === i ? null : i)}
-                      >
-                        <Typography fontWeight={700}>{c.criterio}</Typography>
-                        {expandido === i ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                      </Stack>
-                      <Collapse in={expandido === i}>
-                        <Box sx={{ p: 2 }}>
-                          <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
-                            <FECard variant="flat" sx={{ flex: 1, bgcolor: 'success.light' }}>
-                              <Typography variant="caption" fontWeight={700} color="success.dark">Ahorro</Typography>
-                              <Typography variant="body2">{c.ahorro}</Typography>
-                            </FECard>
-                            <FECard variant="flat" sx={{ flex: 1, bgcolor: 'warning.light' }}>
-                              <Typography variant="caption" fontWeight={700} color="warning.dark">Inversión</Typography>
-                              <Typography variant="body2">{c.inversion}</Typography>
-                            </FECard>
-                          </Stack>
-                          <Typography variant="caption" color="text.secondary">{c.detalle}</Typography>
-                        </Box>
-                      </Collapse>
-                    </Paper>
-                  ))}
-                </Stack>
-              </FECard>
-              <Button fullWidth variant="contained" color="info" size="large" onClick={() => setStep(1)}>
-                Practicar con casos reales →
-              </Button>
-            </Stack>
-          </Fade>
+          <div className="space-y-6">
+            <FinniMessage
+              variant="coach"
+              title="¿El dinero en tu cuenta de ahorro está 'invertido'?"
+              message="No exactamente. Hay una diferencia importante entre ahorrar e invertir, y confundirlos puede costarte. Hoy la aclaramos."
+            />
+            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
+              <p className="font-bold mb-4">Tabla comparativa: Ahorro vs Inversión</p>
+              <div className="space-y-2">
+                {CRITERIOS.map((c, i) => (
+                  <div key={c.criterio} className="rounded-xl overflow-hidden border border-[var(--color-neutral-200)]">
+                    <button
+                      className={cn(
+                        'w-full flex items-center justify-between p-3 text-left transition-colors',
+                        expandido === i ? 'bg-[var(--color-brand-warning-bg)]' : 'bg-gray-50'
+                      )}
+                      onClick={() => setExpandido(expandido === i ? null : i)}
+                    >
+                      <span className="font-bold">{c.criterio}</span>
+                      {expandido === i ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                    {expandido === i && (
+                      <div className="p-3">
+                        <div className="flex gap-3 mb-2">
+                          <div className="flex-1 p-2 rounded-lg bg-[var(--color-brand-success-bg)]">
+                            <span className="text-xs font-bold text-green-700 block">Ahorro</span>
+                            <span className="text-sm">{c.ahorro}</span>
+                          </div>
+                          <div className="flex-1 p-2 rounded-lg bg-[var(--color-brand-warning-bg)]">
+                            <span className="text-xs font-bold text-amber-700 block">Inversión</span>
+                            <span className="text-sm">{c.inversion}</span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-[var(--color-text-secondary)]">{c.detalle}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </FECard>
+            <button
+              className="w-full min-h-11 text-white rounded-xl font-semibold text-sm"
+              style={{ backgroundColor: infoColor }}
+              onClick={() => setStep(1)}
+            >
+              Practicar con casos reales →
+            </button>
+          </div>
         )}
 
         {/* Pantalla 1 — Casos de uso */}
         {step === 1 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="h4" fontWeight={700}>6 situaciones reales</Typography>
-              <Typography variant="body2" color="text.secondary">
-                ¿Cada situación requiere ahorro o inversión?
-              </Typography>
-              <Stack spacing={2}>
-                {CASOS.map((caso, i) => {
-                  const respuesta = respuestas[i];
-                  const correcto = respuesta === caso.respuesta;
-                  const respondido = respuesta !== null;
-                  return (
-                    <FECard key={i} variant="flat" sx={{ border: 1, borderColor: respondido ? (correcto ? 'success.main' : 'error.main') : 'divider' }}>
-                      <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>{caso.texto}</Typography>
-                      <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-                        <Button
-                          size="small"
-                          variant={respuesta === 'ahorro' ? 'contained' : 'outlined'}
-                          color="success"
-                          onClick={() => responder(i, 'ahorro')}
-                        >
-                          Ahorro
-                        </Button>
-                        <Button
-                          size="small"
-                          variant={respuesta === 'inversion' ? 'contained' : 'outlined'}
-                          color="info"
-                          onClick={() => responder(i, 'inversion')}
-                        >
-                          Inversión
-                        </Button>
-                      </Stack>
-                      {respondido && (
-                        <Fade in>
-                          <Box>
-                            <Chip
-                              size="small"
-                              label={correcto ? '✓ Correcto' : '✗ Incorrecto'}
-                              color={correcto ? 'success' : 'error'}
-                              sx={{ mb: 0.5 }}
-                            />
-                            <Typography variant="caption" display="block" color="text.secondary">
-                              {caso.razon}
-                            </Typography>
-                          </Box>
-                        </Fade>
-                      )}
-                    </FECard>
-                  );
-                })}
-              </Stack>
-              {casosCompletos && (
-                <Fade in>
-                  <Stack spacing={2}>
-                    <FECard variant="flat" sx={{ bgcolor: aciertos >= 5 ? 'success.light' : 'info.light', border: 1, borderColor: aciertos >= 5 ? 'success.main' : 'info.main' }}>
-                      <Typography fontWeight={700}>Resultado: {aciertos}/6 correctas</Typography>
-                      <Typography variant="body2">{aciertos >= 5 ? '¡Excelente! Tienes muy claro cuándo usar cada herramienta.' : 'Revisa las incorrectas — el criterio clave es el plazo y la liquidez necesaria.'}</Typography>
-                    </FECard>
-                    <Button fullWidth variant="contained" color="info" size="large" onClick={() => setStep(2)}>
-                      Aplicar a mi situación →
-                    </Button>
-                  </Stack>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+          <div className="space-y-6">
+            <p className="text-lg font-bold">6 situaciones reales</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">¿Cada situación requiere ahorro o inversión?</p>
+            <div className="space-y-4">
+              {CASOS.map((caso, i) => {
+                const respuesta = respuestas[i];
+                const correcto = respuesta === caso.respuesta;
+                const respondido = respuesta !== null;
+                return (
+                  <FECard
+                    key={i}
+                    variant="flat"
+                    className={cn(
+                      'border',
+                      respondido
+                        ? correcto
+                          ? 'border-[var(--color-brand-success)]'
+                          : 'border-[var(--color-brand-error)]'
+                        : 'border-[var(--color-neutral-200)]'
+                    )}
+                  >
+                    <p className="text-sm font-bold mb-2">{caso.texto}</p>
+                    <div className="flex gap-2 mb-2">
+                      <button
+                        className={cn(
+                          'px-3 py-1 rounded-lg text-sm font-semibold border transition-colors',
+                          respuesta === 'ahorro'
+                            ? 'bg-[var(--color-brand-success)] text-white border-[var(--color-brand-success)]'
+                            : 'border-[var(--color-brand-success)] text-[var(--color-brand-success)]'
+                        )}
+                        onClick={() => responder(i, 'ahorro')}
+                        disabled={respondido}
+                      >
+                        Ahorro
+                      </button>
+                      <button
+                        className={cn(
+                          'px-3 py-1 rounded-lg text-sm font-semibold border transition-colors',
+                          respuesta === 'inversion'
+                            ? 'text-white border-transparent'
+                            : 'border-[var(--color-brand-info)]'
+                        )}
+                        style={respuesta === 'inversion' ? { backgroundColor: infoColor } : { color: infoColor }}
+                        onClick={() => responder(i, 'inversion')}
+                        disabled={respondido}
+                      >
+                        Inversión
+                      </button>
+                    </div>
+                    {respondido && (
+                      <div>
+                        <span className={cn(
+                          'inline-block px-2 py-0.5 rounded-full text-xs font-bold mb-1',
+                          correcto
+                            ? 'bg-[var(--color-brand-success-bg)] text-green-700'
+                            : 'bg-[var(--color-brand-error-bg)] text-red-700'
+                        )}>
+                          {correcto ? '✓ Correcto' : '✗ Incorrecto'}
+                        </span>
+                        <p className="text-xs text-[var(--color-text-secondary)]">{caso.razon}</p>
+                      </div>
+                    )}
+                  </FECard>
+                );
+              })}
+            </div>
+            {casosCompletos && (
+              <div className="space-y-4">
+                <FECard
+                  variant="flat"
+                  className={cn(
+                    'border',
+                    aciertos >= 5
+                      ? 'bg-[var(--color-brand-success-bg)] border-[var(--color-brand-success)]'
+                      : 'border-[var(--color-brand-info)]'
+                  )}
+                  style={aciertos < 5 ? { backgroundColor: infoBg } : undefined}
+                >
+                  <p className="font-bold">Resultado: {aciertos}/6 correctas</p>
+                  <p className="text-sm">
+                    {aciertos >= 5
+                      ? '¡Excelente! Tienes muy claro cuándo usar cada herramienta.'
+                      : 'Revisa las incorrectas — el criterio clave es el plazo y la liquidez necesaria.'}
+                  </p>
+                </FECard>
+                <button
+                  className="w-full min-h-11 text-white rounded-xl font-semibold text-sm"
+                  style={{ backgroundColor: infoColor }}
+                  onClick={() => setStep(2)}
+                >
+                  Aplicar a mi situación →
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Pantalla 2 — Regla de oro + aplicación personal */}
         {step === 2 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FECard variant="flat" sx={{ bgcolor: 'warning.light', border: 2, borderColor: 'warning.main' }}>
-                <Typography variant="body1" fontWeight={800}>Regla de oro</Typography>
-                <Typography variant="body2" sx={{ mt: 0.5 }}>
-                  Si necesitas el dinero en menos de 1 año: <b>ahorra</b>.{' '}
-                  Si puedes esperar más de 1 año: <b>considera invertir</b>.
-                </Typography>
-              </FECard>
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'divider' }}>
-                <Typography variant="body1" fontWeight={700} sx={{ mb: 1 }}>
-                  ¿Para qué podrías invertir TÚ?
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                  ¿Tienes algún objetivo a más de 1 año? Escríbelo — lo usaremos en la Lección 13.
-                </Typography>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  placeholder="Ej: Ahorrar para mi primera laptop, para un viaje, para emprender..."
-                  value={objetivoPersonal}
-                  onChange={(e) => setObjetivoPersonal(e.target.value)}
-                  size="small"
-                />
-              </FECard>
-              <FinniMessage
-                variant="coach"
-                title="Ahorro e inversión no se excluyen"
-                message="El ahorro es la base. La inversión es el siguiente nivel. Primero construye el fondo de emergencias — luego viene la inversión."
+          <div className="space-y-6">
+            <FECard variant="flat" className="bg-[var(--color-brand-warning-bg)] border-2 border-[var(--color-brand-warning)]">
+              <p className="font-extrabold">Regla de oro</p>
+              <p className="text-sm mt-1">
+                Si necesitas el dinero en menos de 1 año: <strong>ahorra</strong>.{' '}
+                Si puedes esperar más de 1 año: <strong>considera invertir</strong>.
+              </p>
+            </FECard>
+            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
+              <p className="font-bold mb-2">¿Para qué podrías invertir TÚ?</p>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+                ¿Tienes algún objetivo a más de 1 año? Escríbelo — lo usaremos en la Lección 13.
+              </p>
+              <textarea
+                className="w-full border border-[var(--color-neutral-200)] rounded-lg p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-info)]"
+                rows={3}
+                placeholder="Ej: Ahorrar para mi primera laptop, para un viaje, para emprender..."
+                value={objetivoPersonal}
+                onChange={(e) => setObjetivoPersonal(e.target.value)}
               />
-              <Button
-                fullWidth
-                variant="contained"
-                color="info"
-                size="large"
-                disabled={objetivoPersonal.trim().length < 5}
-                onClick={() => void handleGuardar()}
-              >
-                {guardado ? '✅ Guardado — lección completada' : 'Guardar mi objetivo de inversión'}
-              </Button>
-            </Stack>
-          </Fade>
+            </FECard>
+            <FinniMessage
+              variant="coach"
+              title="Ahorro e inversión no se excluyen"
+              message="El ahorro es la base. La inversión es el siguiente nivel. Primero construye el fondo de emergencias — luego viene la inversión."
+            />
+            <button
+              className="w-full min-h-11 text-white rounded-xl font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: infoColor }}
+              disabled={objetivoPersonal.trim().length < 5}
+              onClick={() => void handleGuardar()}
+            >
+              {guardado ? '✅ Guardado — lección completada' : 'Guardar mi objetivo de inversión'}
+            </button>
+          </div>
         )}
-      </Box>
+      </div>
     </LessonShell>
   );
 }

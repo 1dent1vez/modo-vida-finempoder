@@ -30,3 +30,22 @@ railway.toml
 
 # ─── Misc ────────────────────────────────────────────────────────────────────
 *.tsbuildinfo
+# Added by code-review-graph
+.code-review-graph/
+
+# ─── Herramientas de IA, Agentes y Extensiones ───────────────────────────────
+.claude/
+.rtk/
+.kiro/
+.antigravity/
+.mcp.json
+.opencode.json
+
+# ─── Bases de Datos Locales y Caché ──────────────────────────────────────────
+*.sqlite
+*.sqlite3
+*.db
+.temp/
+.tmp/
+.cache/
+.vite/

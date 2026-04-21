@@ -11,11 +11,6 @@ export type RegisterDTO = {
   acceptTerms: boolean;
 };
 
-export type LoginDTO = {
-  email: string;
-  password: string;
-};
-
 export type AuthUser = {
   _id: string;
   email: string;
@@ -40,14 +35,6 @@ const authApi = {
       return data;
     } catch (err) {
       extractMessage(err, 'No se pudo crear la cuenta');
-    }
-  },
-  async login(payload: LoginDTO): Promise<AuthResponse> {
-    try {
-      const { data } = await client.post<AuthResponse>('/auth/login', payload);
-      return data;
-    } catch (err) {
-      extractMessage(err, 'Error al iniciar sesión');
     }
   },
 };

@@ -1,8 +1,4 @@
 import { useState } from 'react';
-import {
-  Box, Stack, Typography, Button, LinearProgress, Fade,
-  Chip, Paper, TextField,
-} from '@mui/material';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -17,32 +13,20 @@ const PLATAFORMAS = [
 ];
 
 const QUIZ = [
-  {
-    pregunta: '¿Qué es un fondo de inversión?',
-    opciones: ['Una cuenta de ahorro bancaria', 'Un grupo de personas que invierten colectivamente', 'Un préstamo al banco'],
-    correcta: 1,
-  },
-  {
-    pregunta: '¿Qué pasa si la empresa en cuya acción invertiste tiene problemas?',
-    opciones: ['Recibes el dinero garantizado', 'El valor de tu acción puede bajar', 'El gobierno te protege'],
-    correcta: 1,
-  },
-  {
-    pregunta: '¿Cuál es el organismo que regula los fondos en México?',
-    opciones: ['SAT', 'CNBV', 'IMSS'],
-    correcta: 1,
-  },
-  {
-    pregunta: '¿Los fondos balanceados mezclan deuda y acciones?',
-    opciones: ['Falso', 'Verdadero'],
-    correcta: 1,
-  },
-  {
-    pregunta: '¿Desde cuánto puedes invertir en BMV con plataformas fintech?',
-    opciones: ['$10,000', '$5,000', '$200-$500'],
-    correcta: 2,
-  },
+  { pregunta: '¿Qué es un fondo de inversión?', opciones: ['Una cuenta de ahorro bancaria', 'Un grupo de personas que invierten colectivamente', 'Un préstamo al banco'], correcta: 1 },
+  { pregunta: '¿Qué pasa si la empresa en cuya acción invertiste tiene problemas?', opciones: ['Recibes el dinero garantizado', 'El valor de tu acción puede bajar', 'El gobierno te protege'], correcta: 1 },
+  { pregunta: '¿Cuál es el organismo que regula los fondos en México?', opciones: ['SAT', 'CNBV', 'IMSS'], correcta: 1 },
+  { pregunta: '¿Los fondos balanceados mezclan deuda y acciones?', opciones: ['Falso', 'Verdadero'], correcta: 1 },
+  { pregunta: '¿Desde cuánto puedes invertir en BMV con plataformas fintech?', opciones: ['$10,000', '$5,000', '$200-$500'], correcta: 2 },
 ];
+
+const infoColor = 'var(--color-brand-info)';
+const infoBg = 'var(--color-brand-info-bg)';
+const successColor = 'var(--color-brand-success)';
+const successBg = 'var(--color-brand-success-bg)';
+const warnColor = 'var(--color-brand-warning)';
+const warnBg = 'var(--color-brand-warning-bg)';
+const errorColor = 'var(--color-brand-error)';
 
 export default function L07() {
   const [step, setStep] = useState(0);
@@ -57,9 +41,7 @@ export default function L07() {
   const score = quizCompleto ? aciertos / 5 : 0;
 
   const togglePlataforma = (nombre: string) => {
-    setPlataformasInteres((prev) =>
-      prev.includes(nombre) ? prev.filter((p) => p !== nombre) : [...prev, nombre]
-    );
+    setPlataformasInteres((prev) => prev.includes(nombre) ? prev.filter((p) => p !== nombre) : [...prev, nombre]);
   };
 
   const handleGuardar = async () => {
@@ -68,210 +50,161 @@ export default function L07() {
   };
 
   return (
-    <LessonShell
-      id="L07"
-      title="Fondos de inversión y Bolsa: cuando muchos invierten juntos"
-      completion={{ ready: quizCompleto && guardado, score }}
-    >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={(step / 2) * 100}
-          color="info"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+    <LessonShell id="L07" title="Fondos de inversión y Bolsa: cuando muchos invierten juntos" completion={{ ready: quizCompleto && guardado, score }}>
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full transition-all" style={{ width: `${(step / 2) * 100}%`, backgroundColor: infoColor }} />
+        </div>
 
-        {/* Pantalla 0 — Explicación + pausa interactiva */}
+        {/* Pantalla 0 — Explicación */}
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="¿Quieres invertir en muchas empresas a la vez?"
-                message="Los fondos de inversión hacen eso por ti. Hoy entendemos cómo funcionan los fondos y la bolsa."
-              />
-              <FECard variant="flat" sx={{ bgcolor: 'warning.light', border: 1, borderColor: 'warning.main' }}>
-                <Typography fontWeight={800} sx={{ mb: 1 }}>Fondos de Inversión — La olla común 🍲</Typography>
-                <Stack spacing={1.5}>
-                  <Typography variant="body2">
-                    Imagina que tú y 999 personas más juntan $1,000 cada uno. Ahora tienen $1 millón para invertir.
-                    Un gestor profesional decide dónde y cómo. Las ganancias (y pérdidas) se distribuyen proporcionalmente.
-                  </Typography>
-                  <Typography variant="body2">
-                    Los fondos pueden invertir en <b>deuda</b> (más seguros), en <b>acciones</b> (más riesgo y potencial),
-                    o una mezcla de ambos (<b>balanceados</b>).
-                  </Typography>
-                  <Typography variant="body2">
-                    En México, los fondos regulados por la CNBV son accesibles desde $1,000-$5,000. Algunos desde $100 con plataformas fintech.
-                  </Typography>
-                </Stack>
-              </FECard>
+          <div className="space-y-6">
+            <FinniMessage variant="coach" title="¿Quieres invertir en muchas empresas a la vez?" message="Los fondos de inversión hacen eso por ti. Hoy entendemos cómo funcionan los fondos y la bolsa." />
+            <FECard variant="flat" className="border" style={{ borderColor: warnColor, backgroundColor: warnBg }}>
+              <p className="font-extrabold mb-2">Fondos de Inversión — La olla común 🍲</p>
+              <div className="space-y-3">
+                <p className="text-sm">Imagina que tú y 999 personas más juntan $1,000 cada uno. Ahora tienen $1 millón para invertir. Un gestor profesional decide dónde y cómo. Las ganancias (y pérdidas) se distribuyen proporcionalmente.</p>
+                <p className="text-sm">Los fondos pueden invertir en <b>deuda</b> (más seguros), en <b>acciones</b> (más riesgo y potencial), o una mezcla de ambos (<b>balanceados</b>).</p>
+                <p className="text-sm">En México, los fondos regulados por la CNBV son accesibles desde $1,000-$5,000. Algunos desde $100 con plataformas fintech.</p>
+              </div>
+            </FECard>
 
-              {/* Pausa interactiva */}
-              {!audioLeido ? (
-                <Stack spacing={2}>
-                  <FECard variant="flat" sx={{ border: 1, borderColor: 'info.main', bgcolor: 'info.light' }}>
-                    <Typography fontWeight={700} sx={{ mb: 1 }}>⏸ Pausa interactiva</Typography>
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                      ¿Qué te parece más atractivo hasta ahora: fondos o acciones? ¿Por qué?
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={2}
-                      size="small"
-                      placeholder="Escribe tu reflexión..."
-                      value={pausaRespuesta}
-                      onChange={(e) => setPausaRespuesta(e.target.value)}
-                    />
-                  </FECard>
-                  {pausaRespuesta.trim().length >= 5 && (
-                    <Fade in>
-                      <Button fullWidth variant="outlined" color="info" onClick={() => setAudioLeido(true)}>
-                        Continuar con la BMV →
-                      </Button>
-                    </Fade>
-                  )}
-                </Stack>
-              ) : (
-                <Fade in>
-                  <Stack spacing={3}>
-                    <FECard variant="flat" sx={{ bgcolor: 'success.light', border: 1, borderColor: 'success.main' }}>
-                      <Typography fontWeight={800} sx={{ mb: 1 }}>La Bolsa Mexicana de Valores (BMV) 📊</Typography>
-                      <Stack spacing={1.5}>
-                        <Typography variant="body2">
-                          La BMV es el mercado donde se compran y venden acciones de empresas mexicanas.
-                          Cuando compras una acción, eres propietario de una pequeña parte de esa empresa.
-                        </Typography>
-                        <Typography variant="body2">
-                          Si la empresa crece y genera utilidades, el valor de tu acción sube. Si tiene problemas, baja.
-                          A diferencia de los CETES, <b>no hay rendimiento garantizado</b>.
-                        </Typography>
-                        <Typography variant="body2">
-                          Puedes invertir en acciones de la BMV desde plataformas como GBM+, Kuspit o Bursanet desde $200-$500 pesos.
-                        </Typography>
-                      </Stack>
-                    </FECard>
-
-                    <Paper sx={{ p: 2, borderRadius: 3 }}>
-                      <Typography fontWeight={700} sx={{ mb: 1 }}>Fondos vs Acciones individuales</Typography>
-                      <Stack spacing={0.5}>
-                        {[
-                          { aspecto: 'Gestión', fondos: 'Profesional (gestor)', acciones: 'Tú decides' },
-                          { aspecto: 'Diversificación', fondos: 'Automática', acciones: 'Manual' },
-                          { aspecto: 'Monto mínimo', fondos: '$100-$5,000', acciones: '~$200' },
-                          { aspecto: 'Comisiones', fondos: '1-2% anual', acciones: 'Por operación' },
-                        ].map((row) => (
-                          <Stack key={row.aspecto} direction="row" sx={{ py: 0.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-                            <Typography variant="caption" fontWeight={700} sx={{ width: '35%' }}>{row.aspecto}</Typography>
-                            <Typography variant="caption" sx={{ width: '32.5%' }} color="warning.dark">{row.fondos}</Typography>
-                            <Typography variant="caption" sx={{ width: '32.5%' }} color="success.dark">{row.acciones}</Typography>
-                          </Stack>
-                        ))}
-                      </Stack>
-                    </Paper>
-                    <Button fullWidth variant="contained" color="info" size="large" onClick={() => setStep(1)}>
-                      Quiz y plataformas →
-                    </Button>
-                  </Stack>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+            {!audioLeido ? (
+              <div className="space-y-4">
+                <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
+                  <p className="font-bold mb-2">⏸ Pausa interactiva</p>
+                  <p className="text-sm mb-2">¿Qué te parece más atractivo hasta ahora: fondos o acciones? ¿Por qué?</p>
+                  <textarea
+                    value={pausaRespuesta}
+                    onChange={(e) => setPausaRespuesta(e.target.value)}
+                    rows={2}
+                    placeholder="Escribe tu reflexión..."
+                    className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm resize-none"
+                  />
+                </FECard>
+                {pausaRespuesta.trim().length >= 5 && (
+                  <button className="w-full min-h-11 rounded-xl font-semibold text-sm border-2" style={{ borderColor: infoColor, color: infoColor }} onClick={() => setAudioLeido(true)}>
+                    Continuar con la BMV →
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <FECard variant="flat" className="border" style={{ borderColor: successColor, backgroundColor: successBg }}>
+                  <p className="font-extrabold mb-2">La Bolsa Mexicana de Valores (BMV) 📊</p>
+                  <div className="space-y-3">
+                    <p className="text-sm">La BMV es el mercado donde se compran y venden acciones de empresas mexicanas. Cuando compras una acción, eres propietario de una pequeña parte de esa empresa.</p>
+                    <p className="text-sm">Si la empresa crece y genera utilidades, el valor de tu acción sube. Si tiene problemas, baja. A diferencia de los CETES, <b>no hay rendimiento garantizado</b>.</p>
+                    <p className="text-sm">Puedes invertir en acciones de la BMV desde plataformas como GBM+, Kuspit o Bursanet desde $200-$500 pesos.</p>
+                  </div>
+                </FECard>
+                <div className="p-4 rounded-xl bg-white border border-[var(--color-neutral-200)]">
+                  <p className="font-bold mb-2">Fondos vs Acciones individuales</p>
+                  <div className="space-y-0.5">
+                    {[
+                      { aspecto: 'Gestión', fondos: 'Profesional (gestor)', acciones: 'Tú decides' },
+                      { aspecto: 'Diversificación', fondos: 'Automática', acciones: 'Manual' },
+                      { aspecto: 'Monto mínimo', fondos: '$100-$5,000', acciones: '~$200' },
+                      { aspecto: 'Comisiones', fondos: '1-2% anual', acciones: 'Por operación' },
+                    ].map((row) => (
+                      <div key={row.aspecto} className="flex py-1.5 border-b border-[var(--color-neutral-200)]">
+                        <p className="text-xs font-bold w-[35%]">{row.aspecto}</p>
+                        <p className="text-xs w-[32.5%]" style={{ color: '#B45309' }}>{row.fondos}</p>
+                        <p className="text-xs w-[32.5%]" style={{ color: '#059669' }}>{row.acciones}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setStep(1)}>
+                  Quiz y plataformas →
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Pantalla 1 — Quiz + plataformas */}
         {step === 1 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="h4" fontWeight={700}>Quiz de comprensión</Typography>
-              <Stack spacing={2}>
-                {QUIZ.map((q, qi) => {
-                  const resp = respuestas[qi];
-                  const respondido = resp !== null;
-                  const correcto = resp === q.correcta;
-                  return (
-                    <FECard key={qi} variant="flat" sx={{ border: 1, borderColor: respondido ? (correcto ? 'success.main' : 'error.main') : 'divider' }}>
-                      <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>
-                        {qi + 1}. {q.pregunta}
-                      </Typography>
-                      <Stack spacing={1}>
-                        {q.opciones.map((op, oi) => (
-                          <Button
-                            key={oi}
-                            size="small"
-                            variant={resp === oi ? 'contained' : 'outlined'}
-                            color={respondido ? (oi === q.correcta ? 'success' : resp === oi ? 'error' : 'inherit') : 'warning'}
-                            onClick={() => { if (!respondido) setRespuestas((prev) => prev.map((r, i) => i === qi ? oi : r)); }}
-                            sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
-                          >
-                            {op}
-                          </Button>
-                        ))}
-                      </Stack>
-                      {respondido && (
-                        <Typography variant="caption" color={correcto ? 'success.main' : 'error.main'} sx={{ mt: 0.5, display: 'block' }}>
-                          {correcto ? '✓ Correcto' : `✗ La respuesta correcta era: "${q.opciones[q.correcta]}"`}
-                        </Typography>
-                      )}
-                    </FECard>
-                  );
-                })}
-              </Stack>
-              {quizCompleto && (
-                <Fade in>
-                  <Stack spacing={2}>
-                    <FECard variant="flat" sx={{ bgcolor: aciertos >= 4 ? 'success.light' : 'info.light', border: 2, borderColor: aciertos >= 4 ? 'success.main' : 'info.main', textAlign: 'center' }}>
-                      <Typography fontWeight={800}>{aciertos}/5 correctas</Typography>
-                    </FECard>
-                    <Typography variant="h5" fontWeight={700}>Plataformas autorizadas por CNBV</Typography>
-                    <Typography variant="body2" color="text.secondary">Marca las que te generan interés:</Typography>
-                    <Stack spacing={1.5}>
-                      {PLATAFORMAS.map((p) => (
-                        <Paper
-                          key={p.nombre}
-                          onClick={() => togglePlataforma(p.nombre)}
-                          sx={{
-                            p: 2, borderRadius: 2, cursor: 'pointer',
-                            border: 2, borderColor: plataformasInteres.includes(p.nombre) ? 'warning.main' : 'divider',
-                            bgcolor: plataformasInteres.includes(p.nombre) ? 'warning.light' : 'grey.50',
+          <div className="space-y-6">
+            <p className="text-2xl font-bold">Quiz de comprensión</p>
+            <div className="space-y-4">
+              {QUIZ.map((q, qi) => {
+                const resp = respuestas[qi];
+                const respondido = resp !== null;
+                const correcto = resp === q.correcta;
+                return (
+                  <FECard key={qi} variant="flat" className="border" style={{ borderColor: respondido ? (correcto ? successColor : errorColor) : 'var(--color-border)' }}>
+                    <p className="text-sm font-bold mb-2">{qi + 1}. {q.pregunta}</p>
+                    <div className="space-y-2">
+                      {q.opciones.map((op, oi) => (
+                        <button
+                          key={oi}
+                          onClick={() => { if (!respondido) setRespuestas((prev) => prev.map((r, i) => i === qi ? oi : r)); }}
+                          disabled={respondido}
+                          className="w-full text-left px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors disabled:cursor-default"
+                          style={{
+                            borderColor: resp === oi ? (oi === q.correcta ? successColor : errorColor) : (respondido ? 'var(--color-neutral-200)' : warnColor),
+                            backgroundColor: resp === oi ? (oi === q.correcta ? successBg : 'var(--color-brand-error-bg)') : 'transparent',
                           }}
                         >
-                          <Stack direction="row" justifyContent="space-between" alignItems="center">
-                            <Box>
-                              <Typography fontWeight={700}>{p.nombre}</Typography>
-                              <Typography variant="caption">{p.tipo} · Desde {p.minimo}</Typography>
-                            </Box>
-                            <Stack direction="row" spacing={1}>
-                              <Chip size="small" label="CNBV ✓" color="success" />
-                              {plataformasInteres.includes(p.nombre) && <Chip size="small" label="★ Interés" color="info" />}
-                            </Stack>
-                          </Stack>
-                        </Paper>
+                          {op}
+                        </button>
                       ))}
-                    </Stack>
-                    <FinniMessage
-                      variant="coach"
-                      title="Fondos y bolsa son para plazos medianos-largos"
-                      message="La clave es entender en qué estás entrando antes de hacerlo. ¡Ya lo entiendes!"
-                    />
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      color="info"
-                      size="large"
-                      onClick={() => void handleGuardar()}
-                      disabled={guardado}
+                    </div>
+                    {respondido && (
+                      <p className="text-xs mt-1.5" style={{ color: correcto ? successColor : errorColor }}>
+                        {correcto ? '✓ Correcto' : `✗ La respuesta correcta era: "${q.opciones[q.correcta]}"`}
+                      </p>
+                    )}
+                  </FECard>
+                );
+              })}
+            </div>
+            {quizCompleto && (
+              <div className="space-y-4">
+                <FECard variant="flat" className="border-2 text-center" style={{ borderColor: aciertos >= 4 ? successColor : infoColor, backgroundColor: aciertos >= 4 ? successBg : infoBg }}>
+                  <p className="font-extrabold">{aciertos}/5 correctas</p>
+                </FECard>
+                <p className="text-xl font-bold">Plataformas autorizadas por CNBV</p>
+                <p className="text-sm text-[var(--color-text-secondary)]">Marca las que te generan interés:</p>
+                <div className="space-y-3">
+                  {PLATAFORMAS.map((p) => (
+                    <div
+                      key={p.nombre}
+                      onClick={() => togglePlataforma(p.nombre)}
+                      className="p-4 rounded-xl border-2 cursor-pointer transition-all"
+                      style={{
+                        borderColor: plataformasInteres.includes(p.nombre) ? warnColor : 'var(--color-border)',
+                        backgroundColor: plataformasInteres.includes(p.nombre) ? warnBg : 'var(--color-neutral-50)',
+                      }}
                     >
-                      {guardado ? '✅ Intereses guardados — lección completada' : 'Guardar mis plataformas de interés'}
-                    </Button>
-                  </Stack>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-bold">{p.nombre}</p>
+                          <p className="text-xs text-[var(--color-text-secondary)]">{p.tipo} · Desde {p.minimo}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>CNBV ✓</span>
+                          {plataformasInteres.includes(p.nombre) && <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: infoColor }}>★ Interés</span>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <FinniMessage variant="coach" title="Fondos y bolsa son para plazos medianos-largos" message="La clave es entender en qué estás entrando antes de hacerlo. ¡Ya lo entiendes!" />
+                <button
+                  className="w-full min-h-11 text-white rounded-xl font-semibold text-sm disabled:opacity-50"
+                  style={{ backgroundColor: infoColor }}
+                  onClick={() => void handleGuardar()}
+                  disabled={guardado}
+                >
+                  {guardado ? '✅ Intereses guardados — lección completada' : 'Guardar mis plataformas de interés'}
+                </button>
+              </div>
+            )}
+          </div>
         )}
-      </Box>
+      </div>
     </LessonShell>
   );
 }

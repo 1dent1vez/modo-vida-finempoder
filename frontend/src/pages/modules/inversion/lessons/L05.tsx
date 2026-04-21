@@ -1,61 +1,13 @@
 import { useState } from 'react';
-import {
-  Box, Stack, Typography, Button, LinearProgress, Fade,
-  Chip, Paper,
-} from '@mui/material';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 
 const INSTRUMENTOS = [
-  {
-    emoji: '🔵',
-    nombre: 'Instrumentos de Deuda (Renta Fija)',
-    desc: 'Prestas dinero al gobierno o empresa y te pagan interés. Monto y plazo conocidos.',
-    ejemplos: 'CETES, Bondes, depósitos a plazo',
-    minimo: '$100',
-    riesgo: 2,
-    rendimiento: '8-11% anual',
-    tipo: 'deuda',
-    liquidez: 'Alta',
-    paraQuien: 'Ideal para principiantes y perfil conservador.',
-  },
-  {
-    emoji: '🔴',
-    nombre: 'Renta Variable (Acciones)',
-    desc: 'Compras parte de una empresa. Mayor riesgo y mayor potencial de rendimiento.',
-    ejemplos: 'Acciones en la BMV (Cemex, Bimbo, América Móvil)',
-    minimo: '~$200',
-    riesgo: 4,
-    rendimiento: 'Variable (puede ser negativo)',
-    tipo: 'variable',
-    liquidez: 'Media',
-    paraQuien: 'Para perfiles moderados a agresivos con horizonte largo.',
-  },
-  {
-    emoji: '🟡',
-    nombre: 'Fondos de Inversión',
-    desc: 'Grupo de personas que juntan su dinero e invierten colectivamente. Un gestor decide dónde.',
-    ejemplos: 'Fondos de deuda, balanceados o de acciones regulados por CNBV',
-    minimo: '$100-$5,000',
-    riesgo: 3,
-    rendimiento: 'Varía según el fondo',
-    tipo: 'deuda',
-    liquidez: 'Media-Alta',
-    paraQuien: 'Accesibles con montos pequeños. Riesgo variable según el fondo.',
-  },
-  {
-    emoji: '🟢',
-    nombre: 'Bienes Raíces Digitales (FIBRAs)',
-    desc: 'Inversión en bienes inmuebles a través de la bolsa. Desde montos pequeños.',
-    ejemplos: 'FIBRA Uno, FIBRA Danhos en la BMV',
-    minimo: '~$500',
-    riesgo: 3,
-    rendimiento: '7-10% anual',
-    tipo: 'variable',
-    liquidez: 'Media',
-    paraQuien: 'Para quienes quieren bienes raíces sin comprar un inmueble.',
-  },
+  { emoji: '🔵', nombre: 'Instrumentos de Deuda (Renta Fija)', desc: 'Prestas dinero al gobierno o empresa y te pagan interés. Monto y plazo conocidos.', ejemplos: 'CETES, Bondes, depósitos a plazo', minimo: '$100', riesgo: 2, rendimiento: '8-11% anual', tipo: 'deuda', liquidez: 'Alta', paraQuien: 'Ideal para principiantes y perfil conservador.' },
+  { emoji: '🔴', nombre: 'Renta Variable (Acciones)', desc: 'Compras parte de una empresa. Mayor riesgo y mayor potencial de rendimiento.', ejemplos: 'Acciones en la BMV (Cemex, Bimbo, América Móvil)', minimo: '~$200', riesgo: 4, rendimiento: 'Variable (puede ser negativo)', tipo: 'variable', liquidez: 'Media', paraQuien: 'Para perfiles moderados a agresivos con horizonte largo.' },
+  { emoji: '🟡', nombre: 'Fondos de Inversión', desc: 'Grupo de personas que juntan su dinero e invierten colectivamente. Un gestor decide dónde.', ejemplos: 'Fondos de deuda, balanceados o de acciones regulados por CNBV', minimo: '$100-$5,000', riesgo: 3, rendimiento: 'Varía según el fondo', tipo: 'deuda', liquidez: 'Media-Alta', paraQuien: 'Accesibles con montos pequeños. Riesgo variable según el fondo.' },
+  { emoji: '🟢', nombre: 'Bienes Raíces Digitales (FIBRAs)', desc: 'Inversión en bienes inmuebles a través de la bolsa. Desde montos pequeños.', ejemplos: 'FIBRA Uno, FIBRA Danhos en la BMV', minimo: '~$500', riesgo: 3, rendimiento: '7-10% anual', tipo: 'variable', liquidez: 'Media', paraQuien: 'Para quienes quieren bienes raíces sin comprar un inmueble.' },
 ];
 
 const QUIZ_ITEMS = [
@@ -65,6 +17,14 @@ const QUIZ_ITEMS = [
   { nombre: 'FIBRA Danhos', tipo: 'variable' },
   { nombre: 'Fondo de deuda gubernamental', tipo: 'deuda' },
 ];
+
+const infoColor = 'var(--color-brand-info)';
+const infoBg = 'var(--color-brand-info-bg)';
+const warnColor = 'var(--color-brand-warning)';
+const warnBg = 'var(--color-brand-warning-bg)';
+const successColor = 'var(--color-brand-success)';
+const successBg = 'var(--color-brand-success-bg)';
+const errorColor = 'var(--color-brand-error)';
 
 export default function L05() {
   const [step, setStep] = useState(0);
@@ -94,206 +54,178 @@ export default function L05() {
     : INSTRUMENTOS;
 
   return (
-    <LessonShell
-      id="L05"
-      title="El menú de inversiones: ¿qué opciones existen en México?"
-      completion={{ ready: quizCompleto, score }}
-    >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={(step / 3) * 100}
-          color="info"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+    <LessonShell id="L05" title="El menú de inversiones: ¿qué opciones existen en México?" completion={{ ready: quizCompleto, score }}>
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full transition-all" style={{ width: `${(step / 3) * 100}%`, backgroundColor: infoColor }} />
+        </div>
 
-        {/* Pantalla 0 — Menú de categorías */}
+        {/* Pantalla 0 — Menú */}
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="El menú de inversiones"
-                message="Así como en un restaurante hay opciones de distintos precios y estilos, en el mundo de las inversiones hay un menú. Hoy lo vas a conocer para elegir con criterio."
-              />
-              <Stack spacing={2}>
-                {INSTRUMENTOS.map((inst, i) => (
-                  <Paper
-                    key={inst.nombre}
-                    sx={{ borderRadius: 3, overflow: 'hidden', border: 2, borderColor: expandido === i ? 'warning.main' : 'divider' }}
+          <div className="space-y-6">
+            <FinniMessage variant="coach" title="El menú de inversiones" message="Así como en un restaurante hay opciones de distintos precios y estilos, en el mundo de las inversiones hay un menú. Hoy lo vas a conocer para elegir con criterio." />
+            <div className="space-y-4">
+              {INSTRUMENTOS.map((inst, i) => (
+                <div
+                  key={inst.nombre}
+                  className="rounded-2xl overflow-hidden border-2 transition-all"
+                  style={{ borderColor: expandido === i ? warnColor : 'var(--color-border)' }}
+                >
+                  <div
+                    className="flex items-center gap-3 p-4 cursor-pointer"
+                    style={{ backgroundColor: expandido === i ? warnBg : 'var(--color-neutral-50)' }}
+                    onClick={() => setExpandido(expandido === i ? null : i)}
                   >
-                    <Stack
-                      direction="row"
-                      alignItems="center"
-                      spacing={2}
-                      sx={{ p: 2, cursor: 'pointer', bgcolor: expandido === i ? 'warning.light' : 'grey.50' }}
-                      onClick={() => setExpandido(expandido === i ? null : i)}
-                    >
-                      <Typography variant="h5">{inst.emoji}</Typography>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" fontWeight={800}>{inst.nombre}</Typography>
-                        <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
-                          <Chip size="small" label={`Desde ${inst.minimo}`} />
-                          <Chip size="small" label={`Riesgo ${'⭐'.repeat(inst.riesgo)}${'☆'.repeat(5 - inst.riesgo)}`} />
-                        </Stack>
-                      </Box>
-                    </Stack>
-                    {expandido === i && (
-                      <Fade in>
-                        <Box sx={{ p: 2, bgcolor: 'background.paper' }}>
-                          <Typography variant="body2" sx={{ mb: 1 }}>{inst.desc}</Typography>
-                          <Typography variant="body2"><b>Ejemplos:</b> {inst.ejemplos}</Typography>
-                          <Typography variant="body2"><b>Rendimiento típico:</b> {inst.rendimiento}</Typography>
-                          <Typography variant="body2"><b>Liquidez:</b> {inst.liquidez}</Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                            💡 {inst.paraQuien}
-                          </Typography>
-                        </Box>
-                      </Fade>
-                    )}
-                  </Paper>
-                ))}
-              </Stack>
-              <FinniMessage
-                variant="coach"
-                title="Para estudiantes que empiezan"
-                message="Las opciones más accesibles son CETES, fondos de inversión de bajo riesgo y plataformas de micro-inversión reguladas."
-              />
-              <Button fullWidth variant="contained" color="info" size="large" onClick={() => setStep(1)}>
-                Comparar instrumentos →
-              </Button>
-            </Stack>
-          </Fade>
+                    <p className="text-2xl">{inst.emoji}</p>
+                    <div className="flex-1">
+                      <p className="text-sm font-extrabold">{inst.nombre}</p>
+                      <div className="flex gap-2 mt-1 flex-wrap">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-bold border border-[var(--color-neutral-300)] text-[var(--color-text-secondary)]">Desde {inst.minimo}</span>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-bold border border-[var(--color-neutral-300)] text-[var(--color-text-secondary)]">Riesgo {'⭐'.repeat(inst.riesgo)}{'☆'.repeat(5 - inst.riesgo)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {expandido === i && (
+                    <div className="p-4 bg-white">
+                      <p className="text-sm mb-2">{inst.desc}</p>
+                      <p className="text-sm"><b>Ejemplos:</b> {inst.ejemplos}</p>
+                      <p className="text-sm"><b>Rendimiento típico:</b> {inst.rendimiento}</p>
+                      <p className="text-sm"><b>Liquidez:</b> {inst.liquidez}</p>
+                      <p className="text-xs text-[var(--color-text-secondary)] mt-2">💡 {inst.paraQuien}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <FinniMessage variant="coach" title="Para estudiantes que empiezan" message="Las opciones más accesibles son CETES, fondos de inversión de bajo riesgo y plataformas de micro-inversión reguladas." />
+            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setStep(1)}>
+              Comparar instrumentos →
+            </button>
+          </div>
         )}
 
-        {/* Pantalla 1 — Comparador + filtro por perfil */}
+        {/* Pantalla 1 — Comparador + filtro */}
         {step === 1 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="h4" fontWeight={700}>Compara 2 instrumentos</Typography>
-              <Typography variant="body2" color="text.secondary">Selecciona 2 para compararlos lado a lado:</Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                {INSTRUMENTOS.map((inst, i) => (
-                  <Chip
-                    key={inst.nombre}
-                    label={`${inst.emoji} ${inst.nombre.split(' ')[0]}`}
-                    onClick={() => toggleComparar(i)}
-                    variant={comparar.includes(i) ? 'filled' : 'outlined'}
-                    color={comparar.includes(i) ? 'warning' : 'default'}
-                  />
-                ))}
-              </Stack>
-              {comparar.length === 2 && (
-                <Fade in>
-                  <Stack direction="row" spacing={2}>
-                    {comparar.map((idx) => {
-                      const inst = INSTRUMENTOS[idx]!;
-                      return (
-                        <FECard key={idx} variant="flat" sx={{ flex: 1, border: 1, borderColor: 'warning.main' }}>
-                          <Typography fontWeight={700}>{inst.emoji} {inst.nombre.split('(')[0]}</Typography>
-                          <Stack spacing={0.5} sx={{ mt: 1 }}>
-                            <Typography variant="caption"><b>Mínimo:</b> {inst.minimo}</Typography>
-                            <Typography variant="caption"><b>Riesgo:</b> {'⭐'.repeat(inst.riesgo)}</Typography>
-                            <Typography variant="caption"><b>Rendimiento:</b> {inst.rendimiento}</Typography>
-                            <Typography variant="caption"><b>Liquidez:</b> {inst.liquidez}</Typography>
-                          </Stack>
-                        </FECard>
-                      );
-                    })}
-                  </Stack>
-                </Fade>
-              )}
-
-              <Typography variant="h5" fontWeight={700} sx={{ mt: 1 }}>Filtrar por perfil:</Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                {['conservador', 'equilibrio', 'crecimiento'].map((f) => (
-                  <Chip
-                    key={f}
-                    label={f === 'conservador' ? 'Seguridad (bajo riesgo)' : f === 'equilibrio' ? 'Equilibrio' : 'Crecimiento (mayor riesgo)'}
-                    onClick={() => setFiltro(filtro === f ? null : f)}
-                    variant={filtro === f ? 'filled' : 'outlined'}
-                    color={filtro === f ? 'warning' : 'default'}
-                  />
-                ))}
-              </Stack>
-              {filtro && (
-                <Fade in>
-                  <Stack spacing={1}>
-                    {filtrados.map((inst) => (
-                      <Paper key={inst.nombre} sx={{ p: 2, borderRadius: 2, bgcolor: 'warning.light' }}>
-                        <Typography variant="body2" fontWeight={700}>{inst.emoji} {inst.nombre}</Typography>
-                        <Typography variant="caption">{inst.ejemplos}</Typography>
-                      </Paper>
-                    ))}
-                  </Stack>
-                </Fade>
-              )}
-              <Button fullWidth variant="contained" color="info" size="large" onClick={() => setStep(2)}>
-                Quiz de reconocimiento →
-              </Button>
-            </Stack>
-          </Fade>
-        )}
-
-        {/* Pantalla 2 — Quiz: deuda vs variable */}
-        {step === 2 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="h4" fontWeight={700}>Quiz: ¿deuda o variable?</Typography>
-              <Stack spacing={2}>
-                {QUIZ_ITEMS.map((item, i) => {
-                  const resp = respuestas[i];
-                  const respondido = resp !== null;
-                  const correcto = resp === item.tipo;
+          <div className="space-y-6">
+            <p className="text-2xl font-bold">Compara 2 instrumentos</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">Selecciona 2 para compararlos lado a lado:</p>
+            <div className="flex flex-wrap gap-2">
+              {INSTRUMENTOS.map((inst, i) => (
+                <button
+                  key={inst.nombre}
+                  onClick={() => toggleComparar(i)}
+                  className="px-3 py-1.5 rounded-full text-sm font-bold border-2 transition-colors"
+                  style={{
+                    borderColor: warnColor,
+                    backgroundColor: comparar.includes(i) ? warnColor : 'transparent',
+                    color: comparar.includes(i) ? 'white' : 'inherit',
+                  }}
+                >
+                  {inst.emoji} {inst.nombre.split(' ')[0]}
+                </button>
+              ))}
+            </div>
+            {comparar.length === 2 && (
+              <div className="flex gap-4">
+                {comparar.map((idx) => {
+                  const inst = INSTRUMENTOS[idx]!;
                   return (
-                    <FECard key={item.nombre} variant="flat" sx={{ border: 1, borderColor: respondido ? (correcto ? 'success.main' : 'error.main') : 'divider' }}>
-                      <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>{item.nombre}</Typography>
-                      <Stack direction="row" spacing={1}>
-                        <Button
-                          size="small"
-                          variant={resp === 'deuda' ? 'contained' : 'outlined'}
-                          color={respondido ? (item.tipo === 'deuda' ? 'success' : resp === 'deuda' ? 'error' : 'inherit') : 'warning'}
-                          onClick={() => { if (!respondido) setRespuestas((prev) => prev.map((r, idx) => idx === i ? 'deuda' : r)); }}
-                        >
-                          Deuda
-                        </Button>
-                        <Button
-                          size="small"
-                          variant={resp === 'variable' ? 'contained' : 'outlined'}
-                          color={respondido ? (item.tipo === 'variable' ? 'success' : resp === 'variable' ? 'error' : 'inherit') : 'warning'}
-                          onClick={() => { if (!respondido) setRespuestas((prev) => prev.map((r, idx) => idx === i ? 'variable' : r)); }}
-                        >
-                          Variable
-                        </Button>
-                      </Stack>
-                      {respondido && (
-                        <Typography variant="caption" color={correcto ? 'success.main' : 'error.main'} sx={{ mt: 0.5, display: 'block' }}>
-                          {correcto ? '✓ Correcto' : `✗ Es ${item.tipo === 'deuda' ? 'Deuda' : 'Renta Variable'}`}
-                        </Typography>
-                      )}
+                    <FECard key={idx} variant="flat" className="flex-1 border" style={{ borderColor: warnColor }}>
+                      <p className="font-bold">{inst.emoji} {inst.nombre.split('(')[0]}</p>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-xs"><b>Mínimo:</b> {inst.minimo}</p>
+                        <p className="text-xs"><b>Riesgo:</b> {'⭐'.repeat(inst.riesgo)}</p>
+                        <p className="text-xs"><b>Rendimiento:</b> {inst.rendimiento}</p>
+                        <p className="text-xs"><b>Liquidez:</b> {inst.liquidez}</p>
+                      </div>
                     </FECard>
                   );
                 })}
-              </Stack>
-              {quizCompleto && (
-                <Fade in>
-                  <Stack spacing={2}>
-                    <FECard variant="flat" sx={{ bgcolor: aciertos >= 4 ? 'success.light' : 'info.light', border: 2, borderColor: aciertos >= 4 ? 'success.main' : 'info.main', textAlign: 'center' }}>
-                      <Typography variant="h4">{aciertos >= 4 ? '🎯' : '📚'}</Typography>
-                      <Typography fontWeight={800}>{aciertos}/5 correctas</Typography>
-                    </FECard>
-                    <FinniMessage
-                      variant="coach"
-                      title="¡Ya conoces el menú!"
-                      message="En las próximas lecciones vamos a profundizar en los instrumentos más relevantes para ti: CETES, fondos y bolsa."
-                    />
-                  </Stack>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+              </div>
+            )}
+
+            <p className="text-xl font-bold mt-2">Filtrar por perfil:</p>
+            <div className="flex flex-wrap gap-2">
+              {['conservador', 'equilibrio', 'crecimiento'].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFiltro(filtro === f ? null : f)}
+                  className="px-3 py-1.5 rounded-full text-sm font-bold border-2 transition-colors"
+                  style={{
+                    borderColor: warnColor,
+                    backgroundColor: filtro === f ? warnColor : 'transparent',
+                    color: filtro === f ? 'white' : 'inherit',
+                  }}
+                >
+                  {f === 'conservador' ? 'Seguridad (bajo riesgo)' : f === 'equilibrio' ? 'Equilibrio' : 'Crecimiento (mayor riesgo)'}
+                </button>
+              ))}
+            </div>
+            {filtro && (
+              <div className="space-y-2">
+                {filtrados.map((inst) => (
+                  <div key={inst.nombre} className="p-3 rounded-xl" style={{ backgroundColor: warnBg }}>
+                    <p className="text-sm font-bold">{inst.emoji} {inst.nombre}</p>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{inst.ejemplos}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setStep(2)}>
+              Quiz de reconocimiento →
+            </button>
+          </div>
         )}
-      </Box>
+
+        {/* Pantalla 2 — Quiz */}
+        {step === 2 && (
+          <div className="space-y-6">
+            <p className="text-2xl font-bold">Quiz: ¿deuda o variable?</p>
+            <div className="space-y-4">
+              {QUIZ_ITEMS.map((item, i) => {
+                const resp = respuestas[i];
+                const respondido = resp !== null;
+                const correcto = resp === item.tipo;
+                return (
+                  <FECard key={item.nombre} variant="flat" className="border" style={{ borderColor: respondido ? (correcto ? successColor : errorColor) : 'var(--color-border)' }}>
+                    <p className="text-sm font-bold mb-2">{item.nombre}</p>
+                    <div className="flex gap-2">
+                      {(['deuda', 'variable'] as const).map((opt) => (
+                        <button
+                          key={opt}
+                          onClick={() => { if (!respondido) setRespuestas((prev) => prev.map((r, idx) => idx === i ? opt : r)); }}
+                          disabled={respondido}
+                          className="px-3 py-1.5 rounded-lg text-sm font-semibold border-2 transition-colors disabled:cursor-default"
+                          style={{
+                            borderColor: resp === opt ? (item.tipo === opt ? successColor : errorColor) : (respondido ? 'var(--color-neutral-200)' : warnColor),
+                            backgroundColor: resp === opt ? (item.tipo === opt ? successBg : 'var(--color-brand-error-bg)') : 'transparent',
+                          }}
+                        >
+                          {opt === 'deuda' ? 'Deuda' : 'Variable'}
+                        </button>
+                      ))}
+                    </div>
+                    {respondido && (
+                      <p className="text-xs mt-1.5" style={{ color: correcto ? successColor : errorColor }}>
+                        {correcto ? '✓ Correcto' : `✗ Es ${item.tipo === 'deuda' ? 'Deuda' : 'Renta Variable'}`}
+                      </p>
+                    )}
+                  </FECard>
+                );
+              })}
+            </div>
+            {quizCompleto && (
+              <div className="space-y-4">
+                <FECard variant="flat" className="border-2 text-center" style={{ borderColor: aciertos >= 4 ? successColor : infoColor, backgroundColor: aciertos >= 4 ? successBg : infoBg }}>
+                  <p className="text-3xl">{aciertos >= 4 ? '🎯' : '📚'}</p>
+                  <p className="font-extrabold">{aciertos}/5 correctas</p>
+                </FECard>
+                <FinniMessage variant="coach" title="¡Ya conoces el menú!" message="En las próximas lecciones vamos a profundizar en los instrumentos más relevantes para ti: CETES, fondos y bolsa." />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </LessonShell>
   );
 }

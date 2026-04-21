@@ -1,9 +1,4 @@
-// FinEmpoder — QuizQuestion
-// Wrapper de OptionCard[] para preguntas de opción múltiple.
-// Gestiona selección y muestra feedback cuando se responde.
-
 import { useState } from 'react';
-import { Box, Stack, Typography } from '@mui/material';
 import { OptionCard } from './OptionCard';
 
 export interface QuizOption {
@@ -15,13 +10,9 @@ export interface QuizOption {
 export interface QuizQuestionProps {
   question: string;
   options: QuizOption[];
-  /** Índice (id) de la opción correcta */
   correctId: string;
-  /** Se llama cuando el usuario responde, con `true` si acertó */
   onAnswer?: (correct: boolean) => void;
-  /** Si true, las opciones están deshabilitadas (ya respondido externamente) */
   answered?: boolean;
-  /** Opción seleccionada externamente (para modo controlado) */
   selectedId?: string;
 }
 
@@ -43,11 +34,9 @@ export function QuizQuestion({
   };
 
   return (
-    <Box>
-      <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
-        {question}
-      </Typography>
-      <Stack spacing={2}>
+    <div>
+      <h3 className="text-base font-bold mb-4">{question}</h3>
+      <div className="space-y-3">
         {options.map((opt) => {
           const isSelected = (selectedIdProp ?? selectedId) === opt.id;
           const isCorrect = answered && opt.id === correctId;
@@ -66,7 +55,7 @@ export function QuizQuestion({
             />
           );
         })}
-      </Stack>
-    </Box>
+      </div>
+    </div>
   );
 }

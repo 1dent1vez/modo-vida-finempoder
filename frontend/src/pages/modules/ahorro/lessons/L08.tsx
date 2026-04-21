@@ -1,7 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import {
-  Box, Stack, Typography, Button, LinearProgress, Fade, Chip, TextField,
-} from '@mui/material';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -17,6 +14,13 @@ const SITUACIONES = [
   { id: 4, label: 'Falla de transporte personal', costo: '$1,000–$5,000' },
   { id: 5, label: 'Perdida de trabajo part-time', costo: '$800–$3,500/mes' },
 ];
+
+const successColor = 'var(--color-brand-success)';
+const successBg = 'var(--color-brand-success-bg)';
+const warnColor = 'var(--color-brand-warning)';
+const warnBg = 'var(--color-brand-warning-bg)';
+const infoColor = 'var(--color-brand-info)';
+const infoBg = 'var(--color-brand-info-bg)';
 
 export default function L08() {
   const [step, setStep] = useState(0);
@@ -75,201 +79,136 @@ export default function L08() {
   const progress = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 60 : 100;
 
   return (
-    <LessonShell
-      id="L08"
-      title="Tu red de seguridad: fondo de emergencias"
-      completion={{ ready: calculado }}
-    >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={progress}
-          color="success"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+    <LessonShell id="L08" title="Tu red de seguridad: fondo de emergencias" completion={{ ready: calculado }}>
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
+        </div>
 
         {/* Pantalla 0 — Apertura */}
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="El fondo de emergencias es tu red"
-                message="Imagina que mañana se descompone tu laptop justo antes de examenes. ¿Tienes algo guardado para eso? El fondo de emergencias es esa red que atrapa antes del desastre."
-              />
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'success.main' }}>
-                <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>¿Que es un fondo de emergencias?</Typography>
-                <Typography variant="body2">
-                  Dinero guardado especificamente para imprevistos. No es para el viaje, no es para la tele nueva. Es para cuando la vida sorprende.
-                </Typography>
-                <Stack spacing={0.5} sx={{ mt: 1.5 }}>
-                  <Typography variant="caption" color="success.dark">✅ 3 meses de gastos basicos — si tienes apoyo familiar</Typography>
-                  <Typography variant="caption" color="success.dark">✅ 6 meses — si eres mas independiente</Typography>
-                </Stack>
-              </FECard>
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'info.main', bgcolor: 'info.light' }}>
-                <Typography variant="caption" fontWeight={700}>¿Donde guardarlo?</Typography>
-                <Typography variant="body2">Cuenta separada, accesible pero no tan facil de retirar. CETES a 28 dias o cuenta con rendimiento son opciones ideales.</Typography>
-              </FECard>
-              <Button fullWidth variant="contained" color="success" size="large" onClick={() => setStep(1)}>
-                ¿Que situaciones te preocupan? →
-              </Button>
-            </Stack>
-          </Fade>
+          <div className="space-y-6">
+            <FinniMessage variant="coach" title="El fondo de emergencias es tu red" message="Imagina que mañana se descompone tu laptop justo antes de examenes. ¿Tienes algo guardado para eso? El fondo de emergencias es esa red que atrapa antes del desastre." />
+            <FECard variant="flat" className="border" style={{ borderColor: successColor }}>
+              <p className="text-sm font-bold mb-2">¿Que es un fondo de emergencias?</p>
+              <p className="text-sm">Dinero guardado especificamente para imprevistos. No es para el viaje, no es para la tele nueva. Es para cuando la vida sorprende.</p>
+              <div className="mt-3 space-y-1">
+                <p className="text-xs" style={{ color: '#059669' }}>✅ 3 meses de gastos basicos — si tienes apoyo familiar</p>
+                <p className="text-xs" style={{ color: '#059669' }}>✅ 6 meses — si eres mas independiente</p>
+              </div>
+            </FECard>
+            <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
+              <p className="text-xs font-bold">¿Donde guardarlo?</p>
+              <p className="text-sm">Cuenta separada, accesible pero no tan facil de retirar. CETES a 28 dias o cuenta con rendimiento son opciones ideales.</p>
+            </FECard>
+            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
+              ¿Que situaciones te preocupan? →
+            </button>
+          </div>
         )}
 
         {/* Pantalla 1 — Tarjetas de situaciones */}
         {step === 1 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="body1" fontWeight={700}>
-                Toca las situaciones que te han pasado o podrian pasarte:
-              </Typography>
-              <Stack spacing={1.5}>
-                {SITUACIONES.map((s) => (
-                  <FECard
-                    key={s.id}
-                    variant="flat"
-                    sx={{
-                      border: 1,
-                      borderColor: selectedSituaciones.has(s.id) ? 'warning.main' : 'divider',
-                      bgcolor: selectedSituaciones.has(s.id) ? 'warning.light' : 'background.paper',
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => toggleSituacion(s.id)}
-                    role="checkbox"
-                    tabIndex={0}
-                  >
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <Typography variant="body2" fontWeight={600}>
-                        {selectedSituaciones.has(s.id) ? '⚠️' : '○'} {s.label}
-                      </Typography>
-                      <Chip label={s.costo} size="small" color="warning" variant="outlined" />
-                    </Stack>
-                  </FECard>
-                ))}
-              </Stack>
-              {selectedSituaciones.size > 0 && (
-                <Fade in>
-                  <FECard variant="flat" sx={{ bgcolor: 'warning.light', border: 1, borderColor: 'warning.main' }}>
-                    <Typography variant="body2" fontWeight={700}>
-                      {selectedSituaciones.size} situacion(es) identificadas. El fondo de emergencias te protege de estas.
-                    </Typography>
-                  </FECard>
-                </Fade>
-              )}
-              <Button fullWidth variant="contained" color="success" size="large" onClick={() => setStep(2)}>
-                Calcular mi fondo →
-              </Button>
-            </Stack>
-          </Fade>
+          <div className="space-y-6">
+            <p className="text-base font-bold">Toca las situaciones que te han pasado o podrian pasarte:</p>
+            <div className="space-y-3">
+              {SITUACIONES.map((s) => (
+                <FECard
+                  key={s.id}
+                  variant="flat"
+                  className="border cursor-pointer"
+                  style={{
+                    borderColor: selectedSituaciones.has(s.id) ? warnColor : 'var(--color-border)',
+                    backgroundColor: selectedSituaciones.has(s.id) ? warnBg : 'white',
+                  }}
+                  onClick={() => toggleSituacion(s.id)}
+                  role="checkbox"
+                  tabIndex={0}
+                >
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm font-semibold">{selectedSituaciones.has(s.id) ? '⚠️' : '○'} {s.label}</p>
+                    <span className="px-2 py-0.5 rounded-full text-xs font-bold border" style={{ borderColor: warnColor, color: warnColor }}>{s.costo}</span>
+                  </div>
+                </FECard>
+              ))}
+            </div>
+            {selectedSituaciones.size > 0 && (
+              <FECard variant="flat" className="border" style={{ borderColor: warnColor, backgroundColor: warnBg }}>
+                <p className="text-sm font-bold">{selectedSituaciones.size} situacion(es) identificadas. El fondo de emergencias te protege de estas.</p>
+              </FECard>
+            )}
+            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(2)}>
+              Calcular mi fondo →
+            </button>
+          </div>
         )}
 
         {/* Pantalla 2 — Calculadora */}
         {step === 2 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="body1" fontWeight={700}>Calculadora del fondo de emergencias:</Typography>
-
-              {budgetData?.totalIngresos && (
-                <FECard variant="flat" sx={{ border: 1, borderColor: 'info.main', bgcolor: 'info.light' }}>
-                  <Typography variant="caption">Datos de tu presupuesto (M1-L12) precargados</Typography>
+          <div className="space-y-6">
+            <p className="text-base font-bold">Calculadora del fondo de emergencias:</p>
+            {budgetData?.totalIngresos && (
+              <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
+                <p className="text-xs">Datos de tu presupuesto (M1-L12) precargados</p>
+              </FECard>
+            )}
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-[var(--color-text-primary)]">Tus gastos basicos mensuales ($)</label>
+              <input type="number" value={gastosMensuales} onChange={(e) => setGastosMensuales(e.target.value)} min={0} className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm" />
+              <p className="text-xs text-[var(--color-text-secondary)]">Lo minimo para vivir un mes dificil: comida, transporte, servicios</p>
+            </div>
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-[var(--color-text-primary)]">¿Cuanto puedes apartar mensualmente? ($)</label>
+              <input type="number" value={aportacion} onChange={(e) => setAportacion(e.target.value)} min={0} className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm" />
+            </div>
+            {canCalculate && (
+              <div className="space-y-3">
+                <FECard variant="flat" className="border-2" style={{ borderColor: successColor, backgroundColor: successBg }}>
+                  <p className="text-sm font-bold">Meta minima (3 meses):</p>
+                  <p className="text-3xl font-black">${metaMinima.toLocaleString()}</p>
+                  <p className="text-xs text-[var(--color-text-secondary)]">Lo alcanzas en {mesesMinima} meses apartando ${aportNum.toLocaleString()}/mes</p>
                 </FECard>
-              )}
-
-              <TextField
-                label="Tus gastos basicos mensuales ($)"
-                type="number"
-                value={gastosMensuales}
-                onChange={(e) => setGastosMensuales(e.target.value)}
-                size="small"
-                fullWidth
-                helperText="Lo minimo para vivir un mes dificil: comida, transporte, servicios"
-                inputProps={{ min: 0 }}
-              />
-              <TextField
-                label="¿Cuanto puedes apartar mensualmente? ($)"
-                type="number"
-                value={aportacion}
-                onChange={(e) => setAportacion(e.target.value)}
-                size="small"
-                fullWidth
-                inputProps={{ min: 0 }}
-              />
-
-              {canCalculate && (
-                <Fade in>
-                  <Stack spacing={1.5}>
-                    <FECard variant="flat" sx={{ border: 2, borderColor: 'success.main', bgcolor: 'success.light' }}>
-                      <Typography variant="body2" fontWeight={700}>Meta minima (3 meses):</Typography>
-                      <Typography variant="h4">${metaMinima.toLocaleString()}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Lo alcanzas en {mesesMinima} meses apartando ${aportNum.toLocaleString()}/mes
-                      </Typography>
-                    </FECard>
-                    <FECard variant="flat" sx={{ border: 1, borderColor: 'warning.main', bgcolor: 'warning.light' }}>
-                      <Typography variant="body2" fontWeight={700}>Meta ideal (6 meses):</Typography>
-                      <Typography variant="h4">${metaIdeal.toLocaleString()}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Lo alcanzas en {mesesIdeal} meses
-                      </Typography>
-                    </FECard>
-                  </Stack>
-                </Fade>
-              )}
-
-              {metaData?.nombre && (
-                <FECard variant="flat" sx={{ border: 1, borderColor: 'divider' }}>
-                  <Typography variant="caption" color="text.secondary">
-                    💡 Finni recomienda: primero el fondo minimo (${metaMinima.toLocaleString()}), luego tu meta de "{metaData.nombre}"
-                  </Typography>
+                <FECard variant="flat" className="border" style={{ borderColor: warnColor, backgroundColor: warnBg }}>
+                  <p className="text-sm font-bold">Meta ideal (6 meses):</p>
+                  <p className="text-3xl font-black">${metaIdeal.toLocaleString()}</p>
+                  <p className="text-xs text-[var(--color-text-secondary)]">Lo alcanzas en {mesesIdeal} meses</p>
                 </FECard>
-              )}
-
-              {canCalculate && (
-                <Fade in>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    color="success"
-                    size="large"
-                    onClick={() => void handleCalcular()}
-                  >
-                    Guardar mi meta del fondo →
-                  </Button>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+              </div>
+            )}
+            {metaData?.nombre && (
+              <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
+                <p className="text-xs text-[var(--color-text-secondary)]">💡 Finni recomienda: primero el fondo minimo (${metaMinima.toLocaleString()}), luego tu meta de "{metaData.nombre}"</p>
+              </FECard>
+            )}
+            {canCalculate && (
+              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => void handleCalcular()}>
+                Guardar mi meta del fondo →
+              </button>
+            )}
+          </div>
         )}
 
         {/* Pantalla 3 — Confirmacion */}
         {step === 3 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FECard variant="flat" sx={{ bgcolor: 'success.light', border: 2, borderColor: 'success.main', textAlign: 'center', py: 2 }}>
-                <Typography variant="h4">🛡️ Fondo de emergencias</Typography>
-                <Stack direction="row" spacing={1} justifyContent="center" sx={{ mt: 1 }} flexWrap="wrap">
-                  <Chip label={`Meta minima: $${metaMinima.toLocaleString()}`} color="success" />
-                  <Chip label={`Meta ideal: $${metaIdeal.toLocaleString()}`} color="warning" />
-                </Stack>
-              </FECard>
-              <FinniMessage
-                variant="success"
-                title="No necesitas llegar de golpe"
-                message="Construye el fondo gradualmente. Incluso $500 ahorrados ya te protegen de pequeños imprevistos."
-              />
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'divider' }}>
-                <Typography variant="body2" fontWeight={700}>Donde guardarlo:</Typography>
-                {aportNum < 500
-                  ? <Typography variant="body2">Cuenta de ahorro basica (sin comisiones)</Typography>
-                  : <Typography variant="body2">CETES a 28 dias — cetesdirecto.com (rendimiento adicional)</Typography>
-                }
-              </FECard>
-            </Stack>
-          </Fade>
+          <div className="space-y-6">
+            <FECard variant="flat" className="border-2 text-center py-4" style={{ borderColor: successColor, backgroundColor: successBg }}>
+              <p className="text-3xl">🛡️ Fondo de emergencias</p>
+              <div className="flex gap-2 justify-center mt-2 flex-wrap">
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>Meta minima: ${metaMinima.toLocaleString()}</span>
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: warnColor }}>Meta ideal: ${metaIdeal.toLocaleString()}</span>
+              </div>
+            </FECard>
+            <FinniMessage variant="success" title="No necesitas llegar de golpe" message="Construye el fondo gradualmente. Incluso $500 ahorrados ya te protegen de pequeños imprevistos." />
+            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
+              <p className="text-sm font-bold">Donde guardarlo:</p>
+              {aportNum < 500
+                ? <p className="text-sm">Cuenta de ahorro basica (sin comisiones)</p>
+                : <p className="text-sm">CETES a 28 dias — cetesdirecto.com (rendimiento adicional)</p>
+              }
+            </FECard>
+          </div>
         )}
-      </Box>
+      </div>
     </LessonShell>
   );
 }

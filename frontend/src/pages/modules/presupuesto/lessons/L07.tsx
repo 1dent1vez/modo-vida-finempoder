@@ -1,7 +1,5 @@
+import { cn } from '@/lib/utils';
 import { useState } from 'react';
-import {
-  Box, Stack, Typography, Button, LinearProgress, Fade,
-} from '@mui/material';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -75,142 +73,146 @@ export default function L07() {
     }
   };
 
+  const progressValue = step === 0 ? 0 : step === 1 ? ((escenarioIdx + (currentDecision ? 1 : 0)) / ESCENARIOS.length) * 80 : 100;
+
   return (
     <LessonShell
       id="L07"
       title="Priorizar o morir: ajusta tu presupuesto en crisis"
       completion={{ ready: allDone, score: avgScore }}
     >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={step === 0 ? 0 : step === 1 ? ((escenarioIdx + (currentDecision ? 1 : 0)) / ESCENARIOS.length) * 80 : 100}
-          color="warning"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
+        </div>
 
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FECard variant="flat" sx={{ bgcolor: 'warning.light', border: 2, borderColor: 'warning.main', textAlign: 'center', py: 2 }}>
-                <Typography variant="body1" fontWeight={700}>💬 Mensaje bancario</Typography>
-                <Typography variant="h4" sx={{ mt: 1 }}>Saldo disponible: $320</Typography>
-                <Typography variant="body2" color="text.secondary">Faltan 12 días para tu próxima mesada.</Typography>
-              </FECard>
-              <FinniMessage
-                variant="coach"
-                title="Tiempo de decidir"
-                message="Este mes pasó algo inesperado y el dinero no alcanzó. Ahora tienes que decidir. ¿Cómo priorizas?"
-              />
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'divider' }}>
-                <Typography variant="body1" fontWeight={700} sx={{ mb: 1 }}>Matriz de priorización:</Typography>
-                <Stack direction="row" spacing={1}>
-                  <FECard variant="flat" sx={{ flex: 1, bgcolor: 'error.light', textAlign: 'center' }}>
-                    <Typography variant="caption" fontWeight={700}>⚡ Urgente + Necesario</Typography>
-                    <Typography variant="caption" display="block">→ Actúa ya</Typography>
-                  </FECard>
-                  <FECard variant="flat" sx={{ flex: 1, bgcolor: 'warning.light', textAlign: 'center' }}>
-                    <Typography variant="caption" fontWeight={700}>📅 Necesario + No urgente</Typography>
-                    <Typography variant="caption" display="block">→ Planifica</Typography>
-                  </FECard>
-                </Stack>
-                <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                  <FECard variant="flat" sx={{ flex: 1, bgcolor: 'info.light', textAlign: 'center' }}>
-                    <Typography variant="caption" fontWeight={700}>⚡ Urgente + Prescindible</Typography>
-                    <Typography variant="caption" display="block">→ Delega o pospón</Typography>
-                  </FECard>
-                  <FECard variant="flat" sx={{ flex: 1, bgcolor: 'success.light', textAlign: 'center' }}>
-                    <Typography variant="caption" fontWeight={700}>✂️ Prescindible + No urgente</Typography>
-                    <Typography variant="caption" display="block">→ Elimina</Typography>
-                  </FECard>
-                </Stack>
-              </FECard>
-              <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setStep(1)}>
-                ¡A los escenarios! →
-              </Button>
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 border-2 border-[var(--color-brand-warning)] text-center py-4">
+              <p className="font-bold">💬 Mensaje bancario</p>
+              <p className="font-bold text-base mt-2">Saldo disponible: $320</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">Faltan 12 días para tu próxima mesada.</p>
+            </FECard>
+            <FinniMessage
+              variant="coach"
+              title="Tiempo de decidir"
+              message="Este mes pasó algo inesperado y el dinero no alcanzó. Ahora tienes que decidir. ¿Cómo priorizas?"
+            />
+            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
+              <p className="font-bold mb-2">Matriz de priorización:</p>
+              <div className="flex gap-2">
+                <FECard variant="flat" className="flex-1 bg-[var(--color-brand-error)]/10 text-center">
+                  <p className="text-xs font-bold">⚡ Urgente + Necesario</p>
+                  <p className="text-xs block">→ Actúa ya</p>
+                </FECard>
+                <FECard variant="flat" className="flex-1 bg-[var(--color-brand-warning)]/10 text-center">
+                  <p className="text-xs font-bold">📅 Necesario + No urgente</p>
+                  <p className="text-xs block">→ Planifica</p>
+                </FECard>
+              </div>
+              <div className="flex gap-2 mt-2">
+                <FECard variant="flat" className="flex-1 bg-[var(--color-brand-info)]/10 text-center">
+                  <p className="text-xs font-bold">⚡ Urgente + Prescindible</p>
+                  <p className="text-xs block">→ Delega o pospón</p>
+                </FECard>
+                <FECard variant="flat" className="flex-1 bg-[var(--color-brand-success)]/10 text-center">
+                  <p className="text-xs font-bold">✂️ Prescindible + No urgente</p>
+                  <p className="text-xs block">→ Elimina</p>
+                </FECard>
+              </div>
+            </FECard>
+            <button
+              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+              onClick={() => setStep(1)}
+            >
+              ¡A los escenarios! →
+            </button>
+          </div>
         )}
 
         {step === 1 && currentEscenario && (
-          <Fade in key={currentEscenario.id}>
-            <Stack spacing={3}>
-              <FECard variant="flat" sx={{ bgcolor: 'error.light', border: 2, borderColor: 'error.main' }}>
-                <Typography variant="body2" color="text.secondary">Escenario {currentEscenario.id}</Typography>
-                <Typography variant="h4">{currentEscenario.situacion}</Typography>
-                <Typography variant="body2" sx={{ mt: 0.5 }}>{currentEscenario.contexto}</Typography>
-              </FECard>
+          <div className="space-y-3" key={currentEscenario.id}>
+            <FECard variant="flat" className="bg-[var(--color-brand-error)]/10 border-2 border-[var(--color-brand-error)]">
+              <p className="text-sm text-[var(--color-text-secondary)]">Escenario {currentEscenario.id}</p>
+              <p className="font-bold text-base">{currentEscenario.situacion}</p>
+              <p className="text-sm mt-1">{currentEscenario.contexto}</p>
+            </FECard>
 
-              {!currentDecision && (
-                <Stack spacing={2}>
-                  {currentEscenario.opciones.map((op) => (
-                    <Button
-                      key={op.id}
-                      fullWidth
-                      variant="outlined"
-                      color="warning"
-                      onClick={() => choose(op)}
-                      sx={{ textAlign: 'left', justifyContent: 'flex-start', textTransform: 'none', py: 1.5 }}
-                    >
-                      {op.label}
-                    </Button>
-                  ))}
-                </Stack>
-              )}
+            {!currentDecision && (
+              <div className="space-y-2">
+                {currentEscenario.opciones.map((op) => (
+                  <button
+                    key={op.id}
+                    onClick={() => choose(op)}
+                    className="w-full text-left border border-[var(--color-brand-warning)] text-[var(--color-brand-warning)] rounded-xl px-4 py-3 text-sm"
+                  >
+                    {op.label}
+                  </button>
+                ))}
+              </div>
+            )}
 
-              {currentDecision && showConsequence && (
-                <Fade in>
-                  <Stack spacing={2}>
-                    <FECard variant="flat" sx={{ bgcolor: currentDecision.score >= 90 ? 'success.light' : currentDecision.score >= 70 ? 'warning.light' : 'info.light', border: 1, borderColor: 'divider' }}>
-                      <Typography variant="body2" fontWeight={700}>Tu decisión:</Typography>
-                      <Typography variant="body2">{currentDecision.label}</Typography>
-                      <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>{currentDecision.consecuencia}</Typography>
-                    </FECard>
-                    <FinniMessage
-                      variant="coach"
-                      title="Finni valida"
-                      message={
-                        currentDecision.score >= 90
-                          ? 'Excelente decisión financiera. Priorizaste sin sacrificar necesidades.'
-                          : currentDecision.score >= 70
-                          ? 'Buena decisión. Hay opciones aún más óptimas, pero esta funciona.'
-                          : 'Decisión comprensible. Considera las consecuencias a largo plazo.'
-                      }
-                    />
-                    <Button fullWidth variant="contained" color="warning" size="large" onClick={nextScenario}>
-                      {escenarioIdx < ESCENARIOS.length - 1 ? 'Siguiente escenario →' : 'Ver resultado final →'}
-                    </Button>
-                  </Stack>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+            {currentDecision && showConsequence && (
+              <div className="space-y-2">
+                <FECard
+                  variant="flat"
+                  className={cn(
+                    'border',
+                    currentDecision.score >= 90
+                      ? 'bg-[var(--color-brand-success)]/10 border-[var(--color-neutral-200)]'
+                      : currentDecision.score >= 70
+                      ? 'bg-[var(--color-brand-warning)]/10 border-[var(--color-neutral-200)]'
+                      : 'bg-[var(--color-brand-info)]/10 border-[var(--color-neutral-200)]'
+                  )}
+                >
+                  <p className="font-bold text-sm">Tu decisión:</p>
+                  <p className="text-sm">{currentDecision.label}</p>
+                  <p className="text-sm mt-2 italic">{currentDecision.consecuencia}</p>
+                </FECard>
+                <FinniMessage
+                  variant="coach"
+                  title="Finni valida"
+                  message={
+                    currentDecision.score >= 90
+                      ? 'Excelente decisión financiera. Priorizaste sin sacrificar necesidades.'
+                      : currentDecision.score >= 70
+                      ? 'Buena decisión. Hay opciones aún más óptimas, pero esta funciona.'
+                      : 'Decisión comprensible. Considera las consecuencias a largo plazo.'
+                  }
+                />
+                <button
+                  className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+                  onClick={nextScenario}
+                >
+                  {escenarioIdx < ESCENARIOS.length - 1 ? 'Siguiente escenario →' : 'Ver resultado final →'}
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
         {step === 2 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="success"
-                title="¡3 escenarios completados!"
-                message={`Tu puntuación promedio: ${avgScore}/100. ${avgScore >= 90 ? '¡Excelente toma de decisiones!' : avgScore >= 70 ? 'Buenas decisiones. Sigue practicando.' : 'Buen primer intento. Con práctica mejorarás.'}`}
-              />
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'divider' }}>
-                <Typography variant="body1" fontWeight={700} sx={{ mb: 1.5 }}>Principios que aplicaste:</Typography>
-                <Stack spacing={1}>
-                  {[
-                    '1. Separar lo urgente+necesario de lo prescindible',
-                    '2. Buscar recortes en deseos antes que en necesidades',
-                    '3. Explorar alternativas antes de endeudarse',
-                  ].map((p) => (
-                    <Typography key={p} variant="body2">✓ {p}</Typography>
-                  ))}
-                </Stack>
-              </FECard>
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <FinniMessage
+              variant="success"
+              title="¡3 escenarios completados!"
+              message={`Tu puntuación promedio: ${avgScore}/100. ${avgScore >= 90 ? '¡Excelente toma de decisiones!' : avgScore >= 70 ? 'Buenas decisiones. Sigue practicando.' : 'Buen primer intento. Con práctica mejorarás.'}`}
+            />
+            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
+              <p className="font-bold mb-3">Principios que aplicaste:</p>
+              <div className="space-y-2">
+                {[
+                  '1. Separar lo urgente+necesario de lo prescindible',
+                  '2. Buscar recortes en deseos antes que en necesidades',
+                  '3. Explorar alternativas antes de endeudarse',
+                ].map((p) => (
+                  <p key={p} className="text-sm">✓ {p}</p>
+                ))}
+              </div>
+            </FECard>
+          </div>
         )}
-      </Box>
+      </div>
     </LessonShell>
   );
 }

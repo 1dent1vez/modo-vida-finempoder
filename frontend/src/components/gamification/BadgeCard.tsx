@@ -1,8 +1,4 @@
-// FinEmpoder — BadgeCard
-// Tarjeta de logro: desbloqueada (color completo) o bloqueada (gris + candado).
-
-import { Box, Typography } from '@mui/material';
-import LockIcon from '@mui/icons-material/Lock';
+import { cn } from '@/lib/utils';
 import FECard from '../FECard';
 import type { Badge } from '../../data/badges';
 
@@ -15,42 +11,22 @@ export function BadgeCard({ badge, unlocked }: BadgeCardProps) {
   return (
     <FECard
       variant="flat"
-      sx={{
-        p: 3,
-        textAlign: 'center',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 1,
-        filter: unlocked ? 'none' : 'grayscale(1)',
-        opacity: unlocked ? 1 : 0.55,
-        transition: 'all 200ms ease',
-        position: 'relative',
-      }}
+      className={cn(
+        'flex flex-col items-center gap-2 p-6 text-center transition-all duration-200 relative',
+        !unlocked && 'grayscale opacity-55'
+      )}
     >
-      {/* Ícono principal */}
-      <Box sx={{ fontSize: '2.5rem', lineHeight: 1 }}>
-        {unlocked ? badge.icon : <LockIcon sx={{ fontSize: 36, color: 'text.disabled' }} />}
-      </Box>
+      <span className="text-4xl leading-none">
+        {unlocked ? badge.icon : '🔒'}
+      </span>
 
-      {/* Título */}
-      <Typography
-        variant="body2"
-        fontWeight={700}
-        color={unlocked ? 'text.primary' : 'text.disabled'}
-        sx={{ lineHeight: 1.3 }}
-      >
+      <span className={cn('text-sm font-bold leading-snug', !unlocked && 'text-[var(--color-text-secondary)]')}>
         {badge.title}
-      </Typography>
+      </span>
 
-      {/* Descripción o pista */}
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ lineHeight: 1.4, display: 'block' }}
-      >
+      <span className="text-xs text-[var(--color-text-secondary)] leading-snug">
         {unlocked ? badge.description : badge.hint}
-      </Typography>
+      </span>
     </FECard>
   );
 }

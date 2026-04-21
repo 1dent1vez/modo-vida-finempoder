@@ -1,23 +1,10 @@
-﻿import { useMemo, useState } from 'react';
-import {
-  Box,
-  Stack,
-  Typography,
-  Paper,
-  TextField,
-  Slider,
-  Chip,
-  Button,
-  MenuItem,
-  Divider,
-  LinearProgress
-} from '@mui/material';
-import SavingsIcon from '@mui/icons-material/Savings';
-import AlarmIcon from '@mui/icons-material/Alarm';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import { SAVINGS_LESSONS } from './lessonFlow';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { SAVINGS_LESSONS } from './lessonFlow';
 
+const warnColor = 'var(--color-brand-warning)';
+const successColor = 'var(--color-brand-success)';
+const infoColor = 'var(--color-brand-info)';
 
 export default function AhorroIndex() {
   const nav = useNavigate();
@@ -39,143 +26,149 @@ export default function AhorroIndex() {
   };
 
   return (
-    <Box sx={{ p: 2, pb: 9 }}>
-      <Stack direction="row" alignItems="center" spacing={1}>
-        <SavingsIcon sx={{ color: 'warning.main' }} />
-        <Typography variant="h6" fontWeight={800}>
-          Plan rapido de ahorro
-        </Typography>
-      </Stack>
+    <div className="p-4 pb-24 space-y-4">
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <span className="text-2xl">💰</span>
+        <p className="text-lg font-extrabold">Plan rapido de ahorro</p>
+      </div>
 
-      <Paper sx={{ p: 2, borderRadius: 3, mt: 2, borderLeft: '6px solid' }}>
-        <Typography fontWeight={700} sx={{ mb: 1 }}>
-          Define tu meta
-        </Typography>
-        <Stack spacing={1.25}>
-          <TextField
-            label="Meta"
-            value={goalName}
-            onChange={(e) => setGoalName(e.target.value)}
-            helperText="Ejemplo: laptop, mudanza, fondo de emergencia"
-          />
-          <TextField
-            label="Monto objetivo (MXN)"
+      {/* Meta */}
+      <div className="p-4 rounded-2xl border border-[var(--color-neutral-200)]" style={{ borderLeft: `6px solid ${warnColor}` }}>
+        <p className="font-bold mb-3">Define tu meta</p>
+        <div className="space-y-3">
+          <div>
+            <input
+              type="text"
+              placeholder="Meta"
+              value={goalName}
+              onChange={(e) => setGoalName(e.target.value)}
+              className="w-full border border-[var(--color-neutral-200)] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-warning)]"
+            />
+            <p className="text-xs text-[var(--color-text-secondary)] mt-1">Ejemplo: laptop, mudanza, fondo de emergencia</p>
+          </div>
+          <input
             type="number"
+            placeholder="Monto objetivo (MXN)"
+            min={0}
+            step={100}
             value={goalAmount}
             onChange={(e) => setGoalAmount(Number(e.target.value))}
-            inputProps={{ min: 0, step: 100 }}
+            className="w-full border border-[var(--color-neutral-200)] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-warning)]"
           />
-          <Stack spacing={0.5}>
-            <Typography variant="body2" color="text.secondary">
-              Meses para lograrlo: {months}
-            </Typography>
-            <Slider
-              value={months}
+          <div>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-1">Meses para lograrlo: {months}</p>
+            <input
+              type="range"
               min={1}
               max={12}
               step={1}
-              onChange={(_, v) => setMonths(v as number)}
-              valueLabelDisplay="auto"
+              value={months}
+              onChange={(e) => setMonths(Number(e.target.value))}
+              className="w-full accent-[var(--color-brand-warning)]"
             />
-          </Stack>
-          <Typography fontWeight={700}>
-            Necesitas ahorrar ~${monthlyNeeded.toFixed(2)} al mes.
-          </Typography>
-        </Stack>
-      </Paper>
+          </div>
+          <p className="font-bold">Necesitas ahorrar ~${monthlyNeeded.toFixed(2)} al mes.</p>
+        </div>
+      </div>
 
-      <Paper sx={{ p: 2, borderRadius: 3, mt: 2, borderLeft: `6px solid ${'info.main'}` }}>
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <AlarmIcon sx={{ color: 'info.main' }} />
-          <Typography fontWeight={700}>Programa tus depositos</Typography>
-        </Stack>
-        <Stack spacing={1.25} sx={{ mt: 1 }}>
-          <TextField
-            select
-            label="Dia automatico"
+      {/* Depositos */}
+      <div className="p-4 rounded-2xl border border-[var(--color-neutral-200)]" style={{ borderLeft: `6px solid ${infoColor}` }}>
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-lg">⏰</span>
+          <p className="font-bold">Programa tus depositos</p>
+        </div>
+        <div className="space-y-3">
+          <select
             value={autoDay}
             onChange={(e) => setAutoDay(Number(e.target.value))}
+            className="w-full border border-[var(--color-neutral-200)] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-info)] bg-white"
           >
             {[1, 5, 10, 15, 20, 25].map((d) => (
-              <MenuItem key={d} value={d}>
-                Dia {d} de cada mes
-              </MenuItem>
+              <option key={d} value={d}>Dia {d} de cada mes</option>
             ))}
-          </TextField>
-          <TextField
-            label="Monto automatico (MXN)"
+          </select>
+          <input
             type="number"
+            placeholder="Monto automatico (MXN)"
+            min={0}
+            step={50}
             value={autoAmount}
             onChange={(e) => setAutoAmount(Number(e.target.value))}
-            inputProps={{ min: 0, step: 50 }}
+            className="w-full border border-[var(--color-neutral-200)] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-info)]"
           />
-          <TextField
-            select
-            label="Canal"
+          <select
             value={channel}
             onChange={(e) => setChannel(e.target.value as 'transfer' | 'efectivo')}
+            className="w-full border border-[var(--color-neutral-200)] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-info)] bg-white"
           >
-            <MenuItem value="transfer">Transferencia programada</MenuItem>
-            <MenuItem value="efectivo">Deposito en efectivo con recordatorio</MenuItem>
-          </TextField>
-
-          <LinearProgress
-            variant="determinate"
-            value={coverage}
-            sx={{
-              height: 8,
-              borderRadius: 5,
-              bgcolor: 'grey.100',
-              '& .MuiLinearProgress-bar': { bgcolor: paceOk ? 'success.main' : 'warning.main' }
+            <option value="transfer">Transferencia programada</option>
+            <option value="efectivo">Deposito en efectivo con recordatorio</option>
+          </select>
+          <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2">
+            <div
+              className="h-2 rounded-full transition-all"
+              style={{ width: `${coverage}%`, backgroundColor: paceOk ? successColor : warnColor }}
+            />
+          </div>
+          <p className="text-sm text-[var(--color-text-secondary)]">Cubres {coverage}% de lo necesario cada mes.</p>
+          <span
+            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold"
+            style={{
+              backgroundColor: paceOk ? 'var(--color-brand-success-bg)' : 'var(--color-brand-warning-bg)',
+              color: paceOk ? '#059669' : '#D97706',
+              border: `1px solid ${paceOk ? successColor : warnColor}`,
             }}
-          />
-          <Typography variant="body2" color="text.secondary">
-            Cubres {coverage}% de lo necesario cada mes.
-          </Typography>
-          <Chip
-            color={paceOk ? 'success' : 'warning'}
-            label={paceOk ? 'Estas en ruta a la meta' : 'Sube un poco tu deposito'}
-            sx={{ alignSelf: 'flex-start' }}
-          />
-        </Stack>
-      </Paper>
+          >
+            {paceOk ? 'Estas en ruta a la meta' : 'Sube un poco tu deposito'}
+          </span>
+        </div>
+      </div>
 
-      <Paper sx={{ p: 2, borderRadius: 3, mt: 2 }}>
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <AutoAwesomeIcon sx={{ color: 'secondary.main' }} />
-          <Typography fontWeight={700}>Atajos</Typography>
-        </Stack>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          Selecciona un atajo para precargar meta y frecuencia.
-        </Typography>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 1 }}>
-          <Chip label="Ahorro rapido: $1500 en 3 meses" onClick={() => handleApplyPreset(1500, 3)} />
-          <Chip label="Fondo 1-3-6: $6000 en 6 meses" onClick={() => handleApplyPreset(6000, 6)} />
-          <Chip label="Meta grande: $12000 en 10 meses" onClick={() => handleApplyPreset(12000, 10)} />
-        </Stack>
+      {/* Atajos */}
+      <div className="p-4 rounded-2xl border border-[var(--color-neutral-200)] space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">✨</span>
+          <p className="font-bold">Atajos</p>
+        </div>
+        <p className="text-sm text-[var(--color-text-secondary)]">Selecciona un atajo para precargar meta y frecuencia.</p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { label: 'Ahorro rapido: $1500 en 3 meses', amount: 1500, m: 3 },
+            { label: 'Fondo 1-3-6: $6000 en 6 meses', amount: 6000, m: 6 },
+            { label: 'Meta grande: $12000 en 10 meses', amount: 12000, m: 10 },
+          ].map((p) => (
+            <button
+              key={p.label}
+              onClick={() => handleApplyPreset(p.amount, p.m)}
+              className="px-3 py-1 rounded-full text-xs font-semibold border border-[var(--color-neutral-200)] text-[var(--color-text-secondary)] hover:border-[var(--color-brand-warning)] hover:text-[var(--color-brand-warning)] transition-colors"
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
 
-        <Divider sx={{ my: 2 }} />
+        <hr className="border-[var(--color-neutral-200)]" />
 
-        <Stack spacing={1}>
-          <Typography fontWeight={700}>Da el siguiente paso</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Continua con las lecciones para desbloquear guias y simuladores de ahorro.
-          </Typography>
-          <Button
-            variant="contained"
+        <div className="space-y-2">
+          <p className="font-bold">Da el siguiente paso</p>
+          <p className="text-sm text-[var(--color-text-secondary)]">Continua con las lecciones para desbloquear guias y simuladores de ahorro.</p>
+          <button
             onClick={() => nav('/app/ahorro')}
-            sx={{ alignSelf: 'flex-start', bgcolor: 'warning.main', '&:hover': { bgcolor: 'warning.dark' } }}
+            className="min-h-10 px-5 text-white rounded-xl font-semibold text-sm"
+            style={{ backgroundColor: warnColor }}
           >
             Ver lecciones
-          </Button>
-          <Stack direction="row" spacing={1} flexWrap="wrap">
+          </button>
+          <div className="flex flex-wrap gap-2 mt-1">
             {SAVINGS_LESSONS.slice(0, 3).map((l) => (
-              <Chip key={l.id} label={`${l.id} - ${l.title}`} size="small" />
+              <span key={l.id} className="px-2 py-0.5 rounded-full text-xs border border-[var(--color-neutral-200)] text-[var(--color-text-secondary)]">
+                {l.id} - {l.title}
+              </span>
             ))}
-          </Stack>
-        </Stack>
-      </Paper>
-    </Box>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
-

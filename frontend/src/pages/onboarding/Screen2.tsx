@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import OnboardingLayout from './OnboardingLayout';
 import onb2 from '../../assets/onb2.png';
-import { isOnboarded, setOnboarded } from '../../utils/onboarding';
+import { isOnboarded, setOnboarded } from '@/shared/utils/onboarding';
 import { useAuth } from '../../store/auth';
 
 export default function Screen2() {

@@ -1,8 +1,5 @@
+import { cn } from '@/lib/utils';
 import { useState, useEffect, useMemo } from 'react';
-import {
-  Box, Stack, Typography, Button, LinearProgress, Fade,
-  TextField, Chip,
-} from '@mui/material';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -21,7 +18,6 @@ const SMART_LETTERS = [
 export default function L09() {
   const [step, setStep] = useState(0);
 
-  // Form fields
   const [queQuieres, setQueQuieres] = useState('');
   const [monto, setMonto] = useState('');
   const [porQue, setPorQue] = useState('');
@@ -32,7 +28,6 @@ export default function L09() {
 
   const step1Valid = queQuieres.trim().length >= 3;
   const step2Valid = montoNum > 0;
-  const step3Valid = true; // calculadora siempre válida cuando hay monto
   const step4Valid = porQue.trim().length >= 5;
   const step5Valid = plazoMeses >= 1 && plazoMeses <= 24;
 
@@ -43,7 +38,6 @@ export default function L09() {
     : '';
 
   const isAlcanzable = useMemo(() => {
-    // Assume a typical student income of $2,500
     return aporteMensual <= 2500 * 0.3;
   }, [aporteMensual]);
 
@@ -60,202 +54,198 @@ export default function L09() {
     }
   }, [allValid, queQuieres, montoNum, porQue, plazoMeses, aporteMensual, metaText]);
 
+  const progressValue = step === 0 ? 0 : step === 1 ? 20 : step === 2 ? 50 : 100;
+
   return (
     <LessonShell
       id="L09"
       title="Metas financieras con método: el sistema SMART"
       completion={{ ready: allValid }}
     >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={step === 0 ? 0 : step === 1 ? 20 : step === 2 ? 50 : 100}
-          color="warning"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
+        </div>
 
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="¿Qué es una meta SMART?"
-                message={`"Quiero ahorrar" no es una meta. "Quiero ahorrar $3,000 para mi viaje de graduación en 6 meses apartando $500 al mes" — eso sí es una meta. ¿Notas la diferencia?`}
-              />
-              <Stack spacing={1.5}>
-                {SMART_LETTERS.map((s) => (
-                  <FECard key={s.letter} variant="flat" sx={{ border: 1, borderColor: 'warning.main' }}>
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <Typography variant="h3" sx={{ color: 'warning.main', minWidth: 32 }}>{s.letter}</Typography>
-                      <Box>
-                        <Typography variant="body1" fontWeight={700}>{s.name}</Typography>
-                        <Typography variant="body2" color="text.secondary">{s.desc}</Typography>
-                      </Box>
-                    </Stack>
-                  </FECard>
-                ))}
-              </Stack>
-              <FinniMessage
-                variant="coach"
-                title="Una meta SMART"
-                message="Es como un GPS financiero. Sin ella, solo estás manejando sin rumbo."
-              />
-              <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setStep(1)}>
-                ¡Crear mi meta! →
-              </Button>
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <FinniMessage
+              variant="coach"
+              title="¿Qué es una meta SMART?"
+              message={`"Quiero ahorrar" no es una meta. "Quiero ahorrar $3,000 para mi viaje de graduación en 6 meses apartando $500 al mes" — eso sí es una meta. ¿Notas la diferencia?`}
+            />
+            <div className="space-y-2">
+              {SMART_LETTERS.map((s) => (
+                <FECard key={s.letter} variant="flat" className="border border-[var(--color-brand-warning)]">
+                  <div className="flex items-center gap-3">
+                    <p className="text-2xl font-bold min-w-8 text-[var(--color-brand-warning)]">{s.letter}</p>
+                    <div>
+                      <p className="font-bold">{s.name}</p>
+                      <p className="text-sm text-[var(--color-text-secondary)]">{s.desc}</p>
+                    </div>
+                  </div>
+                </FECard>
+              ))}
+            </div>
+            <FinniMessage
+              variant="coach"
+              title="Una meta SMART"
+              message="Es como un GPS financiero. Sin ella, solo estás manejando sin rumbo."
+            />
+            <button
+              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+              onClick={() => setStep(1)}
+            >
+              ¡Crear mi meta! →
+            </button>
+          </div>
         )}
 
         {step === 1 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="h4">Formulario guiado (5 pasos)</Typography>
+          <div className="space-y-3">
+            <p className="font-bold text-base">Formulario guiado (5 pasos)</p>
 
-              {/* Paso 1 — ¿Qué quieres? */}
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'warning.main' }}>
-                <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>
-                  Paso 1/5 — ¿Qué quieres lograr? (S — Específica)
-                </Typography>
-                <TextField
-                  label="¿Qué quieres?"
+            <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
+              <p className="font-bold text-sm mb-2">
+                Paso 1/5 — ¿Qué quieres lograr? (S — Específica)
+              </p>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-[var(--color-text-secondary)]">¿Qué quieres?</label>
+                <input
                   value={queQuieres}
                   onChange={(e) => setQueQuieres(e.target.value)}
-                  size="small"
-                  fullWidth
                   placeholder="Ej: comprar una laptop, hacer un viaje..."
+                  className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm"
                 />
-                <Stack direction="row" flexWrap="wrap" gap={1} useFlexGap sx={{ mt: 1 }}>
-                  {SUGERENCIAS.map((s) => (
-                    <Chip
-                      key={s}
-                      label={s}
-                      size="small"
-                      variant="outlined"
-                      onClick={() => setQueQuieres(s)}
-                      sx={{ cursor: 'pointer' }}
-                    />
-                  ))}
-                </Stack>
-              </FECard>
+              </div>
+              <div className="flex flex-wrap gap-1 mt-2">
+                {SUGERENCIAS.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setQueQuieres(s)}
+                    className="px-2 py-0.5 rounded-full text-xs border border-[var(--color-neutral-200)] text-[var(--color-text-secondary)] cursor-pointer"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </FECard>
 
-              {/* Paso 2 — ¿Cuánto? */}
-              <FECard variant="flat" sx={{ border: 1, borderColor: step1Valid ? 'warning.main' : 'divider', opacity: step1Valid ? 1 : 0.5 }}>
-                <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>
-                  Paso 2/5 — ¿Cuánto dinero necesitas? (M — Medible)
-                </Typography>
-                <TextField
-                  label="Monto en pesos"
+            <FECard
+              variant="flat"
+              className={cn('border transition-opacity', step1Valid ? 'border-[var(--color-brand-warning)]' : 'border-[var(--color-neutral-200)] opacity-50')}
+            >
+              <p className="font-bold text-sm mb-2">
+                Paso 2/5 — ¿Cuánto dinero necesitas? (M — Medible)
+              </p>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-[var(--color-text-secondary)]">Monto en pesos</label>
+                <input
                   type="number"
                   value={monto}
                   onChange={(e) => setMonto(e.target.value)}
-                  size="small"
-                  fullWidth
                   disabled={!step1Valid}
-                  inputProps={{ min: 1 }}
+                  min={1}
+                  className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm disabled:opacity-50"
                 />
+              </div>
+            </FECard>
+
+            {step2Valid && (
+              <FECard variant="flat" className="border border-[var(--color-brand-info)] bg-[var(--color-brand-info)]/10">
+                <p className="font-bold text-sm mb-2">
+                  Paso 3/5 — ¿Es alcanzable? (A — Alcanzable)
+                </p>
+                <p className="text-sm mb-2">
+                  Plazo: <b>{plazoMeses} {plazoMeses === 1 ? 'mes' : 'meses'}</b>
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {[1, 2, 3, 6, 9, 12, 18, 24].map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setPlazoMeses(m)}
+                      className={cn(
+                        'px-2 py-0.5 rounded-full text-xs font-semibold border transition-colors',
+                        plazoMeses === m
+                          ? 'bg-[var(--color-brand-warning)] text-white border-[var(--color-brand-warning)]'
+                          : 'border-[var(--color-neutral-200)] text-[var(--color-text-secondary)]'
+                      )}
+                    >
+                      {m}m
+                    </button>
+                  ))}
+                </div>
+                <FECard
+                  variant="flat"
+                  className={cn('mt-3', isAlcanzable ? 'bg-[var(--color-brand-success)]/10' : 'bg-[var(--color-brand-warning)]/10')}
+                >
+                  <p className="font-bold text-sm">
+                    Deberías apartar: <b>${aporteMensual.toLocaleString()}/mes</b>
+                  </p>
+                  <p className="text-xs text-[var(--color-text-secondary)]">
+                    {isAlcanzable ? '✅ Es alcanzable para un universitario típico' : '⚠️ Es exigente. Considera aumentar el plazo.'}
+                  </p>
+                </FECard>
               </FECard>
+            )}
 
-              {/* Paso 3 — ¿Es alcanzable? */}
-              {step2Valid && (
-                <Fade in>
-                  <FECard variant="flat" sx={{ border: 1, borderColor: 'info.main', bgcolor: 'info.light' }}>
-                    <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>
-                      Paso 3/5 — ¿Es alcanzable? (A — Alcanzable)
-                    </Typography>
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                      Plazo: <b>{plazoMeses} {plazoMeses === 1 ? 'mes' : 'meses'}</b>
-                    </Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                      {[1, 2, 3, 6, 9, 12, 18, 24].map((m) => (
-                        <Chip
-                          key={m}
-                          label={`${m}m`}
-                          size="small"
-                          color={plazoMeses === m ? 'warning' : 'default'}
-                          variant={plazoMeses === m ? 'filled' : 'outlined'}
-                          onClick={() => setPlazoMeses(m)}
-                          sx={{ cursor: 'pointer', fontWeight: 600 }}
-                        />
-                      ))}
-                    </Stack>
-                    <FECard variant="flat" sx={{ mt: 1.5, bgcolor: isAlcanzable ? 'success.light' : 'warning.light' }}>
-                      <Typography variant="body2" fontWeight={700}>
-                        Deberías apartar: <b>${aporteMensual.toLocaleString()}/mes</b>
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {isAlcanzable ? '✅ Es alcanzable para un universitario típico' : '⚠️ Es exigente. Considera aumentar el plazo.'}
-                      </Typography>
-                    </FECard>
-                  </FECard>
-                </Fade>
-              )}
+            {step2Valid && (
+              <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
+                <p className="font-bold text-sm mb-2">
+                  Paso 4/5 — ¿Por qué es importante? (R — Relevante)
+                </p>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-[var(--color-text-secondary)]">¿Por qué esta meta importa para ti?</label>
+                  <textarea
+                    value={porQue}
+                    onChange={(e) => setPorQue(e.target.value)}
+                    rows={2}
+                    className="w-full rounded-xl border border-[var(--color-neutral-200)] p-3 text-sm resize-none"
+                  />
+                </div>
+              </FECard>
+            )}
 
-              {/* Paso 4 — ¿Por qué? */}
-              {step3Valid && step2Valid && (
-                <Fade in>
-                  <FECard variant="flat" sx={{ border: 1, borderColor: 'warning.main' }}>
-                    <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>
-                      Paso 4/5 — ¿Por qué es importante? (R — Relevante)
-                    </Typography>
-                    <TextField
-                      label="¿Por qué esta meta importa para ti?"
-                      value={porQue}
-                      onChange={(e) => setPorQue(e.target.value)}
-                      size="small"
-                      fullWidth
-                      multiline
-                      rows={2}
-                    />
-                  </FECard>
-                </Fade>
-              )}
-
-              {/* Resultado */}
-              {allValid && (
-                <Fade in>
-                  <Stack spacing={2}>
-                    <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setStep(2)}>
-                      Ver mi tarjeta de compromiso →
-                    </Button>
-                  </Stack>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+            {allValid && (
+              <button
+                className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+                onClick={() => setStep(2)}
+              >
+                Ver mi tarjeta de compromiso →
+              </button>
+            )}
+          </div>
         )}
 
         {step === 2 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="h4">Tu meta SMART 🎯</Typography>
-              <FECard variant="flat" sx={{ border: 3, borderColor: 'warning.main', bgcolor: 'warning.light', p: 2 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>TARJETA DE COMPROMISO</Typography>
-                <Typography variant="body1" fontWeight={700} sx={{ mb: 2 }}>{metaText}</Typography>
-                <Stack spacing={0.5}>
-                  {[
-                    { label: 'Qué', value: queQuieres },
-                    { label: 'Cuánto', value: `$${montoNum.toLocaleString()}` },
-                    { label: 'Cuándo', value: `En ${plazoMeses} meses` },
-                    { label: 'Cómo', value: `Apartando $${aporteMensual.toLocaleString()}/mes` },
-                    { label: 'Por qué', value: porQue },
-                  ].map((r) => (
-                    <Stack key={r.label} direction="row" spacing={1}>
-                      <Typography variant="caption" fontWeight={700} sx={{ minWidth: 50 }}>{r.label}:</Typography>
-                      <Typography variant="caption">{r.value}</Typography>
-                    </Stack>
-                  ))}
-                </Stack>
-              </FECard>
-              <FinniMessage
-                variant="success"
-                title="¡Tu meta está lista!"
-                message="En el siguiente módulo vamos a construir el plan para cumplirla. Tu meta queda guardada para usar en la Lección 12."
-              />
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <p className="font-bold text-base">Tu meta SMART 🎯</p>
+            <FECard variant="flat" className="border-[3px] border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10 p-4">
+              <p className="text-xs text-[var(--color-text-secondary)] mb-2">TARJETA DE COMPROMISO</p>
+              <p className="font-bold mb-4">{metaText}</p>
+              <div className="space-y-1">
+                {[
+                  { label: 'Qué', value: queQuieres },
+                  { label: 'Cuánto', value: `$${montoNum.toLocaleString()}` },
+                  { label: 'Cuándo', value: `En ${plazoMeses} meses` },
+                  { label: 'Cómo', value: `Apartando $${aporteMensual.toLocaleString()}/mes` },
+                  { label: 'Por qué', value: porQue },
+                ].map((r) => (
+                  <div key={r.label} className="flex gap-2">
+                    <p className="text-xs font-bold min-w-12">{r.label}:</p>
+                    <p className="text-xs">{r.value}</p>
+                  </div>
+                ))}
+              </div>
+            </FECard>
+            <FinniMessage
+              variant="success"
+              title="¡Tu meta está lista!"
+              message="En el siguiente módulo vamos a construir el plan para cumplirla. Tu meta queda guardada para usar en la Lección 12."
+            />
+          </div>
         )}
-      </Box>
+      </div>
     </LessonShell>
   );
 }

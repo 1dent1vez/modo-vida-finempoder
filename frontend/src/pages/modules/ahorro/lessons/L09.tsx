@@ -1,7 +1,4 @@
 import { useState } from 'react';
-import {
-  Box, Stack, Typography, Button, LinearProgress, Fade, Chip,
-} from '@mui/material';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -25,6 +22,19 @@ const SEGUROS = [
   { label: 'Seguro de gadgets', desc: 'Para laptop o celular si es tu herramienta de trabajo' },
 ];
 
+const successColor = 'var(--color-brand-success)';
+const successBg = 'var(--color-brand-success-bg)';
+const errorColor = 'var(--color-brand-error)';
+const errorBg = 'var(--color-brand-error-bg)';
+const infoColor = 'var(--color-brand-info)';
+const infoBg = 'var(--color-brand-info-bg)';
+
+const OPT_LABELS: Record<string, string> = {
+  ahorro: '💰 Ahorro',
+  seguro: '🛡️ Seguro',
+  ambos: '✅ Ambos',
+};
+
 export default function L09() {
   const [step, setStep] = useState(0);
   const [mapAnswers, setMapAnswers] = useState<Record<number, MapChoice>>({});
@@ -45,218 +55,146 @@ export default function L09() {
 
   const progress = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 60 : step === 3 ? 80 : 100;
 
-  return (
-    <LessonShell
-      id="L09"
-      title="Ahorro y seguros: la dupla de la tranquilidad"
-      completion={{ ready: mapDone && quizDone, score: score / 3 }}
-    >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={progress}
-          color="success"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+  const quizOpts = [
+    { q: q1, set: setQ1, correct: 'b', opts: [{ key: 'a', label: 'A) Solo el fondo de emergencias' }, { key: 'b', label: 'B) Un seguro medico' }, { key: 'c', label: 'C) Pedir prestado' }], question: '1. Una emergencia medica de $25,000. ¿Que conviene?', fb: { ok: 'Correcto. Para gastos tan grandes, el seguro es indispensable.', fail: 'Un seguro medico es el mas adecuado para montos elevados.' } },
+    { q: q2, set: setQ2, correct: 'a', opts: [{ key: 'a', label: 'A) Mi fondo de emergencias' }, { key: 'b', label: 'B) Un seguro' }, { key: 'c', label: 'C) Una tarjeta de credito' }], question: '2. Una multa de $400. ¿Que usas?', fb: { ok: 'Correcto. Para imprevistos pequeños, el fondo es perfecto.', fail: 'Para imprevistos pequeños usa el fondo de emergencias.' } },
+    { q: q3, set: setQ3, correct: 'b', opts: [{ key: 'a', label: 'A) Solo el fondo de emergencias' }, { key: 'b', label: 'B) Fondo para los primeros meses + seguro de desempleo si disponible' }, { key: 'c', label: 'C) Solo el seguro' }], question: '3. Perdiste tu trabajo part-time por 4 meses. ¿La mejor estrategia?', fb: { ok: 'Correcto. La dupla ahorro + seguro es la estrategia optima.', fail: 'La combinacion de ambos es la estrategia mas solida.' } },
+  ];
 
-        {/* Pantalla 0 — Apertura + narracion */}
+  return (
+    <LessonShell id="L09" title="Ahorro y seguros: la dupla de la tranquilidad" completion={{ ready: mapDone && quizDone, score: score / 3 }}>
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
+        </div>
+
+        {/* Pantalla 0 — Apertura */}
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="La dupla imbatible"
-                message="El ahorro te protege de lo que ya sabes que podria pasar. El seguro te protege de lo que no imaginas que podria pasar. Juntos son imbatibles."
-              />
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'divider' }}>
-                <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>Situacion 1 — Carlos:</Typography>
-                <Typography variant="body2">Tiene $3,000 en fondo de emergencias. Se enferma, gasto medico $8,000.</Typography>
-                <Typography variant="body2" color="error.main" sx={{ mt: 0.5 }}>
-                  Sin seguro → vacia el fondo y sigue debiendo $5,000.
-                </Typography>
-                <Typography variant="body2" color="success.main">
-                  Con seguro medico estudiantil → paga $500 deducible, fondo intacto.
-                </Typography>
-              </FECard>
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'divider' }}>
-                <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>Situacion 2 — Mariana:</Typography>
-                <Typography variant="body2">Tiene seguro de desempleo estudiantil. Pierde trabajo part-time.</Typography>
-                <Typography variant="body2" color="success.main" sx={{ mt: 0.5 }}>
-                  El seguro cubre 3 meses de ingreso basico. Fondo intacto para otra situacion.
-                </Typography>
-              </FECard>
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'info.main', bgcolor: 'info.light' }}>
-                <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>Seguros basicos para universitarios:</Typography>
-                {SEGUROS.map((s) => (
-                  <Stack key={s.label} direction="row" spacing={1} alignItems="flex-start" sx={{ mb: 0.5 }}>
-                    <Typography variant="body2">•</Typography>
-                    <Box>
-                      <Typography variant="body2" fontWeight={600}>{s.label}</Typography>
-                      <Typography variant="caption" color="text.secondary">{s.desc}</Typography>
-                    </Box>
-                  </Stack>
-                ))}
-              </FECard>
-              <Button fullWidth variant="contained" color="success" size="large" onClick={() => setStep(1)}>
-                Mapa de situaciones →
-              </Button>
-            </Stack>
-          </Fade>
+          <div className="space-y-6">
+            <FinniMessage variant="coach" title="La dupla imbatible" message="El ahorro te protege de lo que ya sabes que podria pasar. El seguro te protege de lo que no imaginas que podria pasar. Juntos son imbatibles." />
+            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
+              <p className="text-sm font-bold mb-2">Situacion 1 — Carlos:</p>
+              <p className="text-sm">Tiene $3,000 en fondo de emergencias. Se enferma, gasto medico $8,000.</p>
+              <p className="text-sm mt-1" style={{ color: errorColor }}>Sin seguro → vacia el fondo y sigue debiendo $5,000.</p>
+              <p className="text-sm" style={{ color: successColor }}>Con seguro medico estudiantil → paga $500 deducible, fondo intacto.</p>
+            </FECard>
+            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
+              <p className="text-sm font-bold mb-2">Situacion 2 — Mariana:</p>
+              <p className="text-sm">Tiene seguro de desempleo estudiantil. Pierde trabajo part-time.</p>
+              <p className="text-sm mt-1" style={{ color: successColor }}>El seguro cubre 3 meses de ingreso basico. Fondo intacto para otra situacion.</p>
+            </FECard>
+            <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
+              <p className="text-sm font-bold mb-2">Seguros basicos para universitarios:</p>
+              {SEGUROS.map((s) => (
+                <div key={s.label} className="flex gap-2 items-start mb-1">
+                  <p className="text-sm">•</p>
+                  <div>
+                    <p className="text-sm font-semibold">{s.label}</p>
+                    <p className="text-xs text-[var(--color-text-secondary)]">{s.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </FECard>
+            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
+              Mapa de situaciones →
+            </button>
+          </div>
         )}
 
         {/* Pantalla 1 — Mapa de 6 situaciones */}
         {step === 1 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="body1" fontWeight={700}>
-                ¿Que herramienta usarias en cada situacion?
-              </Typography>
-              <Chip label={`${Object.values(mapAnswers).filter(Boolean).length}/${SITUACIONES.length}`} color="success" size="small" sx={{ alignSelf: 'flex-start' }} />
-              <Stack spacing={2}>
-                {SITUACIONES.map((s) => {
-                  const ans = mapAnswers[s.id];
-                  const isCorrect = ans === s.correct;
-                  return (
-                    <FECard
-                      key={s.id}
-                      variant="flat"
-                      sx={{
-                        border: 1,
-                        borderColor: ans ? (isCorrect ? 'success.main' : 'error.main') : 'divider',
-                        bgcolor: ans ? (isCorrect ? 'success.light' : 'error.light') : 'background.paper',
-                      }}
-                    >
-                      <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>{s.text}</Typography>
-                      <Stack direction="row" spacing={1} flexWrap="wrap">
-                        {(['ahorro', 'seguro', 'ambos'] as const).map((opt) => (
-                          <Button
-                            key={opt}
-                            size="small"
-                            variant={ans === opt ? 'contained' : 'outlined'}
-                            color={ans === opt ? (isCorrect ? 'success' : 'error') : 'inherit'}
-                            onClick={() => chooseMap(s.id, opt)}
-                            disabled={!!ans}
-                            sx={{ textTransform: 'none', minWidth: 70 }}
-                          >
-                            {opt === 'ahorro' ? '💰 Ahorro' : opt === 'seguro' ? '🛡️ Seguro' : '✅ Ambos'}
-                          </Button>
-                        ))}
-                      </Stack>
-                      {showMapFeedback[s.id] && (
-                        <Fade in>
-                          <Typography variant="caption" sx={{ display: 'block', mt: 0.75, color: isCorrect ? 'success.dark' : 'error.dark' }}>
-                            {isCorrect ? '✅ ' : '❌ '}{s.exp}
-                          </Typography>
-                        </Fade>
-                      )}
-                    </FECard>
-                  );
-                })}
-              </Stack>
-              {mapDone && (
-                <Fade in>
-                  <Button fullWidth variant="contained" color="success" size="large" onClick={() => setStep(2)}>
-                    Quiz rapido →
-                  </Button>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+          <div className="space-y-6">
+            <p className="text-base font-bold">¿Que herramienta usarias en cada situacion?</p>
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>
+              {Object.values(mapAnswers).filter(Boolean).length}/{SITUACIONES.length}
+            </span>
+            <div className="space-y-4 mt-2">
+              {SITUACIONES.map((s) => {
+                const ans = mapAnswers[s.id];
+                const isCorrect = ans === s.correct;
+                return (
+                  <FECard
+                    key={s.id}
+                    variant="flat"
+                    className="border"
+                    style={{
+                      borderColor: ans ? (isCorrect ? successColor : errorColor) : 'var(--color-border)',
+                      backgroundColor: ans ? (isCorrect ? successBg : errorBg) : 'white',
+                    }}
+                  >
+                    <p className="text-sm font-semibold mb-2">{s.text}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(['ahorro', 'seguro', 'ambos'] as const).map((opt) => (
+                        <button
+                          key={opt}
+                          onClick={() => chooseMap(s.id, opt)}
+                          disabled={!!ans}
+                          className="px-3 py-1.5 rounded-lg text-sm font-semibold border-2 transition-colors disabled:cursor-default"
+                          style={{
+                            borderColor: ans === opt ? (isCorrect ? successColor : errorColor) : 'var(--color-neutral-300)',
+                            backgroundColor: ans === opt ? (isCorrect ? successBg : errorBg) : 'transparent',
+                          }}
+                        >
+                          {OPT_LABELS[opt]}
+                        </button>
+                      ))}
+                    </div>
+                    {showMapFeedback[s.id] && (
+                      <p className="text-xs mt-2" style={{ color: isCorrect ? '#059669' : '#DC2626' }}>
+                        {isCorrect ? '✅ ' : '❌ '}{s.exp}
+                      </p>
+                    )}
+                  </FECard>
+                );
+              })}
+            </div>
+            {mapDone && (
+              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(2)}>
+                Quiz rapido →
+              </button>
+            )}
+          </div>
         )}
 
         {/* Pantalla 2 — Quiz 3 preguntas */}
         {step === 2 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="h4">Quiz: ¿cuando conviene cada uno?</Typography>
-
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'divider' }}>
-                <Typography variant="body1" fontWeight={700} sx={{ mb: 1.5 }}>
-                  1. Una emergencia medica de $25,000. ¿Que conviene?
-                </Typography>
-                <Stack spacing={1}>
-                  {[
-                    { key: 'a', label: 'A) Solo el fondo de emergencias' },
-                    { key: 'b', label: 'B) Un seguro medico' },
-                    { key: 'c', label: 'C) Pedir prestado' },
-                  ].map((o) => (
-                    <Button key={o.key} variant={q1 === o.key ? 'contained' : 'outlined'}
-                      color={q1 === o.key ? (o.key === 'b' ? 'success' : 'error') : 'inherit'}
-                      onClick={() => setQ1(o.key as Q)} disabled={q1 !== null}
-                      sx={{ justifyContent: 'flex-start', textTransform: 'none' }}>
-                      {o.label}
-                    </Button>
-                  ))}
-                </Stack>
-                {q1 && <Chip sx={{ mt: 1 }} color={q1 === 'b' ? 'success' : 'error'}
-                  label={q1 === 'b' ? 'Correcto. Para gastos tan grandes, el seguro es indispensable.' : 'Un seguro medico es el mas adecuado para montos elevados.'} />}
-              </FECard>
-
-              {q1 && (
-                <Fade in>
-                  <FECard variant="flat" sx={{ border: 1, borderColor: 'divider' }}>
-                    <Typography variant="body1" fontWeight={700} sx={{ mb: 1.5 }}>
-                      2. Una multa de $400. ¿Que usas?
-                    </Typography>
-                    <Stack spacing={1}>
-                      {[
-                        { key: 'a', label: 'A) Mi fondo de emergencias' },
-                        { key: 'b', label: 'B) Un seguro' },
-                        { key: 'c', label: 'C) Una tarjeta de credito' },
-                      ].map((o) => (
-                        <Button key={o.key} variant={q2 === o.key ? 'contained' : 'outlined'}
-                          color={q2 === o.key ? (o.key === 'a' ? 'success' : 'error') : 'inherit'}
-                          onClick={() => setQ2(o.key as Q)} disabled={q2 !== null}
-                          sx={{ justifyContent: 'flex-start', textTransform: 'none' }}>
-                          {o.label}
-                        </Button>
-                      ))}
-                    </Stack>
-                    {q2 && <Chip sx={{ mt: 1 }} color={q2 === 'a' ? 'success' : 'error'}
-                      label={q2 === 'a' ? 'Correcto. Para imprevistos pequeños, el fondo es perfecto.' : 'Para imprevistos pequeños usa el fondo de emergencias.'} />}
-                  </FECard>
-                </Fade>
-              )}
-
-              {q2 && (
-                <Fade in>
-                  <FECard variant="flat" sx={{ border: 1, borderColor: 'divider' }}>
-                    <Typography variant="body1" fontWeight={700} sx={{ mb: 1.5 }}>
-                      3. Perdiste tu trabajo part-time por 4 meses. ¿La mejor estrategia?
-                    </Typography>
-                    <Stack spacing={1}>
-                      {[
-                        { key: 'a', label: 'A) Solo el fondo de emergencias' },
-                        { key: 'b', label: 'B) Fondo para los primeros meses + seguro de desempleo si disponible' },
-                        { key: 'c', label: 'C) Solo el seguro' },
-                      ].map((o) => (
-                        <Button key={o.key} variant={q3 === o.key ? 'contained' : 'outlined'}
-                          color={q3 === o.key ? (o.key === 'b' ? 'success' : 'error') : 'inherit'}
-                          onClick={() => setQ3(o.key as Q)} disabled={q3 !== null}
-                          sx={{ justifyContent: 'flex-start', textTransform: 'none' }}>
-                          {o.label}
-                        </Button>
-                      ))}
-                    </Stack>
-                    {q3 && <Chip sx={{ mt: 1 }} color={q3 === 'b' ? 'success' : 'error'}
-                      label={q3 === 'b' ? 'Correcto. La dupla ahorro + seguro es la estrategia optima.' : 'La combinacion de ambos es la estrategia mas solida.'} />}
-                  </FECard>
-                </Fade>
-              )}
-
-              {quizDone && (
-                <Fade in>
-                  <FinniMessage
-                    variant="success"
-                    title={`${score}/3 correctas`}
-                    message="No necesitas el seguro perfecto. Necesitas empezar con el mas basico que puedas costear."
-                  />
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+          <div className="space-y-6">
+            <p className="text-2xl font-bold">Quiz: ¿cuando conviene cada uno?</p>
+            {quizOpts.map(({ q, set, correct, opts, question, fb }, idx) => {
+              if (idx > 0 && quizOpts[idx - 1]!.q === null) return null;
+              return (
+                <FECard key={idx} variant="flat" className="border border-[var(--color-neutral-200)]">
+                  <p className="text-base font-bold mb-3">{question}</p>
+                  <div className="space-y-2">
+                    {opts.map((o) => (
+                      <button
+                        key={o.key}
+                        onClick={() => { if (!q) set(o.key as Q); }}
+                        disabled={q !== null}
+                        className="w-full text-left px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors disabled:cursor-default"
+                        style={{
+                          borderColor: q === o.key ? (o.key === correct ? successColor : errorColor) : 'var(--color-neutral-200)',
+                          backgroundColor: q === o.key ? (o.key === correct ? successBg : errorBg) : 'transparent',
+                        }}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                  {q && (
+                    <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: q === correct ? successColor : errorColor }}>
+                      {q === correct ? fb.ok : fb.fail}
+                    </span>
+                  )}
+                </FECard>
+              );
+            })}
+            {quizDone && (
+              <FinniMessage variant="success" title={`${score}/3 correctas`} message="No necesitas el seguro perfecto. Necesitas empezar con el mas basico que puedas costear." />
+            )}
+          </div>
         )}
-      </Box>
+      </div>
     </LessonShell>
   );
 }

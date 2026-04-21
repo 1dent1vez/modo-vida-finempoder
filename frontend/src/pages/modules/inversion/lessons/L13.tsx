@@ -1,8 +1,4 @@
 import { useEffect, useState } from 'react';
-import {
-  Box, Stack, Typography, Button, LinearProgress, Fade,
-  TextField, Paper, Chip, MenuItem,
-} from '@mui/material';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -27,6 +23,9 @@ const TASA_POR_INSTRUMENTO: Record<string, number> = {
   'ETFs internacionales (plataforma CNBV)': 0.12,
 };
 
+const CATEGORIAS_OBJETIVO = ['Educación', 'Emprendimiento', 'Tecnología', 'Viaje', 'Emergencias', 'Otro'];
+const PLAZOS_MESES = [6, 12, 18, 24, 36, 48, 60];
+
 function calcProyeccion(capital: number, aportacion: number, tasa: number, meses: number): number {
   const tasaMensual = tasa / 12;
   let total = capital;
@@ -35,6 +34,13 @@ function calcProyeccion(capital: number, aportacion: number, tasa: number, meses
   }
   return total;
 }
+
+const infoColor = 'var(--color-brand-info)';
+const infoBg = 'var(--color-brand-info-bg)';
+const successColor = 'var(--color-brand-success)';
+const successBg = 'var(--color-brand-success-bg)';
+const warnColor = 'var(--color-brand-warning)';
+const warnBg = 'var(--color-brand-warning-bg)';
 
 export default function L13() {
   const [step, setStep] = useState(0);
@@ -60,11 +66,6 @@ export default function L13() {
       setPerfilGuardado(perfil);
       const instsDispo = INSTRUMENTOS_POR_PERFIL[perfil] ?? INSTRUMENTOS_POR_PERFIL.default!;
       setInstrumento(instsDispo[0]!);
-
-      const plataformas7 = await lessonDataRepository.load<{ plataformas: string[] }>('inversion', 'l07_plataformas');
-      if (plataformas7?.plataformas?.length) {
-        // plataformas como contexto, no se usa directamente en el form
-      }
     };
     void load();
   }, []);
@@ -99,220 +100,193 @@ export default function L13() {
     setGuardado(true);
   };
 
+  const progressValue = planCompleto
+    ? 100
+    : ((Number(!!seccion1Lista) + Number(!!seccion2Lista) + Number(!!seccion3Lista) + Number(!!seccion4Lista)) / 4) * 80;
+
   return (
     <LessonShell
       id="L13"
       title="Tu plan de inversión personal: metas, montos y plazos"
       completion={{ ready: planCompleto && guardado }}
     >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={planCompleto ? 100 : ((Number(seccion1Lista) + Number(seccion2Lista) + Number(seccion3Lista) + Number(!!seccion4Lista)) / 4) * 80}
-          color="info"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full transition-all" style={{ width: `${progressValue}%`, backgroundColor: infoColor }} />
+        </div>
 
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="¡Es momento de juntar todo lo que aprendiste!"
-                message="Hoy vas a construir tu plan personal de inversión. No el de un experto con millones — el tuyo, con tu situación real, como estudiante mexicano."
-              />
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'divider' }}>
-                <Typography fontWeight={700} sx={{ mb: 1 }}>Un plan de inversión básico tiene 4 componentes:</Typography>
-                {[
-                  '1. Tu objetivo: ¿para qué quieres que crezca tu dinero?',
-                  '2. Tu monto: ¿cuánto puedes invertir hoy y de forma recurrente?',
-                  '3. Tu plazo: ¿cuándo quieres ver el resultado?',
-                  '4. Tu instrumento: ¿cuál es el más adecuado para tu perfil?',
-                ].map((p) => (
-                  <Typography key={p} variant="body2" sx={{ py: 0.5 }}>✓ {p}</Typography>
-                ))}
-                <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic', color: 'text.secondary' }}>
-                  "Un plan aproximado hoy es mejor que el plan perfecto nunca."
-                </Typography>
+          <div className="space-y-6">
+            <FinniMessage
+              variant="coach"
+              title="¡Es momento de juntar todo lo que aprendiste!"
+              message="Hoy vas a construir tu plan personal de inversión. No el de un experto con millones — el tuyo, con tu situación real, como estudiante mexicano."
+            />
+            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
+              <p className="font-bold mb-2">Un plan de inversión básico tiene 4 componentes:</p>
+              {[
+                '1. Tu objetivo: ¿para qué quieres que crezca tu dinero?',
+                '2. Tu monto: ¿cuánto puedes invertir hoy y de forma recurrente?',
+                '3. Tu plazo: ¿cuándo quieres ver el resultado?',
+                '4. Tu instrumento: ¿cuál es el más adecuado para tu perfil?',
+              ].map((p) => (
+                <p key={p} className="text-sm py-1">✓ {p}</p>
+              ))}
+              <p className="text-sm mt-2 italic text-[var(--color-text-secondary)]">
+                "Un plan aproximado hoy es mejor que el plan perfecto nunca."
+              </p>
+            </FECard>
+            {perfilGuardado !== 'default' && (
+              <FECard variant="flat" className="border" style={{ backgroundColor: infoBg, borderColor: infoColor }}>
+                <p className="text-xs font-bold">Recuperado desde lecciones anteriores:</p>
+                <p className="text-xs">Perfil de riesgo: <b>{perfilGuardado}</b></p>
+                {capitalInicial > 0 && (
+                  <p className="text-xs">Capital disponible (L4): <b>${capitalInicial.toLocaleString()}</b></p>
+                )}
               </FECard>
-              {perfilGuardado !== 'default' && (
-                <FECard variant="flat" sx={{ bgcolor: 'info.light', border: 1, borderColor: 'info.main' }}>
-                  <Typography variant="caption" fontWeight={700}>Recuperado desde lecciones anteriores:</Typography>
-                  <Typography variant="caption" display="block">Perfil de riesgo: <b>{perfilGuardado}</b></Typography>
-                  {capitalInicial > 0 && (
-                    <Typography variant="caption" display="block">Capital disponible (L4): <b>${capitalInicial.toLocaleString()}</b></Typography>
-                  )}
-                </FECard>
-              )}
-              <Button fullWidth variant="contained" color="info" size="large" onClick={() => setStep(1)}>
-                Construir mi plan →
-              </Button>
-            </Stack>
-          </Fade>
+            )}
+            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setStep(1)}>
+              Construir mi plan →
+            </button>
+          </div>
         )}
 
         {step === 1 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="h4" fontWeight={700}>Mi plan de inversión</Typography>
+          <div className="space-y-6">
+            <p className="text-2xl font-bold">Mi plan de inversión</p>
 
-              {/* Sección 1 — Objetivo */}
-              <Paper sx={{ p: 2, borderRadius: 3, border: 2, borderColor: seccion1Lista ? 'success.main' : 'warning.main' }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-                  <Typography fontWeight={800}>1. Objetivo</Typography>
-                  {seccion1Lista && <Chip size="small" label="✓" color="success" />}
-                </Stack>
-                <TextField
-                  fullWidth
-                  size="small"
-                  multiline
-                  rows={2}
-                  label="¿Para qué quieres invertir?"
-                  value={objetivo}
-                  onChange={(e) => setObjetivo(e.target.value)}
-                  placeholder="Ej: Comprar mi primera laptop, estudios de posgrado, emprender..."
-                  sx={{ mb: 1.5 }}
-                />
-                <TextField
-                  select
-                  fullWidth
-                  size="small"
-                  label="Categoría"
-                  value={categoriaObjetivo}
-                  onChange={(e) => setCategoriaObjetivo(e.target.value)}
-                >
-                  {['Educación', 'Emprendimiento', 'Tecnología', 'Viaje', 'Emergencias', 'Otro'].map((op) => (
-                    <MenuItem key={op} value={op}>{op}</MenuItem>
-                  ))}
-                </TextField>
-              </Paper>
+            {/* Sección 1 — Objetivo */}
+            <div className="p-4 rounded-2xl border-2" style={{ borderColor: seccion1Lista ? successColor : warnColor }}>
+              <div className="flex justify-between items-center mb-3">
+                <p className="font-black">1. Objetivo</p>
+                {seccion1Lista && <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>✓</span>}
+              </div>
+              <textarea
+                rows={2}
+                placeholder="Ej: Comprar mi primera laptop, estudios de posgrado, emprender..."
+                value={objetivo}
+                onChange={(e) => setObjetivo(e.target.value)}
+                className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm resize-none mb-3"
+              />
+              <select
+                value={categoriaObjetivo}
+                onChange={(e) => setCategoriaObjetivo(e.target.value)}
+                className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm bg-white"
+              >
+                <option value="">Categoría...</option>
+                {CATEGORIAS_OBJETIVO.map((op) => (
+                  <option key={op} value={op}>{op}</option>
+                ))}
+              </select>
+            </div>
 
-              {/* Sección 2 — Montos */}
-              <Paper sx={{ p: 2, borderRadius: 3, border: 2, borderColor: 'warning.main' }}>
-                <Typography fontWeight={800} sx={{ mb: 1.5 }}>2. Montos</Typography>
-                <Stack spacing={1.5}>
-                  <TextField
-                    fullWidth
-                    size="small"
+            {/* Sección 2 — Montos */}
+            <div className="p-4 rounded-2xl border-2" style={{ borderColor: warnColor }}>
+              <p className="font-black mb-3">2. Montos</p>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Capital inicial ($)</label>
+                  <input
                     type="number"
-                    label="Capital inicial ($)"
                     value={capitalInicial}
                     onChange={(e) => setCapitalInicial(Math.max(0, Number(e.target.value)))}
-                    inputProps={{ min: 0, step: 100 }}
-                    helperText="Desde L4 — puedes ajustarlo"
+                    min={0}
+                    step={100}
+                    className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm"
                   />
-                  <TextField
-                    fullWidth
-                    size="small"
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-1">Desde L4 — puedes ajustarlo</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Aportación mensual ($)</label>
+                  <input
                     type="number"
-                    label="Aportación mensual ($)"
                     value={aportacionMensual}
                     onChange={(e) => setAportacionMensual(Math.max(0, Number(e.target.value)))}
-                    inputProps={{ min: 0, step: 50 }}
+                    min={0}
+                    step={50}
+                    className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm"
                   />
-                </Stack>
-              </Paper>
+                </div>
+              </div>
+            </div>
 
-              {/* Sección 3 — Plazo */}
-              <Paper sx={{ p: 2, borderRadius: 3, border: 2, borderColor: 'warning.main' }}>
-                <Typography fontWeight={800} sx={{ mb: 1.5 }}>3. Plazo</Typography>
-                <TextField
-                  select
-                  fullWidth
-                  size="small"
-                  label="Horizonte de inversión"
-                  value={plazoMeses}
-                  onChange={(e) => setPlazoMeses(Number(e.target.value))}
+            {/* Sección 3 — Plazo */}
+            <div className="p-4 rounded-2xl border-2" style={{ borderColor: warnColor }}>
+              <p className="font-black mb-3">3. Plazo</p>
+              <select
+                value={plazoMeses}
+                onChange={(e) => setPlazoMeses(Number(e.target.value))}
+                className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm bg-white"
+              >
+                {PLAZOS_MESES.map((m) => (
+                  <option key={m} value={m}>{m} meses ({(m / 12).toFixed(1)} años)</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Sección 4 — Instrumento */}
+            <div className="p-4 rounded-2xl border-2" style={{ borderColor: instrumento ? successColor : warnColor }}>
+              <div className="flex justify-between items-center mb-3">
+                <p className="font-black">4. Instrumento</p>
+                {perfilGuardado !== 'default' && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-bold border" style={{ borderColor: infoColor, color: infoColor }}>Perfil: {perfilGuardado}</span>
+                )}
+              </div>
+              <select
+                value={instrumento}
+                onChange={(e) => setInstrumento(e.target.value)}
+                className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm bg-white"
+              >
+                {instrumentosDisponibles.map((inst) => (
+                  <option key={inst} value={inst}>{inst}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Proyección dinámica */}
+            {planCompleto && (
+              <div className="space-y-4">
+                <div className="p-4 rounded-2xl border-2" style={{ borderColor: supera ? successColor : warnColor, backgroundColor: supera ? successBg : warnBg }}>
+                  <p className="text-sm font-bold">Proyección a {plazoMeses} meses:</p>
+                  <p className="text-3xl font-black">${proyeccion.toFixed(0)}</p>
+                  <div className="flex gap-6 mt-2">
+                    <div>
+                      <p className="text-xs text-[var(--color-text-secondary)]">Total aportado</p>
+                      <p className="text-sm font-bold">${totalAportado.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[var(--color-text-secondary)]">Ganancia estimada</p>
+                      <p className="text-sm font-bold" style={{ color: successColor }}>+${ganancia.toFixed(0)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[var(--color-text-secondary)]">Tasa anual</p>
+                      <p className="text-sm font-bold">{(tasaAnual * 100).toFixed(1)}%</p>
+                    </div>
+                  </div>
+                  <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: supera ? successColor : warnColor }}>
+                    {supera ? `✅ Supera la inflación (${(inflacion * 100).toFixed(1)}%)` : `⚠️ No supera la inflación (${(inflacion * 100).toFixed(1)}%)`}
+                  </span>
+                </div>
+                <button
+                  className="w-full min-h-11 text-white rounded-xl font-semibold text-sm disabled:opacity-50"
+                  style={{ backgroundColor: infoColor }}
+                  onClick={() => void handleGuardar()}
+                  disabled={guardado}
                 >
-                  {[6, 12, 18, 24, 36, 48, 60].map((m) => (
-                    <MenuItem key={m} value={m}>{m} meses ({(m / 12).toFixed(1)} años)</MenuItem>
-                  ))}
-                </TextField>
-              </Paper>
-
-              {/* Sección 4 — Instrumento */}
-              <Paper sx={{ p: 2, borderRadius: 3, border: 2, borderColor: instrumento ? 'success.main' : 'warning.main' }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                  <Typography fontWeight={800}>4. Instrumento</Typography>
-                  {perfilGuardado !== 'default' && (
-                    <Chip size="small" label={`Perfil: ${perfilGuardado}`} color="info" />
-                  )}
-                </Stack>
-                <TextField
-                  select
-                  fullWidth
-                  size="small"
-                  label="Instrumento (filtrado por perfil)"
-                  value={instrumento}
-                  onChange={(e) => setInstrumento(e.target.value)}
-                >
-                  {instrumentosDisponibles.map((inst) => (
-                    <MenuItem key={inst} value={inst}>{inst}</MenuItem>
-                  ))}
-                </TextField>
-              </Paper>
-
-              {/* Proyección dinámica */}
-              {planCompleto && (
-                <Fade in>
-                  <Stack spacing={2}>
-                    <Paper
-                      sx={{
-                        p: 2, borderRadius: 3,
-                        bgcolor: supera ? 'success.light' : 'warning.light',
-                        border: 2,
-                        borderColor: supera ? 'success.main' : 'warning.main',
-                      }}
-                    >
-                      <Typography variant="body2" fontWeight={700}>Proyección a {plazoMeses} meses:</Typography>
-                      <Typography variant="h4" fontWeight={900}>${proyeccion.toFixed(0)}</Typography>
-                      <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
-                        <Box>
-                          <Typography variant="caption" color="text.secondary">Total aportado</Typography>
-                          <Typography variant="body2" fontWeight={700}>${totalAportado.toLocaleString()}</Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="caption" color="text.secondary">Ganancia estimada</Typography>
-                          <Typography variant="body2" fontWeight={700} color="success.main">+${ganancia.toFixed(0)}</Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="caption" color="text.secondary">Tasa anual</Typography>
-                          <Typography variant="body2" fontWeight={700}>{(tasaAnual * 100).toFixed(1)}%</Typography>
-                        </Box>
-                      </Stack>
-                      <Chip
-                        size="small"
-                        label={supera ? `✅ Supera la inflación (${(inflacion * 100).toFixed(1)}%)` : `⚠️ No supera la inflación (${(inflacion * 100).toFixed(1)}%)`}
-                        color={supera ? 'success' : 'warning'}
-                        sx={{ mt: 1 }}
-                      />
-                    </Paper>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      color="info"
-                      size="large"
-                      onClick={() => void handleGuardar()}
-                      disabled={guardado}
-                    >
-                      {guardado ? '✅ Plan guardado — lección completada' : 'Guardar mi plan de inversión'}
-                    </Button>
-                    {guardado && (
-                      <Fade in>
-                        <FinniMessage
-                          variant="success"
-                          title="¡Plan de inversión guardado!"
-                          message="Tu plan se usará en la Lección 14 (evaluación) y en el reto final de la Lección 15."
-                        />
-                      </Fade>
-                    )}
-                  </Stack>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+                  {guardado ? '✅ Plan guardado — lección completada' : 'Guardar mi plan de inversión'}
+                </button>
+                {guardado && (
+                  <FinniMessage
+                    variant="success"
+                    title="¡Plan de inversión guardado!"
+                    message="Tu plan se usará en la Lección 14 (evaluación) y en el reto final de la Lección 15."
+                  />
+                )}
+              </div>
+            )}
+          </div>
         )}
-      </Box>
+      </div>
     </LessonShell>
   );
 }

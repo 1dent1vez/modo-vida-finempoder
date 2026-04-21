@@ -5,7 +5,7 @@ import questionnaireApi, {
   type QuestionnaireType,
   type ResearchStatusDTO,
 } from '../../api/questionnaire/questionnaire.api';
-import { trackQuestionnaireSubmitted } from '../../utils/analytics';
+import { trackQuestionnaireSubmitted } from '@/shared/utils/analytics';
 import { useAuth } from '../../store/auth';
 
 const emptyStatus: ResearchStatusDTO = {

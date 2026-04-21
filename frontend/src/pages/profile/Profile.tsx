@@ -1,15 +1,10 @@
-// FinEmpoder — Profile (Rediseño)
-// PageHeader + hero Avatar + info + stats + logout.
-
-import { Avatar, Box, Button, Chip, Grid, Stack, Typography } from '@mui/material';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-import BoltIcon from '@mui/icons-material/Bolt';
-import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
-import LogoutIcon from '@mui/icons-material/Logout';
+import { Trophy, Flame, Zap, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader } from '../../components/shared/PageHeader';
-import { StatCard } from '../../components/shared/StatCard';
-import FECard from '../../components/FECard';
+import { PageHeader } from '../../shared/components/PageHeader';
+import { StatCard } from '../../shared/components/StatCard';
+import FECard from '../../shared/components/FECard';
+import { Button } from '../../shared/components/ui/button';
+import { Badge } from '../../shared/components/ui/badge';
 import { useAuth } from '../../store/auth';
 import { useProgress } from '../../store/progress';
 import { useGamification } from '../../hooks/gamification/useGamification';
@@ -26,7 +21,6 @@ export default function Profile() {
   const level = gamification?.level ?? 1;
   const streakCurrent = streak.current ?? 0;
 
-  // Letras iniciales del nombre (o email como fallback)
   const displayName = user?.name ?? 'Estudiante FinEmpoder';
   const initials = displayName
     .split(' ')
@@ -34,7 +28,6 @@ export default function Profile() {
     .map((w) => w[0]?.toUpperCase() ?? '')
     .join('');
 
-  // Total de lecciones completadas (aprox por % de módulos, 15 por módulo)
   const presupuestoProgress = modules.presupuesto?.progress ?? 0;
   const ahorroProgress = modules.ahorro?.progress ?? 0;
   const inversionProgress = modules.inversion?.progress ?? 0;
@@ -48,111 +41,65 @@ export default function Profile() {
   };
 
   return (
-    <Box sx={{ pb: 10, bgcolor: 'background.default', minHeight: '100vh' }}>
+    <div className="min-h-screen pb-24 bg-[var(--color-bg-app)]">
       <PageHeader title="Mi perfil" />
 
-      <Box sx={{ p: 2 }}>
-        {/* ── Hero: Avatar + nombre + nivel ── */}
-        <FECard variant="hero" sx={{ mb: 2, textAlign: 'center' }}>
-          <Stack alignItems="center" spacing={2}>
-            <Avatar
-              sx={{
-                width: 80,
-                height: 80,
-                bgcolor: 'secondary.main',
-                color: 'common.white',
-                fontSize: '2rem',
-                fontWeight: 800,
-              }}
-            >
+      <div className="p-4 space-y-4">
+        {/* Hero: Avatar + nombre + nivel */}
+        <FECard variant="hero" className="text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-20 w-20 rounded-full bg-[var(--color-brand-secondary)] flex items-center justify-center text-white text-3xl font-extrabold">
               {initials || '?'}
-            </Avatar>
-            <Box>
-              <Typography variant="h3" fontWeight={800} sx={{ mb: 0.5 }}>
-                {displayName}
-              </Typography>
-              <Chip
-                label={`Nivel ${level}`}
-                color="secondary"
-                size="small"
-                icon={<EmojiEventsIcon sx={{ fontSize: 16 }} />}
-                sx={{ fontWeight: 700 }}
-              />
-            </Box>
-          </Stack>
+            </div>
+            <div>
+              <h2 className="text-lg font-extrabold mb-1">{displayName}</h2>
+              <Badge variant="warning" className="gap-1">
+                <Trophy className="h-3 w-3" />
+                Nivel {level}
+              </Badge>
+            </div>
+          </div>
         </FECard>
 
-        {/* ── Información ── */}
-        <FECard variant="flat" sx={{ mb: 2 }}>
-          <Typography variant="h4" fontWeight={700} sx={{ mb: 2 }}>
-            Información
-          </Typography>
-          <Stack spacing={1.5}>
+        {/* Información */}
+        <FECard variant="flat">
+          <h2 className="text-base font-bold mb-3">Información</h2>
+          <div className="space-y-3">
             <InfoRow label="Correo electrónico" value={user?.email ?? '—'} />
             <InfoRow label="Nombre" value={user?.name ?? '—'} />
-          </Stack>
+          </div>
         </FECard>
 
-        {/* ── Estadísticas ── */}
-        <Typography variant="h4" fontWeight={700} sx={{ mb: 1.5 }}>
-          Mis estadísticas
-        </Typography>
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid size={{ xs: 4 }}>
-            <StatCard
-              icon={<EmojiEventsIcon />}
-              label="Lecciones"
-              value={totalCompleted}
-              color="primary"
-              size="sm"
-            />
-          </Grid>
-          <Grid size={{ xs: 4 }}>
-            <StatCard
-              icon={<LocalFireDepartmentIcon />}
-              label="Racha"
-              value={`${streakCurrent}d`}
-              color="warning"
-              size="sm"
-            />
-          </Grid>
-          <Grid size={{ xs: 4 }}>
-            <StatCard
-              icon={<BoltIcon />}
-              label="XP"
-              value={xp}
-              color="info"
-              size="sm"
-            />
-          </Grid>
-        </Grid>
+        {/* Estadísticas */}
+        <div>
+          <h2 className="text-base font-bold mb-3">Mis estadísticas</h2>
+          <div className="grid grid-cols-3 gap-2">
+            <StatCard icon={<Trophy />} label="Lecciones" value={totalCompleted} color="primary" size="sm" />
+            <StatCard icon={<Flame />} label="Racha" value={`${streakCurrent}d`} color="warning" size="sm" />
+            <StatCard icon={<Zap />} label="XP" value={xp} color="info" size="sm" />
+          </div>
+        </div>
 
-        {/* ── Cerrar sesión ── */}
+        {/* Cerrar sesión */}
         <Button
-          variant="outlined"
-          color="error"
-          fullWidth
-          startIcon={<LogoutIcon />}
+          variant="destructive"
+          className="w-full"
           onClick={handleLogout}
           aria-label="Cerrar sesión"
         >
+          <LogOut className="h-4 w-4" />
           Cerrar sesión
         </Button>
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }
 
-/* ── Helper local ── */
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <Box>
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-        {label}
-      </Typography>
-      <Typography variant="body1" fontWeight={500}>
-        {value}
-      </Typography>
-    </Box>
+    <div>
+      <p className="text-xs text-[var(--color-text-secondary)]">{label}</p>
+      <p className="font-medium text-sm">{value}</p>
+    </div>
   );
 }

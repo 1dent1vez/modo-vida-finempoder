@@ -1,8 +1,5 @@
+import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
-import {
-  Box, Stack, Typography, Button, LinearProgress, Fade,
-  Chip, TextField,
-} from '@mui/material';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -94,6 +91,7 @@ export default function L08() {
   }, [canComplete, selectedStrategy, triggers]);
 
   const getSituacion = (id: string) => SITUACIONES.find((s) => s.id === id);
+  const progressValue = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 60 : step === 3 ? 80 : 100;
 
   return (
     <LessonShell
@@ -101,190 +99,185 @@ export default function L08() {
       title="Cuando el corazón gasta y la cartera llora"
       completion={{ ready: canComplete }}
     >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 60 : step === 3 ? 80 : 100}
-          color="warning"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
+        </div>
 
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="El gasto emocional"
-                message="¿Alguna vez compraste algo solo porque estabas estresado, aburrido o querías 'darte un gusto'? Eso tiene nombre: gasto emocional. Y no es malo en sí… siempre que lo conozcas."
-              />
-              <Stack spacing={2}>
-                {[
-                  { title: 'Situación 1 — Valeria', desc: 'Reprobó un examen → fue al mall → compró ropa que no necesitaba → culpa post-compra.' },
-                  { title: 'Situación 2 — Diego', desc: 'Vio oferta de videojuego → compra impulsiva → lo jugó 2 horas → lo olvidó.' },
-                ].map((s) => (
-                  <FECard key={s.title} variant="flat" sx={{ border: 1, borderColor: 'warning.main' }}>
-                    <Typography variant="body2" fontWeight={700}>{s.title}</Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{s.desc}</Typography>
-                  </FECard>
-                ))}
-              </Stack>
-              <FinniMessage
-                variant="coach"
-                title="La pregunta clave"
-                message="No es '¿puedo pagarlo?', sino '¿lo compraría si me sintiera bien?'"
-              />
-              <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setStep(1)}>
-                Quiz: ¿Racional, emocional o impulsivo? →
-              </Button>
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <FinniMessage
+              variant="coach"
+              title="El gasto emocional"
+              message="¿Alguna vez compraste algo solo porque estabas estresado, aburrido o querías 'darte un gusto'? Eso tiene nombre: gasto emocional. Y no es malo en sí… siempre que lo conozcas."
+            />
+            <div className="space-y-2">
+              {[
+                { title: 'Situación 1 — Valeria', desc: 'Reprobó un examen → fue al mall → compró ropa que no necesitaba → culpa post-compra.' },
+                { title: 'Situación 2 — Diego', desc: 'Vio oferta de videojuego → compra impulsiva → lo jugó 2 horas → lo olvidó.' },
+              ].map((s) => (
+                <FECard key={s.title} variant="flat" className="border border-[var(--color-brand-warning)]">
+                  <p className="font-bold text-sm">{s.title}</p>
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-1">{s.desc}</p>
+                </FECard>
+              ))}
+            </div>
+            <FinniMessage
+              variant="coach"
+              title="La pregunta clave"
+              message="No es '¿puedo pagarlo?', sino '¿lo compraría si me sintiera bien?'"
+            />
+            <button
+              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+              onClick={() => setStep(1)}
+            >
+              Quiz: ¿Racional, emocional o impulsivo? →
+            </button>
+          </div>
         )}
 
         {step === 1 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="body1">
-                Para cada situación, elige: <b>Racional</b>, <b>Emocional</b> o <b>Impulsivo</b>.
-                No hay una sola respuesta: Finni explica los matices.
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={(Object.keys(answers).length / SITUACIONES.length) * 100}
-                color="warning"
-                sx={{ height: 8, borderRadius: 4 }}
-              />
-              <Stack spacing={2}>
-                {SITUACIONES.map((s) => (
-                  <FECard
-                    key={s.id}
-                    variant="flat"
-                    sx={{
-                      border: 1,
-                      borderColor: answers[s.id] ? 'success.main' : 'divider',
-                      bgcolor: answers[s.id] ? 'success.light' : 'background.paper',
-                    }}
-                  >
-                    <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>{s.desc}</Typography>
-                    {!answers[s.id] ? (
-                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                        {(['racional', 'emocional', 'impulsivo'] as GastoType[]).map((type) => (
-                          <Chip
-                            key={type}
-                            label={type.charAt(0).toUpperCase() + type.slice(1)}
-                            onClick={() => answerSituacion(s.id, type)}
-                            variant="outlined"
-                            sx={{ cursor: 'pointer', fontWeight: 600 }}
-                          />
-                        ))}
-                      </Stack>
-                    ) : (
-                      <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                        Tu respuesta: <b>{answers[s.id]}</b> · {s.explicacion}
-                      </Typography>
-                    )}
-                  </FECard>
-                ))}
-              </Stack>
+          <div className="space-y-3">
+            <p className="text-sm">
+              Para cada situación, elige: <b>Racional</b>, <b>Emocional</b> o <b>Impulsivo</b>.
+              No hay una sola respuesta: Finni explica los matices.
+            </p>
+            <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2">
+              <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${(Object.keys(answers).length / SITUACIONES.length) * 100}%` }} />
+            </div>
+            <div className="space-y-2">
+              {SITUACIONES.map((s) => (
+                <FECard
+                  key={s.id}
+                  variant="flat"
+                  className={cn(
+                    'border',
+                    answers[s.id]
+                      ? 'bg-[var(--color-brand-success)]/10 border-[var(--color-brand-success)]'
+                      : 'border-[var(--color-neutral-200)]'
+                  )}
+                >
+                  <p className="font-bold text-sm mb-2">{s.desc}</p>
+                  {!answers[s.id] ? (
+                    <div className="flex flex-wrap gap-2">
+                      {(['racional', 'emocional', 'impulsivo'] as GastoType[]).map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => answerSituacion(s.id, type)}
+                          className="px-3 py-1 rounded-full text-sm font-semibold border border-[var(--color-neutral-200)] text-[var(--color-text-secondary)] cursor-pointer"
+                        >
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-[var(--color-text-secondary)] italic">
+                      Tu respuesta: <b>{answers[s.id]}</b> · {s.explicacion}
+                    </p>
+                  )}
+                </FECard>
+              ))}
+            </div>
 
-              {lastFeedback && answers[lastFeedback.id] && (
-                <Fade in>
-                  <FECard variant="flat" sx={{ bgcolor: 'info.light', border: 1, borderColor: 'info.main' }}>
-                    <Typography variant="body2" fontWeight={700}>Finni explica:</Typography>
-                    <Typography variant="body2">{getSituacion(lastFeedback.id)?.explicacion}</Typography>
-                  </FECard>
-                </Fade>
-              )}
+            {lastFeedback && answers[lastFeedback.id] && (
+              <FECard variant="flat" className="bg-[var(--color-brand-info)]/10 border border-[var(--color-brand-info)]">
+                <p className="font-bold text-sm">Finni explica:</p>
+                <p className="text-sm">{getSituacion(lastFeedback.id)?.explicacion}</p>
+              </FECard>
+            )}
 
-              {quizDone && (
-                <Fade in>
-                  <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setStep(2)}>
-                    Autoevaluación →
-                  </Button>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+            {quizDone && (
+              <button
+                className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+                onClick={() => setStep(2)}
+              >
+                Autoevaluación →
+              </button>
+            )}
+          </div>
         )}
 
         {step === 2 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="body1" fontWeight={700}>
-                ¿Cuándo es más probable que hagas gastos emocionales?
-              </Typography>
-              <Stack direction="row" flexWrap="wrap" gap={1} useFlexGap>
-                {TRIGGERS.map((t) => (
-                  <Chip
-                    key={t.id}
-                    label={t.label}
-                    onClick={() => toggleTrigger(t.id)}
-                    color={triggers.has(t.id) ? 'warning' : 'default'}
-                    variant={triggers.has(t.id) ? 'filled' : 'outlined'}
-                    sx={{ cursor: 'pointer', fontWeight: 600 }}
-                  />
-                ))}
-              </Stack>
-              <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setStep(3)}>
-                Elegir mi estrategia →
-              </Button>
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <p className="font-bold">
+              ¿Cuándo es más probable que hagas gastos emocionales?
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {TRIGGERS.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => toggleTrigger(t.id)}
+                  className={cn(
+                    'px-3 py-1 rounded-full text-sm font-semibold border transition-colors',
+                    triggers.has(t.id)
+                      ? 'bg-[var(--color-brand-warning)] text-white border-[var(--color-brand-warning)]'
+                      : 'border-[var(--color-neutral-200)] text-[var(--color-text-secondary)]'
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <button
+              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+              onClick={() => setStep(3)}
+            >
+              Elegir mi estrategia →
+            </button>
+          </div>
         )}
 
         {step === 3 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="Estrategias anti-gasto-impulsivo"
-                message="Elige 1 estrategia para practicar esta semana. La que más resuene contigo."
-              />
-              <Stack spacing={2}>
-                {ESTRATEGIAS.map((e) => (
-                  <FECard
-                    key={e}
-                    variant="flat"
-                    sx={{
-                      border: 2,
-                      borderColor: selectedStrategy === e ? 'warning.main' : 'divider',
-                      bgcolor: selectedStrategy === e ? 'warning.light' : 'background.paper',
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => setSelectedStrategy(e)}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <Typography variant="body2" fontWeight={selectedStrategy === e ? 700 : 400}>
-                      {selectedStrategy === e ? '✓ ' : ''}{e}
-                    </Typography>
-                  </FECard>
-                ))}
-              </Stack>
-              {selectedStrategy && (
-                <Fade in>
-                  <Stack spacing={2}>
-                    <Typography variant="body2">
-                      Escribe tu nombre para "firmar" tu compromiso (opcional):
-                    </Typography>
-                    <TextField
-                      label="Tu nombre"
-                      value={nombre}
-                      onChange={(e) => setNombre(e.target.value)}
-                      size="small"
-                      fullWidth
-                    />
-                    <FinniMessage
-                      variant="success"
-                      title="Conocerte es el primer paso"
-                      message={`${nombre ? nombre + ', c' : 'C'}onocerte es el primer paso para gastar mejor.`}
-                    />
-                  </Stack>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <FinniMessage
+              variant="coach"
+              title="Estrategias anti-gasto-impulsivo"
+              message="Elige 1 estrategia para practicar esta semana. La que más resuene contigo."
+            />
+            <div className="space-y-2">
+              {ESTRATEGIAS.map((e) => (
+                <FECard
+                  key={e}
+                  variant="flat"
+                  className={cn(
+                    'border-2 cursor-pointer transition-colors',
+                    selectedStrategy === e
+                      ? 'border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10'
+                      : 'border-[var(--color-neutral-200)]'
+                  )}
+                  onClick={() => setSelectedStrategy(e)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <p className={selectedStrategy === e ? 'font-bold text-sm' : 'text-sm'}>
+                    {selectedStrategy === e ? '✓ ' : ''}{e}
+                  </p>
+                </FECard>
+              ))}
+            </div>
+            {selectedStrategy && (
+              <div className="space-y-2">
+                <p className="text-sm">
+                  Escribe tu nombre para "firmar" tu compromiso (opcional):
+                </p>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-[var(--color-text-secondary)]">Tu nombre</label>
+                  <input
+                    value={nombre}
+                    onChange={(e) => setNombre(e.target.value)}
+                    className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm"
+                  />
+                </div>
+                <FinniMessage
+                  variant="success"
+                  title="Conocerte es el primer paso"
+                  message={`${nombre ? nombre + ', c' : 'C'}onocerte es el primer paso para gastar mejor.`}
+                />
+              </div>
+            )}
+          </div>
         )}
-      </Box>
+      </div>
     </LessonShell>
   );
 }

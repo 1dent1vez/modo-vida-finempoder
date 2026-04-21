@@ -1,99 +1,56 @@
-// FinEmpoder — PageHeader
-// AppBar sticky reutilizable para todas las pantallas de la app.
-// Reemplaza: Typography h5 ad-hoc en Logros/Perfil/Ajustes y AppBar transparente en Overviews.
-
-import { AppBar, Box, IconButton, Toolbar, Typography } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { ArrowLeft } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
 
 export interface PageHeaderProps {
-  /** Título principal de la pantalla */
   title: string;
-  /** Subtítulo opcional debajo del título */
   subtitle?: string;
-  /** Si se pasa, renderiza IconButton ← a la izquierda */
   onBack?: () => void;
-  /** Slot derecho libre: XPChip, StreakBadge u otro elemento */
   rightSlot?: ReactNode;
-  /** Tinte de color por módulo (hereda el color del AppBar border-bottom) */
   moduleColor?: 'warning' | 'success' | 'info';
 }
 
-export function PageHeader({
-  title,
-  subtitle,
-  onBack,
-  rightSlot,
-  moduleColor,
-}: PageHeaderProps) {
-  // Mapea moduleColor a un hex de borde (usa los tokens del sistema de diseño)
-  const borderColorMap = {
-    warning: '#F59E0B',
-    success: '#10B981',
-    info: '#4B73F0',
-  } as const;
+const borderColorMap = {
+  warning: 'border-b-[var(--color-brand-warning)]',
+  success: 'border-b-[var(--color-brand-success)]',
+  info:    'border-b-[var(--color-brand-primary)]',
+} as const;
 
-  const borderBottom = moduleColor
-    ? `2px solid ${borderColorMap[moduleColor]}`
-    : '1px solid #E5E7EB';
-
+export function PageHeader({ title, subtitle, onBack, rightSlot, moduleColor }: PageHeaderProps) {
   return (
-    <AppBar
-      position="sticky"
-      elevation={0}
-      sx={{
-        bgcolor: 'background.paper',
-        color: 'text.primary',
-        borderBottom,
-      }}
+    <header
+      className={cn(
+        'sticky top-0 z-50 bg-white border-b border-[var(--color-neutral-200)]',
+        moduleColor && 'border-b-2',
+        moduleColor && borderColorMap[moduleColor]
+      )}
     >
-      <Toolbar sx={{ px: { xs: 1, sm: 2 }, minHeight: 56 }}>
-        {/* Back button — solo si se proporciona onBack */}
+      <div className="flex items-center px-2 sm:px-4 min-h-14 gap-2">
         {onBack ? (
-          <IconButton
-            edge="start"
+          <button
             onClick={onBack}
             aria-label="volver"
-            sx={{ mr: 1, color: 'text.primary' }}
+            className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full hover:bg-[var(--color-neutral-100)] transition-colors"
           >
-            <ArrowBackIcon />
-          </IconButton>
+            <ArrowLeft size={20} />
+          </button>
         ) : (
-          // Spacer para mantener el layout balanceado en pantallas raíz
-          <Box sx={{ width: 40, mr: 1, display: { md: 'none' } }} />
+          <div className="shrink-0 w-10 md:hidden" />
         )}
 
-        {/* Título — centrado en móvil, izquierda en desktop */}
-        <Box
-          sx={{
-            flex: 1,
-            textAlign: { xs: 'center', md: 'left' },
-          }}
-        >
-          <Typography
-            variant="h3"
-            component="h1"
-            noWrap
-            sx={{ fontWeight: 700, lineHeight: 1.3 }}
-          >
-            {title}
-          </Typography>
+        <div className="flex-1 text-center md:text-left">
+          <h1 className="font-bold leading-snug truncate text-base">{title}</h1>
           {subtitle && (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: 'block', lineHeight: 1.3 }}
-            >
+            <span className="block text-xs text-[var(--color-text-secondary)] leading-snug">
               {subtitle}
-            </Typography>
+            </span>
           )}
-        </Box>
+        </div>
 
-        {/* Slot derecho — XPChip, StreakBadge, etc. */}
-        <Box sx={{ ml: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <div className="shrink-0 flex items-center gap-2 ml-2">
           {rightSlot ?? null}
-        </Box>
-      </Toolbar>
-    </AppBar>
+        </div>
+      </div>
+    </header>
   );
 }

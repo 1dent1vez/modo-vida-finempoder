@@ -1,17 +1,6 @@
 // FinEmpoder — QuestionnaireForm
 // Pre-test y Post-test: Likert 1-5 con etiquetas extremos, botón warning, header de marca.
 
-import {
-  Box,
-  Button,
-  FormControl,
-  FormLabel,
-  Radio,
-  RadioGroup,
-  FormControlLabel,
-  Stack,
-  Typography,
-} from '@mui/material';
 import { useState, type FormEvent } from 'react';
 import type { Question } from './questions';
 import { canSubmitQuestionnaire } from './questionnaireUtils';
@@ -26,6 +15,8 @@ export type QuestionnaireFormProps = {
 };
 
 const LIKERT_LABELS = ['1', '2', '3', '4', '5'] as const;
+
+const warnColor = 'var(--color-brand-warning)';
 
 export function QuestionnaireForm({ questions, title, onSubmit, submitting }: QuestionnaireFormProps) {
   const [values, setValues] = useState<Record<string, number>>({});
@@ -47,95 +38,89 @@ export function QuestionnaireForm({ questions, title, onSubmit, submitting }: Qu
   };
 
   return (
-    <Box
-      sx={{
-        bgcolor: 'background.default',
-        minHeight: '100svh',
-        pt: `calc(12px + env(safe-area-inset-top))`,
-        pb: `calc(24px + env(safe-area-inset-bottom))`,
+    <div
+      className="bg-white min-h-svh"
+      style={{
+        paddingTop: 'calc(12px + env(safe-area-inset-top))',
+        paddingBottom: 'calc(24px + env(safe-area-inset-bottom))',
       }}
     >
       {/* ── Header de marca ── */}
-      <Stack
-        direction="row"
-        alignItems="center"
-        spacing={1}
-        sx={{ px: 3, pb: 2, bgcolor: 'background.paper', borderBottom: '1px solid #E5E7EB' }}
-      >
-        <Box
-          component="img"
+      <div className="flex items-center gap-2 px-6 pb-4 bg-white border-b border-[var(--color-border)]">
+        <img
           src={logo}
           alt="FinEmpoder"
-          sx={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
+          className="w-7 h-7 rounded-full object-cover"
         />
-        <Typography fontWeight={700}>FinEmpoder</Typography>
-      </Stack>
+        <p className="font-bold">FinEmpoder</p>
+      </div>
 
-      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ p: 2, pb: 4 }}>
-        <Typography variant="h5" fontWeight={800} sx={{ mb: 0.5 }}>
-          {title}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+      <form onSubmit={handleSubmit} noValidate className="p-4 pb-8">
+        <p className="text-xl font-black mb-1">{title}</p>
+        <p className="text-sm text-[var(--color-text-secondary)] mb-4">
           Indica qué tan de acuerdo estás con cada afirmación (1 = Muy en desacuerdo, 5 = Muy de acuerdo).
-        </Typography>
+        </p>
 
-        <Stack spacing={2}>
+        <div className="space-y-4">
           {questions.map((q) => (
             <FECard key={q.id} variant="flat">
-              <FormControl component="fieldset" fullWidth>
-                <FormLabel sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
-                  {q.text}
-                </FormLabel>
+              <fieldset>
+                <legend className="font-bold text-[var(--color-text-primary)] mb-1">{q.text}</legend>
                 {q.helper && (
-                  <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                    {q.helper}
-                  </Typography>
+                  <p className="text-xs text-[var(--color-text-secondary)] mb-2">{q.helper}</p>
                 )}
 
                 {/* Etiquetas de extremos Likert */}
-                <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.25 }}>
-                  <Typography variant="caption" color="text.disabled">
-                    Muy en desacuerdo
-                  </Typography>
-                  <Typography variant="caption" color="text.disabled">
-                    Muy de acuerdo
-                  </Typography>
-                </Stack>
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs text-[var(--color-text-secondary)]">Muy en desacuerdo</span>
+                  <span className="text-xs text-[var(--color-text-secondary)]">Muy de acuerdo</span>
+                </div>
 
-                <RadioGroup
-                  row
-                  value={values[q.id] ?? ''}
-                  onChange={(e) => handleChange(q.id, Number(e.target.value))}
-                  sx={{ justifyContent: 'space-between' }}
-                >
-                  {LIKERT_LABELS.map((val) => (
-                    <FormControlLabel
-                      key={val}
-                      value={Number(val)}
-                      control={<Radio size="small" color="warning" />}
-                      label={val}
-                      labelPlacement="top"
-                      sx={{ mx: 0, '& .MuiFormControlLabel-label': { fontSize: '0.75rem', fontWeight: 600 } }}
-                    />
-                  ))}
-                </RadioGroup>
-              </FormControl>
+                <div className="flex justify-between gap-1">
+                  {LIKERT_LABELS.map((val) => {
+                    const numVal = Number(val);
+                    const isSelected = values[q.id] === numVal;
+                    return (
+                      <label
+                        key={val}
+                        className="flex flex-col items-center gap-1 cursor-pointer flex-1"
+                      >
+                        <input
+                          type="radio"
+                          name={q.id}
+                          value={numVal}
+                          checked={isSelected}
+                          onChange={() => handleChange(q.id, numVal)}
+                          className="sr-only"
+                        />
+                        <span
+                          className="w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold transition-colors"
+                          style={{
+                            borderColor: warnColor,
+                            backgroundColor: isSelected ? warnColor : 'transparent',
+                            color: isSelected ? 'white' : warnColor,
+                          }}
+                        >
+                          {val}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
             </FECard>
           ))}
-        </Stack>
+        </div>
 
-        <Button
-          variant="contained"
-          color="warning"
-          size="large"
-          fullWidth
-          sx={{ mt: 3, borderRadius: 3, textTransform: 'none', fontWeight: 800 }}
-          disabled={!allAnswered || submitting}
+        <button
           type="submit"
+          disabled={!allAnswered || submitting}
+          className="w-full mt-6 min-h-12 text-white rounded-2xl font-black text-base disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+          style={{ backgroundColor: warnColor }}
         >
           {submitting ? 'Enviando…' : '¡Enviar respuestas!'}
-        </Button>
-      </Box>
-    </Box>
+        </button>
+      </form>
+    </div>
   );
 }

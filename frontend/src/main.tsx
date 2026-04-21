@@ -3,12 +3,15 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material';
+import './index.css';
+
 import { registerSW } from 'virtual:pwa-register';
 import { useNotifications } from './store/notifications';
 import { useAuth } from './store/auth';
+import { useProgress } from './store/progress';
+import { useLessons } from './store/lessons';
 import { supabase } from './lib/supabase';
-import { theme } from './theme';
+
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { initSentry } from './lib/sentry';
 import { SyncManager } from './lib/sync/SyncManager';
@@ -28,6 +31,9 @@ supabase.auth.onAuthStateChange((_event, session) => {
     });
   } else {
     clearAuth();
+    useProgress.getState().reset();
+    useLessons.getState().reset();
+    qc.clear();
   }
   setHydrated();
 });
@@ -55,10 +61,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <QueryClientProvider client={qc}>
         <BrowserRouter>
-          {/* ThemeProvider requerido para L01-L15 legacy — retirar al completar migración MDX */}
-          <ThemeProvider theme={theme}>
-            <App />
-          </ThemeProvider>
+          <App />
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>

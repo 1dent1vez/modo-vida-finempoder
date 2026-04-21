@@ -1,16 +1,19 @@
 import { useState } from 'react';
-import {
-  Box, Stack, Typography, Button, LinearProgress, Fade, Chip,
-} from '@mui/material';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
 
-type CardType = 'aliado' | 'saboteador';
 type Classification = 'aliado' | 'saboteador' | null;
 
-const CARDS: { id: string; label: string; correct: CardType; tip: string }[] = [
+const successColor = 'var(--color-brand-success)';
+const successBg = 'var(--color-brand-success-bg)';
+const errorColor = 'var(--color-brand-error)';
+const errorBg = 'var(--color-brand-error-bg)';
+const warnColor = 'var(--color-brand-warning)';
+const warnBg = 'var(--color-brand-warning-bg)';
+
+const CARDS: { id: string; label: string; correct: 'aliado' | 'saboteador'; tip: string }[] = [
   { id: 'c1', label: 'Transferencia automatica el dia de cobro', correct: 'aliado', tip: 'Si lo haces manual, es mas probable que lo pospongas.' },
   { id: 'c2', label: 'Meta clara y visible (foto en pantalla de bloqueo)', correct: 'aliado', tip: 'Una imagen concreta activa la motivacion de continuar.' },
   { id: 'c3', label: 'Notificaciones de progreso de ahorro', correct: 'aliado', tip: 'Ver que llevas $500 de $2,000 activa la motivacion.' },
@@ -40,7 +43,6 @@ export default function L04() {
 
   const answered = Object.values(answers).filter(Boolean).length;
   const allClassified = answered === CARDS.length;
-
   const aliadosCards = CARDS.filter((c) => c.correct === 'aliado');
 
   const classify = (id: string, val: Classification) => {
@@ -57,237 +59,167 @@ export default function L04() {
     });
   };
 
-  const mySaboteadores = Array.from(saboteadoresCheck)
-    .filter((id) => ACCIONES[id]);
-
+  const mySaboteadores = Array.from(saboteadoresCheck).filter((id) => ACCIONES[id]);
   const canComplete = allClassified && aliadoElegido.trim().length > 0;
 
   const handleSave = async () => {
-    await lessonDataRepository.save('ahorro', 'l4_aliados', {
-      aliadoElegido,
-      saboteadores: Array.from(saboteadoresCheck),
-      savedAt: new Date().toISOString(),
-    });
+    await lessonDataRepository.save('ahorro', 'l4_aliados', { aliadoElegido, saboteadores: Array.from(saboteadoresCheck), savedAt: new Date().toISOString() });
     setStep(3);
   };
 
   const progress = step === 0 ? 0 : step === 1 ? 33 : step === 2 ? 66 : 100;
 
   return (
-    <LessonShell
-      id="L04"
-      title="Aliados y saboteadores del ahorro"
-      completion={{ ready: canComplete }}
-    >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={progress}
-          color="success"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+    <LessonShell id="L04" title="Aliados y saboteadores del ahorro" completion={{ ready: canComplete }}>
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
+        </div>
 
         {/* Pantalla 0 — Apertura */}
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="Ahorrar es una decision de comportamiento"
-                message="Hay cosas en tu vida que te ayudan a ahorrar… y otras que trabajan en tu contra sin que lo notes."
-              />
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'success.main' }}>
-                <Typography variant="body2">
-                  En esta leccion vas a clasificar 10 tarjetas: <b>aliados</b> (te ayudan) vs <b>saboteadores</b> (te boicotean).
-                  Luego veras cuales tienes en tu vida.
-                </Typography>
-              </FECard>
-              <Button fullWidth variant="contained" color="success" size="large" onClick={() => setStep(1)}>
-                Clasificar las 10 tarjetas →
-              </Button>
-            </Stack>
-          </Fade>
+          <div className="space-y-6">
+            <FinniMessage variant="coach" title="Ahorrar es una decision de comportamiento" message="Hay cosas en tu vida que te ayudan a ahorrar… y otras que trabajan en tu contra sin que lo notes." />
+            <FECard variant="flat" className="border" style={{ borderColor: successColor }}>
+              <p className="text-sm">En esta leccion vas a clasificar 10 tarjetas: <b>aliados</b> (te ayudan) vs <b>saboteadores</b> (te boicotean). Luego veras cuales tienes en tu vida.</p>
+            </FECard>
+            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
+              Clasificar las 10 tarjetas →
+            </button>
+          </div>
         )}
 
-        {/* Pantalla 1 — 10 tarjetas para clasificar */}
+        {/* Pantalla 1 — Clasificar tarjetas */}
         {step === 1 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography variant="body1" fontWeight={700}>Clasifica cada tarjeta:</Typography>
-                <Chip label={`${answered}/${CARDS.length}`} color="success" size="small" />
-              </Stack>
-              <LinearProgress
-                variant="determinate"
-                value={(answered / CARDS.length) * 100}
-                color="success"
-                sx={{ height: 8, borderRadius: 4 }}
-              />
-              <Stack spacing={2}>
-                {CARDS.map((c) => {
-                  const ans = answers[c.id];
-                  const isCorrect = ans === c.correct;
-                  return (
-                    <FECard
-                      key={c.id}
-                      variant="flat"
-                      sx={{
-                        border: 1,
-                        borderColor: ans ? (isCorrect ? 'success.main' : 'error.main') : 'divider',
-                        bgcolor: ans ? (isCorrect ? 'success.light' : 'error.light') : 'background.paper',
-                      }}
-                    >
-                      <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
-                        {c.label}
-                      </Typography>
-                      <Stack direction="row" spacing={1}>
-                        <Button
-                          size="small"
-                          variant={ans === 'aliado' ? 'contained' : 'outlined'}
-                          color="success"
-                          onClick={() => classify(c.id, 'aliado')}
-                          disabled={!!ans}
-                          sx={{ textTransform: 'none' }}
-                        >
-                          ✅ Aliado
-                        </Button>
-                        <Button
-                          size="small"
-                          variant={ans === 'saboteador' ? 'contained' : 'outlined'}
-                          color="error"
-                          onClick={() => classify(c.id, 'saboteador')}
-                          disabled={!!ans}
-                          sx={{ textTransform: 'none' }}
-                        >
-                          ❌ Saboteador
-                        </Button>
-                      </Stack>
-                      {showFeedback[c.id] && (
-                        <Fade in>
-                          <Typography
-                            variant="caption"
-                            sx={{ display: 'block', mt: 0.75, color: isCorrect ? 'success.dark' : 'error.dark' }}
-                          >
-                            {isCorrect ? '✅ Correcto. ' : `❌ Es un ${c.correct}. `}{c.tip}
-                          </Typography>
-                        </Fade>
-                      )}
-                    </FECard>
-                  );
-                })}
-              </Stack>
-              {allClassified && (
-                <Fade in>
-                  <Button fullWidth variant="contained" color="success" size="large" onClick={() => setStep(2)}>
-                    Mi autoevaluacion →
-                  </Button>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <p className="font-bold">Clasifica cada tarjeta:</p>
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>{answered}/{CARDS.length}</span>
+            </div>
+            <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2">
+              <div className="h-2 rounded-full transition-all" style={{ width: `${(answered / CARDS.length) * 100}%`, backgroundColor: successColor }} />
+            </div>
+            <div className="space-y-3">
+              {CARDS.map((c) => {
+                const ans = answers[c.id];
+                const isCorrect = ans === c.correct;
+                return (
+                  <FECard
+                    key={c.id}
+                    variant="flat"
+                    className="border"
+                    style={{
+                      borderColor: ans ? (isCorrect ? successColor : errorColor) : 'var(--color-neutral-200)',
+                      backgroundColor: ans ? (isCorrect ? successBg : errorBg) : 'white',
+                    }}
+                  >
+                    <p className="text-sm font-semibold mb-2">{c.label}</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => classify(c.id, 'aliado')}
+                        disabled={!!ans}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold border-2 disabled:cursor-default transition-colors"
+                        style={{ borderColor: successColor, backgroundColor: ans === 'aliado' ? successColor : 'transparent', color: ans === 'aliado' ? 'white' : '#059669' }}
+                      >
+                        ✅ Aliado
+                      </button>
+                      <button
+                        onClick={() => classify(c.id, 'saboteador')}
+                        disabled={!!ans}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold border-2 disabled:cursor-default transition-colors"
+                        style={{ borderColor: errorColor, backgroundColor: ans === 'saboteador' ? errorColor : 'transparent', color: ans === 'saboteador' ? 'white' : '#DC2626' }}
+                      >
+                        ❌ Saboteador
+                      </button>
+                    </div>
+                    {showFeedback[c.id] && (
+                      <p className="text-xs mt-1" style={{ color: isCorrect ? '#059669' : '#DC2626' }}>
+                        {isCorrect ? '✅ Correcto. ' : `❌ Es un ${c.correct}. `}{c.tip}
+                      </p>
+                    )}
+                  </FECard>
+                );
+              })}
+            </div>
+            {allClassified && (
+              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(2)}>
+                Mi autoevaluacion →
+              </button>
+            )}
+          </div>
         )}
 
         {/* Pantalla 2 — Autoevaluacion + compromiso */}
         {step === 2 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="body1" fontWeight={700}>
-                ¿Cuales saboteadores tienes en tu vida ahora?
-              </Typography>
-              <Stack spacing={1}>
-                {CARDS.filter((c) => c.correct === 'saboteador').map((c) => (
-                  <FECard
-                    key={c.id}
-                    variant="flat"
-                    sx={{
-                      border: 1,
-                      borderColor: saboteadoresCheck.has(c.id) ? 'error.main' : 'divider',
-                      bgcolor: saboteadoresCheck.has(c.id) ? 'error.light' : 'background.paper',
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => toggleSaboteador(c.id)}
-                    role="checkbox"
-                    tabIndex={0}
-                  >
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Typography variant="body2">
-                        {saboteadoresCheck.has(c.id) ? '☑' : '☐'} {c.label}
-                      </Typography>
-                    </Stack>
-                  </FECard>
-                ))}
-              </Stack>
+          <div className="space-y-6">
+            <p className="font-bold">¿Cuales saboteadores tienes en tu vida ahora?</p>
+            <div className="space-y-2">
+              {CARDS.filter((c) => c.correct === 'saboteador').map((c) => (
+                <FECard
+                  key={c.id}
+                  variant="flat"
+                  className="border cursor-pointer"
+                  style={{
+                    borderColor: saboteadoresCheck.has(c.id) ? errorColor : 'var(--color-neutral-200)',
+                    backgroundColor: saboteadoresCheck.has(c.id) ? errorBg : 'white',
+                  }}
+                  onClick={() => toggleSaboteador(c.id)}
+                  role="checkbox"
+                  tabIndex={0}
+                >
+                  <p className="text-sm">{saboteadoresCheck.has(c.id) ? '☑' : '☐'} {c.label}</p>
+                </FECard>
+              ))}
+            </div>
 
-              {mySaboteadores.length > 0 && (
-                <Fade in>
-                  <FECard variant="flat" sx={{ border: 1, borderColor: 'warning.main', bgcolor: 'warning.light' }}>
-                    <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>
-                      Plan de accion de Finni:
-                    </Typography>
-                    <Stack spacing={0.75}>
-                      {mySaboteadores.map((id) => (
-                        <Typography key={id} variant="body2">
-                          → {ACCIONES[id]}
-                        </Typography>
-                      ))}
-                    </Stack>
-                  </FECard>
-                </Fade>
-              )}
+            {mySaboteadores.length > 0 && (
+              <FECard variant="flat" className="border" style={{ borderColor: warnColor, backgroundColor: warnBg }}>
+                <p className="font-bold text-sm mb-2">Plan de accion de Finni:</p>
+                <div className="space-y-1">
+                  {mySaboteadores.map((id) => (
+                    <p key={id} className="text-sm">→ {ACCIONES[id]}</p>
+                  ))}
+                </div>
+              </FECard>
+            )}
 
-              <Typography variant="body1" fontWeight={700} sx={{ mt: 1 }}>
-                Elige 1 aliado que vas a activar esta semana:
-              </Typography>
-              <Stack spacing={1}>
-                {aliadosCards.map((c) => (
-                  <Button
-                    key={c.id}
-                    variant={aliadoElegido === c.id ? 'contained' : 'outlined'}
-                    color="success"
-                    onClick={() => setAliadoElegido(c.id)}
-                    sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
-                  >
-                    {c.label}
-                  </Button>
-                ))}
-              </Stack>
+            <p className="font-bold mt-2">Elige 1 aliado que vas a activar esta semana:</p>
+            <div className="space-y-2">
+              {aliadosCards.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setAliadoElegido(c.id)}
+                  className="w-full text-left px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors"
+                  style={{
+                    borderColor: successColor,
+                    backgroundColor: aliadoElegido === c.id ? successColor : 'transparent',
+                    color: aliadoElegido === c.id ? 'white' : 'inherit',
+                  }}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
 
-              {aliadoElegido && (
-                <Fade in>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    color="success"
-                    size="large"
-                    onClick={() => void handleSave()}
-                  >
-                    Guardar mi compromiso →
-                  </Button>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+            {aliadoElegido && (
+              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => void handleSave()}>
+                Guardar mi compromiso →
+              </button>
+            )}
+          </div>
         )}
 
         {/* Pantalla 3 — Cierre */}
         {step === 3 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="success"
-                title="Tu perfil de ahorrador esta guardado"
-                message="Conoces tus aliados y tus saboteadores. Eso ya es una ventaja enorme sobre quien ni siquiera los identifica."
-              />
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'success.main', bgcolor: 'success.light' }}>
-                <Typography variant="body2" fontWeight={700}>Tu aliado esta semana:</Typography>
-                <Typography variant="body2">
-                  {aliadosCards.find((c) => c.id === aliadoElegido)?.label ?? aliadoElegido}
-                </Typography>
-              </FECard>
-            </Stack>
-          </Fade>
+          <div className="space-y-6">
+            <FinniMessage variant="success" title="Tu perfil de ahorrador esta guardado" message="Conoces tus aliados y tus saboteadores. Eso ya es una ventaja enorme sobre quien ni siquiera los identifica." />
+            <FECard variant="flat" className="border" style={{ borderColor: successColor, backgroundColor: successBg }}>
+              <p className="font-bold text-sm">Tu aliado esta semana:</p>
+              <p className="text-sm">{aliadosCards.find((c) => c.id === aliadoElegido)?.label ?? aliadoElegido}</p>
+            </FECard>
+          </div>
         )}
-      </Box>
+      </div>
     </LessonShell>
   );
 }

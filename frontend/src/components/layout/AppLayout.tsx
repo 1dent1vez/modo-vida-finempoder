@@ -1,27 +1,18 @@
-import { Box } from '@mui/material';
-import { AppNavbar } from './AppNavbar';
-
-const skipLinkStyles = {
-  position: 'absolute',
-  left: '-9999px',
-  top: '0',
-  zIndex: 9999,
-  padding: '8px 16px',
-  backgroundColor: 'primary.main',
-  color: 'primary.contrastText',
-  '&:focus': { left: '8px', top: '8px' },
-} as const;
-
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Box sx={{ minHeight: '100vh', pb: { xs: 8, sm: 8 } }}>
-      <Box component="a" href="#main-content" sx={skipLinkStyles}>
+    <div className="min-h-screen pb-16 sm:pb-16">
+      <a
+        href="#main-content"
+        className="absolute -left-[9999px] top-0 z-[9999] px-4 py-2 bg-[var(--color-brand-primary)] text-white focus:left-2 focus:top-2"
+      >
         Saltar al contenido
-      </Box>
-      <Box component="main" id="main-content" tabIndex={-1}>
+      </a>
+      <main id="main-content" tabIndex={-1}>
         {children}
-      </Box>
+      </main>
       <AppNavbar />
-    </Box>
+    </div>
   );
 }
+
+import { AppNavbar } from './AppNavbar';

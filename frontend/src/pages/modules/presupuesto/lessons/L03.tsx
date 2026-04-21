@@ -1,8 +1,5 @@
+import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
-import {
-  Box, Stack, Typography, Button, LinearProgress, Fade,
-  Chip, TextField,
-} from '@mui/material';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -62,138 +59,134 @@ export default function L03() {
     }
   }, [personalValid, found, personalGastos, grandTotal, monthly]);
 
+  const progressValue = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 60 : step === 3 ? 80 : 100;
+
   return (
     <LessonShell
       id="L03"
       title="El gasto hormiga: el ladrón silencioso"
       completion={{ ready: allFound && personalValid }}
     >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 60 : step === 3 ? 80 : 100}
-          color="warning"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
+        </div>
 
-        {/* Pantalla 0 — Apertura */}
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FECard variant="flat" sx={{ textAlign: 'center', py: 3, bgcolor: 'warning.light' }}>
-                <Typography variant="h2">👜 → 💸</Typography>
-                <Typography variant="body1" fontWeight={700} sx={{ mt: 1 }}>
-                  Cartera llena el lunes → vacía el viernes
-                </Typography>
-              </FECard>
-              <FinniMessage
-                variant="coach"
-                title="¿Tienes un ladrón en tu rutina?"
-                message="No te roba de golpe. Te roba de a poquito. Todos los días. Se llama gasto hormiga."
-              />
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'warning.main' }}>
-                <Typography variant="body2">
-                  El gasto hormiga es cualquier compra <b>pequeña, recurrente y casi automática</b> que hacemos sin pensarlo.
-                  Un café de $45, una descarga de $19, un antojito de $35…
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  Solos no parecen gran cosa. Pero sumados al mes, pueden comerse entre{' '}
-                  <b>$500 y $1,500 pesos</b> de tu presupuesto.
-                </Typography>
-              </FECard>
-              <FinniMessage
-                variant="coach"
-                title="La clave"
-                message="El problema no es el café. El problema es que no lo tienes en tu presupuesto."
-              />
-              <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setStep(1)}>
-                ¡A encontrar los gastos hormiga! →
-              </Button>
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <FECard variant="flat" className="text-center py-6 bg-[var(--color-brand-warning)]/10">
+              <p className="text-4xl">👜 → 💸</p>
+              <p className="font-bold mt-2">
+                Cartera llena el lunes → vacía el viernes
+              </p>
+            </FECard>
+            <FinniMessage
+              variant="coach"
+              title="¿Tienes un ladrón en tu rutina?"
+              message="No te roba de golpe. Te roba de a poquito. Todos los días. Se llama gasto hormiga."
+            />
+            <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
+              <p className="text-sm">
+                El gasto hormiga es cualquier compra <b>pequeña, recurrente y casi automática</b> que hacemos sin pensarlo.
+                Un café de $45, una descarga de $19, un antojito de $35…
+              </p>
+              <p className="text-sm mt-2">
+                Solos no parecen gran cosa. Pero sumados al mes, pueden comerse entre{' '}
+                <b>$500 y $1,500 pesos</b> de tu presupuesto.
+              </p>
+            </FECard>
+            <FinniMessage
+              variant="coach"
+              title="La clave"
+              message="El problema no es el café. El problema es que no lo tienes en tu presupuesto."
+            />
+            <button
+              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+              onClick={() => setStep(1)}
+            >
+              ¡A encontrar los gastos hormiga! →
+            </button>
+          </div>
         )}
 
-        {/* Pantalla 1 — Mini-juego */}
         {step === 1 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="body1">
-                Toca todos los gastos hormiga que encuentres en tu semana universitaria. ¡Hay 10!
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={(found.size / GASTOS_HORMIGA.length) * 100}
-                color="warning"
-                sx={{ height: 8, borderRadius: 4 }}
-              />
-              <Typography variant="caption" color="text.secondary" textAlign="center">
-                {found.size}/10 gastos identificados
-              </Typography>
-              <Stack direction="row" flexWrap="wrap" gap={1.5} useFlexGap>
-                {GASTOS_HORMIGA.map((g) => (
-                  <Chip
-                    key={g.id}
-                    label={`${g.emoji} ${g.label} $${g.amount}`}
-                    onClick={() => toggleFound(g.id)}
-                    color={found.has(g.id) ? 'warning' : 'default'}
-                    variant={found.has(g.id) ? 'filled' : 'outlined'}
-                    sx={{ fontWeight: 600, cursor: 'pointer', minHeight: 40 }}
-                  />
-                ))}
-              </Stack>
-              {found.size > 0 && (
-                <FECard variant="flat" sx={{ bgcolor: 'warning.light' }}>
-                  <Typography variant="body2" fontWeight={700}>
-                    Total encontrado esta semana: <b>${totalFound}</b>
-                  </Typography>
-                </FECard>
-              )}
-              {allFound && (
-                <Fade in>
-                  <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setStep(2)}>
-                    Ver cuánto suma al mes →
-                  </Button>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <p className="text-sm">
+              Toca todos los gastos hormiga que encuentres en tu semana universitaria. ¡Hay 10!
+            </p>
+            <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2">
+              <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${(found.size / GASTOS_HORMIGA.length) * 100}%` }} />
+            </div>
+            <p className="text-xs text-[var(--color-text-secondary)] text-center">
+              {found.size}/10 gastos identificados
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {GASTOS_HORMIGA.map((g) => (
+                <button
+                  key={g.id}
+                  onClick={() => toggleFound(g.id)}
+                  className={cn(
+                    'px-3 py-2 rounded-full text-sm font-semibold border transition-colors min-h-10',
+                    found.has(g.id)
+                      ? 'bg-[var(--color-brand-warning)] text-white border-[var(--color-brand-warning)]'
+                      : 'border-[var(--color-neutral-200)] text-[var(--color-text-secondary)]'
+                  )}
+                >
+                  {g.emoji} {g.label} ${g.amount}
+                </button>
+              ))}
+            </div>
+            {found.size > 0 && (
+              <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10">
+                <p className="font-bold text-sm">
+                  Total encontrado esta semana: <b>${totalFound}</b>
+                </p>
+              </FECard>
+            )}
+            {allFound && (
+              <button
+                className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+                onClick={() => setStep(2)}
+              >
+                Ver cuánto suma al mes →
+              </button>
+            )}
+          </div>
         )}
 
-        {/* Pantalla 2 — Calculadora */}
         {step === 2 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FECard variant="flat" sx={{ bgcolor: 'warning.light', textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ mb: 1 }}>Cálculo automático</Typography>
-                <Typography variant="body2">Total gastos hormiga/semana: <b>${totalFound}</b></Typography>
-                <Typography variant="body2">Al mes (x4): <b>${totalFound * 4}</b></Typography>
-                <Typography variant="body2">Al año (x52): <b>${totalFound * 52}</b></Typography>
-              </FECard>
-              <FinniMessage
-                variant="coach"
-                title="Ahora los tuyos"
-                message="Ingresa tus 3 gastos hormiga reales (los que haces casi automáticamente)."
-              />
-              <Stack spacing={2}>
-                {personalGastos.map((g, i) => (
-                  <FECard key={i} variant="flat" sx={{ border: 1, borderColor: 'divider' }}>
-                    <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>
-                      Gasto hormiga #{i + 1}
-                    </Typography>
-                    <Stack direction="row" spacing={1}>
-                      <TextField
-                        label="¿Cuál es?"
+          <div className="space-y-3">
+            <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 text-center">
+              <p className="font-bold text-base mb-2">Cálculo automático</p>
+              <p className="text-sm">Total gastos hormiga/semana: <b>${totalFound}</b></p>
+              <p className="text-sm">Al mes (x4): <b>${totalFound * 4}</b></p>
+              <p className="text-sm">Al año (x52): <b>${totalFound * 52}</b></p>
+            </FECard>
+            <FinniMessage
+              variant="coach"
+              title="Ahora los tuyos"
+              message="Ingresa tus 3 gastos hormiga reales (los que haces casi automáticamente)."
+            />
+            <div className="space-y-2">
+              {personalGastos.map((g, i) => (
+                <FECard key={i} variant="flat" className="border border-[var(--color-neutral-200)]">
+                  <p className="font-bold text-sm mb-2">Gasto hormiga #{i + 1}</p>
+                  <div className="flex gap-2">
+                    <div className="flex flex-col gap-1 flex-[2]">
+                      <label className="text-xs text-[var(--color-text-secondary)]">¿Cuál es?</label>
+                      <input
                         value={g.nombre}
                         onChange={(e) => {
                           const next = [...personalGastos];
                           next[i] = { ...next[i], nombre: e.target.value };
                           setPersonalGastos(next);
                         }}
-                        size="small"
-                        sx={{ flex: 2 }}
+                        className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm"
                       />
-                      <TextField
-                        label="$monto"
+                    </div>
+                    <div className="flex flex-col gap-1 flex-1">
+                      <label className="text-xs text-[var(--color-text-secondary)]">$monto</label>
+                      <input
                         type="number"
                         value={g.monto}
                         onChange={(e) => {
@@ -201,63 +194,62 @@ export default function L03() {
                           next[i] = { ...next[i], monto: e.target.value };
                           setPersonalGastos(next);
                         }}
-                        size="small"
-                        sx={{ flex: 1 }}
-                        inputProps={{ min: 0 }}
+                        min={0}
+                        className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm"
                       />
-                    </Stack>
-                  </FECard>
-                ))}
-              </Stack>
-              {personalTotal > 0 && (
-                <FECard variant="flat" sx={{ bgcolor: 'error.light' }}>
-                  <Typography variant="body2" fontWeight={700}>
-                    Tus gastos hormiga/semana: <b>${personalTotal}</b>
-                  </Typography>
-                  <Typography variant="body2">
-                    Total combinado/semana: <b>${grandTotal}</b> | Mes: <b>${monthly}</b> | Año: <b>${yearly}</b>
-                  </Typography>
+                    </div>
+                  </div>
                 </FECard>
-              )}
-              {personalValid && (
-                <Fade in>
-                  <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setStep(3)}>
-                    Reflexión final →
-                  </Button>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+              ))}
+            </div>
+            {personalTotal > 0 && (
+              <FECard variant="flat" className="bg-[var(--color-brand-error)]/10">
+                <p className="font-bold text-sm">
+                  Tus gastos hormiga/semana: <b>${personalTotal}</b>
+                </p>
+                <p className="text-sm">
+                  Total combinado/semana: <b>${grandTotal}</b> | Mes: <b>${monthly}</b> | Año: <b>${yearly}</b>
+                </p>
+              </FECard>
+            )}
+            {personalValid && (
+              <button
+                className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+                onClick={() => setStep(3)}
+              >
+                Reflexión final →
+              </button>
+            )}
+          </div>
         )}
 
-        {/* Pantalla 3 — Reflexión y cierre */}
         {step === 3 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="success"
-                title="¡Ladrón identificado! 🐜"
-                message={`Identificaste $${grandTotal} en gastos hormiga por semana. Eso es $${monthly} al mes que podrías redirigir.`}
-              />
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'divider' }}>
-                <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>
-                  ¿Cuáles eliminarías sin extrañarlos?
-                </Typography>
-                <Stack direction="row" flexWrap="wrap" gap={1} useFlexGap>
-                  {[...GASTOS_HORMIGA.filter((g) => found.has(g.id)), ...personalGastos.filter((g) => g.nombre).map((g) => ({ id: g.nombre, label: g.nombre, emoji: '💸', amount: parseFloat(g.monto) || 0 }))].map((g) => (
-                    <Chip key={g.id} label={`${g.emoji} ${g.label}`} size="small" variant="outlined" />
-                  ))}
-                </Stack>
-              </FECard>
-              <FinniMessage
-                variant="coach"
-                title="Recuerda"
-                message="No se trata de eliminar todo. Se trata de hacerlos conscientes y decidir cuáles valen la pena."
-              />
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <FinniMessage
+              variant="success"
+              title="¡Ladrón identificado! 🐜"
+              message={`Identificaste $${grandTotal} en gastos hormiga por semana. Eso es $${monthly} al mes que podrías redirigir.`}
+            />
+            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
+              <p className="font-bold text-sm mb-2">
+                ¿Cuáles eliminarías sin extrañarlos?
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {[...GASTOS_HORMIGA.filter((g) => found.has(g.id)), ...personalGastos.filter((g) => g.nombre).map((g) => ({ id: g.nombre, label: g.nombre, emoji: '💸', amount: parseFloat(g.monto) || 0 }))].map((g) => (
+                  <span key={g.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs border border-[var(--color-neutral-200)] font-semibold">
+                    {g.emoji} {g.label}
+                  </span>
+                ))}
+              </div>
+            </FECard>
+            <FinniMessage
+              variant="coach"
+              title="Recuerda"
+              message="No se trata de eliminar todo. Se trata de hacerlos conscientes y decidir cuáles valen la pena."
+            />
+          </div>
         )}
-      </Box>
+      </div>
     </LessonShell>
   );
 }

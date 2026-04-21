@@ -1,8 +1,8 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useResearchStatus } from '../hooks/research/useResearchStatus';
-import { evaluateResearchGate } from '../utils/researchGate';
+import { evaluateResearchGate } from '@/shared/utils/researchGate';
 import { useAuth } from '../store/auth';
-import { isOnboarded } from '../utils/onboarding';
+import { isOnboarded } from '@/shared/utils/onboarding';
 
 export function ResearchGate({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();

@@ -60,25 +60,3 @@ export async function submitQuestionnaire(req: Request, res: Response) {
   }
 }
 
-export async function getMyQuestionnaire(req: Request, res: Response) {
-  try {
-    const userId = req.user?.sub;
-    if (!userId) return res.status(401).json({ error: 'No autenticado' });
-
-    const typeParsed = typeSchema.safeParse(req.params.type);
-    if (!typeParsed.success) return res.status(400).json({ error: 'Tipo inválido, usa pre o post' });
-
-    const { data, error } = await supabase
-      .from('questionnaire_results')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('type', typeParsed.data)
-      .single();
-
-    if (error || !data) return res.status(404).json({ error: 'No encontrado' });
-
-    return res.json(data);
-  } catch {
-    return res.status(500).json({ error: 'Error al obtener cuestionario' });
-  }
-}

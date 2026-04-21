@@ -10,7 +10,6 @@ import { authRouter } from './routes/auth.js';
 import { progressRouter } from './routes/progress.js';
 import { questionnaireRouter } from './routes/questionnaire.js';
 import { researchRouter } from './routes/research.js';
-import { budgetRouter } from './routes/budget.js';
 
 export const app = express();
 
@@ -82,7 +81,6 @@ app.use('/api/auth', authLimiter, authRouter);
 app.use('/api/progress', progressRouter);
 app.use('/api/questionnaire', questionnaireRouter);
 app.use('/api/research', researchRouter);
-app.use('/api/budget', budgetRouter);
 
 // ── 404 ───────────────────────────────────────────────
 app.use('/api', (_req, res) => {

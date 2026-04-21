@@ -31,11 +31,6 @@ const questionnaireApi = {
     return data;
   },
 
-  async getMine(type: QuestionnaireType): Promise<QuestionnaireResultDTO> {
-    const { data } = await client.get<QuestionnaireResultDTO>(`/questionnaire/${type}/me`);
-    return data;
-  },
-
   async getStatus(): Promise<ResearchStatusDTO> {
     const { data } = await client.get<ResearchStatusDTO>('/research/status/me');
     return data;

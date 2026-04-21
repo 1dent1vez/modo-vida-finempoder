@@ -1,8 +1,6 @@
+import { cn } from '@/lib/utils';
 import { useState } from 'react';
-import {
-  Box, Stack, Typography, Button, LinearProgress, Fade, Chip,
-} from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { CheckCircle } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -78,167 +76,161 @@ export default function L11() {
     }
   };
 
+  const progressValue = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 55 : 100;
+
   return (
     <LessonShell
       id="L11"
       title="Tu presupuesto en la palma de la mano"
       completion={{ ready: allTutorialDone }}
     >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 55 : 100}
-          color="warning"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
+        </div>
 
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="Tu smartphone, tu mejor aliado"
-                message="Registrar gastos en papel está bien. Pero si tienes un smartphone, puedes hacer algo más poderoso: que tu dinero se registre y analice casi solo."
-              />
-              <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setStep(1)}>
-                Ver herramientas disponibles →
-              </Button>
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <FinniMessage
+              variant="coach"
+              title="Tu smartphone, tu mejor aliado"
+              message="Registrar gastos en papel está bien. Pero si tienes un smartphone, puedes hacer algo más poderoso: que tu dinero se registre y analice casi solo."
+            />
+            <button
+              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+              onClick={() => setStep(1)}
+            >
+              Ver herramientas disponibles →
+            </button>
+          </div>
         )}
 
         {step === 1 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="body1" fontWeight={700}>Opciones gratuitas en México:</Typography>
-              <Typography variant="body2" color="text.secondary">
-                Toca las que te llamen la atención para marcarlas como favoritas.
-              </Typography>
-              <Stack spacing={2}>
-                {HERRAMIENTAS.map((h) => (
-                  <FECard
-                    key={h.id}
-                    variant="flat"
-                    sx={{
-                      border: 2,
-                      borderColor: favoritas.has(h.id) ? 'warning.main' : 'divider',
-                      bgcolor: favoritas.has(h.id) ? 'warning.light' : 'background.paper',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    onClick={() => toggleFavorita(h.id)}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <Stack direction="row" spacing={2} alignItems="flex-start">
-                      <Typography variant="h2">{h.emoji}</Typography>
-                      <Box sx={{ flex: 1 }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                          <Typography variant="body1" fontWeight={700}>{h.nombre}</Typography>
-                          {favoritas.has(h.id) && <CheckCircleIcon color="warning" fontSize="small" />}
-                        </Stack>
-                        <Chip label={h.tipo} size="small" sx={{ mt: 0.5, mb: 0.5 }} />
-                        <Typography variant="body2" color="text.secondary">{h.descripcion}</Typography>
-                        <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
-                          {h.pros.map((p) => <Chip key={p} label={p} size="small" variant="outlined" />)}
-                        </Stack>
-                      </Box>
-                    </Stack>
-                  </FECard>
-                ))}
-              </Stack>
-              <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setStep(2)}>
-                Tutorial de FinEmpoder →
-              </Button>
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <p className="font-bold">Opciones gratuitas en México:</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              Toca las que te llamen la atención para marcarlas como favoritas.
+            </p>
+            <div className="space-y-2">
+              {HERRAMIENTAS.map((h) => (
+                <FECard
+                  key={h.id}
+                  variant="flat"
+                  className={cn(
+                    'border-2 cursor-pointer transition-all',
+                    favoritas.has(h.id)
+                      ? 'border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10'
+                      : 'border-[var(--color-neutral-200)]'
+                  )}
+                  onClick={() => toggleFavorita(h.id)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="flex items-start gap-3">
+                    <p className="text-4xl">{h.emoji}</p>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center">
+                        <p className="font-bold">{h.nombre}</p>
+                        {favoritas.has(h.id) && <CheckCircle className="text-[var(--color-brand-warning)]" size={18} />}
+                      </div>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-[var(--color-neutral-200)] font-semibold mt-1 mb-1">
+                        {h.tipo}
+                      </span>
+                      <p className="text-sm text-[var(--color-text-secondary)]">{h.descripcion}</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {h.pros.map((p) => (
+                          <span key={p} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs border border-[var(--color-neutral-200)] font-semibold">
+                            {p}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </FECard>
+              ))}
+            </div>
+            <button
+              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+              onClick={() => setStep(2)}
+            >
+              Tutorial de FinEmpoder →
+            </button>
+          </div>
         )}
 
         {step === 2 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="body1" fontWeight={700}>
-                Tutorial interactivo de FinEmpoder
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Completa las 5 acciones para desbloquear la lección.
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={(completedSteps.size / PASOS_TUTORIAL.length) * 100}
-                color="warning"
-                sx={{ height: 8, borderRadius: 4 }}
-              />
-              <Stack spacing={1.5}>
-                {PASOS_TUTORIAL.map((p, i) => {
-                  const done = completedSteps.has(p.id);
-                  const isCurrent = i === tutorialStep;
-                  return (
-                    <FECard
-                      key={p.id}
-                      variant="flat"
-                      sx={{
-                        border: 2,
-                        borderColor: done ? 'success.main' : isCurrent ? 'warning.main' : 'divider',
-                        bgcolor: done ? 'success.light' : isCurrent ? 'warning.light' : 'background.paper',
-                        opacity: !done && !isCurrent ? 0.5 : 1,
-                      }}
-                    >
-                      <Stack direction="row" spacing={2} alignItems="center">
-                        <Typography variant="body2" sx={{ minWidth: 24, fontWeight: 700 }}>
-                          {done ? '✅' : isCurrent ? '👉' : `${i + 1}.`}
-                        </Typography>
-                        <Typography variant="body2" fontWeight={isCurrent ? 700 : 400}>
-                          {p.desc}
-                        </Typography>
-                      </Stack>
-                      {isCurrent && (
-                        <Fade in>
-                          <Stack spacing={1} sx={{ mt: 1.5 }}>
-                            <FECard variant="flat" sx={{ bgcolor: 'info.light' }}>
-                              <Typography variant="caption">
-                                💡 Finni: "{p.finni}"
-                              </Typography>
-                            </FECard>
-                            <Button
-                              fullWidth
-                              variant="contained"
-                              color="warning"
-                              size="small"
-                              onClick={completarPaso}
-                            >
-                              ✓ Marcar como hecho
-                            </Button>
-                          </Stack>
-                        </Fade>
-                      )}
-                    </FECard>
-                  );
-                })}
-              </Stack>
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <p className="font-bold">
+              Tutorial interactivo de FinEmpoder
+            </p>
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              Completa las 5 acciones para desbloquear la lección.
+            </p>
+            <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2">
+              <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${(completedSteps.size / PASOS_TUTORIAL.length) * 100}%` }} />
+            </div>
+            <div className="space-y-3">
+              {PASOS_TUTORIAL.map((p, i) => {
+                const done = completedSteps.has(p.id);
+                const isCurrent = i === tutorialStep;
+                return (
+                  <FECard
+                    key={p.id}
+                    variant="flat"
+                    className={cn(
+                      'border-2 transition-colors',
+                      done ? 'border-[var(--color-brand-success)] bg-[var(--color-brand-success)]/10'
+                        : isCurrent ? 'border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10'
+                        : 'border-[var(--color-neutral-200)] opacity-50'
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <p className="text-sm font-bold min-w-6">
+                        {done ? '✅' : isCurrent ? '👉' : `${i + 1}.`}
+                      </p>
+                      <p className={cn('text-sm', isCurrent ? 'font-bold' : '')}>
+                        {p.desc}
+                      </p>
+                    </div>
+                    {isCurrent && (
+                      <div className="space-y-2 mt-3">
+                        <FECard variant="flat" className="bg-[var(--color-brand-info)]/10">
+                          <p className="text-xs">
+                            💡 Finni: "{p.finni}"
+                          </p>
+                        </FECard>
+                        <button
+                          className="w-full min-h-9 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+                          onClick={completarPaso}
+                        >
+                          ✓ Marcar como hecho
+                        </button>
+                      </div>
+                    )}
+                  </FECard>
+                );
+              })}
+            </div>
+          </div>
         )}
 
         {step === 3 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="success"
-                title="¡5/5 acciones completadas!"
-                message="Ya tienes tus primeros registros reales en FinEmpoder. ¡Eso es un hábito que empieza hoy!"
-              />
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'warning.main' }}>
-                <Typography variant="body1" fontWeight={700} sx={{ mb: 1 }}>Mini-reto:</Typography>
-                <Typography variant="body2">
-                  Registra <b>todos tus gastos de mañana</b> usando tu herramienta favorita.
-                  Vuelve a FinEmpoder al final del día y compara.
-                </Typography>
-              </FECard>
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <FinniMessage
+              variant="success"
+              title="¡5/5 acciones completadas!"
+              message="Ya tienes tus primeros registros reales en FinEmpoder. ¡Eso es un hábito que empieza hoy!"
+            />
+            <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
+              <p className="font-bold mb-2">Mini-reto:</p>
+              <p className="text-sm">
+                Registra <b>todos tus gastos de mañana</b> usando tu herramienta favorita.
+                Vuelve a FinEmpoder al final del día y compara.
+              </p>
+            </FECard>
+          </div>
         )}
-      </Box>
+      </div>
     </LessonShell>
   );
 }

@@ -1,8 +1,4 @@
 import { useState } from 'react';
-import {
-  Box, Stack, Typography, Button, LinearProgress, Fade,
-  TextField, Paper, Chip,
-} from '@mui/material';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -32,6 +28,13 @@ function calcCrecimiento(monto: number, tasa: number, anios: number): number {
   return monto * Math.pow(1 + tasa / 100, anios);
 }
 
+const infoColor = 'var(--color-brand-info)';
+const infoBg = 'var(--color-brand-info-bg)';
+const successColor = 'var(--color-brand-success)';
+const successBg = 'var(--color-brand-success-bg)';
+const errorColor = 'var(--color-brand-error)';
+const errorBg = 'var(--color-brand-error-bg)';
+
 export default function L11() {
   const [step, setStep] = useState(0);
   const [monto, setMonto] = useState(10000);
@@ -49,191 +52,165 @@ export default function L11() {
 
   const simulacroListo = respuestaSimulacro.every((r) => r.trim().length >= 3);
 
+  const progress = (step / 2) * 100;
+
   return (
     <LessonShell
       id="L11"
       title="Las comisiones se comen tus ganancias: cómo detectarlas"
       completion={{ ready: calculado && simulacroHecho }}
     >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={(step / 2) * 100}
-          color="info"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: infoColor }} />
+        </div>
 
         {/* Pantalla 0 — Tipos de comisiones + ISR */}
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="El rendimiento que anuncian no es lo que recibes"
-                message='Te dijeron que el fondo tiene un rendimiento del 10% anual. ¡Genial! Pero nadie te mencionó las comisiones. Al final del año, puede que solo hayas ganado el 6%. Hoy aprendemos a leer la letra chica.'
-              />
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'divider' }}>
-                <Typography fontWeight={700} sx={{ mb: 1.5 }}>Tipos de comisiones</Typography>
-                <Stack spacing={1.5}>
-                  {TIPOS_COMISION.map((c) => (
-                    <Stack key={c.tipo} direction="row" justifyContent="space-between" sx={{ borderBottom: '1px solid', borderColor: 'divider', pb: 1 }}>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" fontWeight={700}>{c.tipo}</Typography>
-                        <Typography variant="caption" color="text.secondary">{c.desc}</Typography>
-                      </Box>
-                      <Chip size="small" label={c.ejemplo} color="info" variant="outlined" />
-                    </Stack>
-                  ))}
-                </Stack>
-              </FECard>
-              <FECard variant="flat" sx={{ bgcolor: 'info.light', border: 1, borderColor: 'info.main' }}>
-                <Typography fontWeight={700} sx={{ mb: 0.5 }}>ISR (Impuesto sobre Rendimientos)</Typography>
-                <Typography variant="body2">
-                  Los rendimientos de inversiones en México pagan ISR. En CETES es automático
-                  (retención de ~0.15% en 2024 — ya viene descontado). En acciones, debes declarar.
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
-                  "No es para asustarte. Es para que tus cálculos sean realistas desde el principio."
-                </Typography>
-              </FECard>
-              <FinniMessage
-                variant="coach"
-                title="Ninguna comisión es mala per se"
-                message="Lo malo es no saberla antes de invertir. Siempre pregunta: ¿cuál es el costo total anual de esta inversión?"
-              />
-              <Button fullWidth variant="contained" color="info" size="large" onClick={() => setStep(1)}>
-                Calculadora de comisiones →
-              </Button>
-            </Stack>
-          </Fade>
+          <div className="space-y-6">
+            <FinniMessage
+              variant="coach"
+              title="El rendimiento que anuncian no es lo que recibes"
+              message='Te dijeron que el fondo tiene un rendimiento del 10% anual. ¡Genial! Pero nadie te mencionó las comisiones. Al final del año, puede que solo hayas ganado el 6%. Hoy aprendemos a leer la letra chica.'
+            />
+            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
+              <p className="font-bold mb-4">Tipos de comisiones</p>
+              <div className="space-y-3">
+                {TIPOS_COMISION.map((c) => (
+                  <div key={c.tipo} className="flex justify-between items-start pb-3 border-b border-[var(--color-neutral-200)] last:border-0">
+                    <div className="flex-1">
+                      <p className="text-sm font-bold">{c.tipo}</p>
+                      <p className="text-xs text-[var(--color-text-secondary)]">{c.desc}</p>
+                    </div>
+                    <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold border flex-shrink-0" style={{ borderColor: infoColor, color: infoColor }}>{c.ejemplo}</span>
+                  </div>
+                ))}
+              </div>
+            </FECard>
+            <FECard variant="flat" className="border" style={{ backgroundColor: infoBg, borderColor: infoColor }}>
+              <p className="font-bold mb-1">ISR (Impuesto sobre Rendimientos)</p>
+              <p className="text-sm">
+                Los rendimientos de inversiones en México pagan ISR. En CETES es automático
+                (retención de ~0.15% en 2024 — ya viene descontado). En acciones, debes declarar.
+              </p>
+              <p className="text-sm mt-2 italic">
+                "No es para asustarte. Es para que tus cálculos sean realistas desde el principio."
+              </p>
+            </FECard>
+            <FinniMessage
+              variant="coach"
+              title="Ninguna comisión es mala per se"
+              message="Lo malo es no saberla antes de invertir. Siempre pregunta: ¿cuál es el costo total anual de esta inversión?"
+            />
+            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setStep(1)}>
+              Calculadora de comisiones →
+            </button>
+          </div>
         )}
 
         {/* Pantalla 1 — Calculadora + comparador + simulacro */}
         {step === 1 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="h4" fontWeight={700}>Calculadora de rendimiento neto</Typography>
-              <Stack spacing={2}>
-                <TextField
-                  label="Monto de inversión ($)"
-                  type="number"
-                  value={monto}
-                  onChange={(e) => setMonto(Math.max(0, Number(e.target.value)))}
-                  size="small"
-                  inputProps={{ min: 0, step: 1000 }}
-                />
-                <TextField
-                  label="Rendimiento bruto anunciado (%)"
-                  type="number"
-                  value={rendimientoBruto}
-                  onChange={(e) => setRendimientoBruto(Math.max(0, Math.min(50, Number(e.target.value))))}
-                  size="small"
-                  inputProps={{ min: 0, max: 50, step: 0.5 }}
-                />
-                <TextField
-                  label="Comisión de administración anual (%)"
-                  type="number"
-                  value={comisionAdmin}
-                  onChange={(e) => setComisionAdmin(Math.max(0, Math.min(10, Number(e.target.value))))}
-                  size="small"
-                  inputProps={{ min: 0, max: 10, step: 0.5 }}
-                />
-                <TextField
-                  label="Plazo (años)"
-                  type="number"
-                  value={plazo}
-                  onChange={(e) => setPlazo(Math.max(1, Math.min(30, Number(e.target.value))))}
-                  size="small"
-                  inputProps={{ min: 1, max: 30, step: 1 }}
-                />
-              </Stack>
-              <Stack direction="row" spacing={2}>
-                <Paper sx={{ p: 2, borderRadius: 2, flex: 1, bgcolor: 'grey.100' }}>
-                  <Typography variant="caption" color="text.secondary">Rendimiento bruto</Typography>
-                  <Typography variant="h6" fontWeight={800}>{rendimientoBruto}%</Typography>
-                  <Typography variant="caption">Recibirías: ${crecimientoBruto.toFixed(0)}</Typography>
-                </Paper>
-                <Paper sx={{ p: 2, borderRadius: 2, flex: 1, bgcolor: 'success.light', border: 1, borderColor: 'success.main' }}>
-                  <Typography variant="caption" color="text.secondary">Rendimiento neto real</Typography>
-                  <Typography variant="h6" fontWeight={800} color="success.dark">{rendiNeto.toFixed(2)}%</Typography>
-                  <Typography variant="caption">Recibirías: ${crecimientoNeto.toFixed(0)}</Typography>
-                </Paper>
-              </Stack>
-              <Paper sx={{ p: 2, borderRadius: 2, bgcolor: 'error.light', border: 1, borderColor: 'error.main' }}>
-                <Typography variant="caption" fontWeight={700} color="error.dark">Impacto de comisiones en {plazo} años:</Typography>
-                <Typography variant="h5" fontWeight={900} color="error.dark">-${diferencia.toFixed(0)}</Typography>
-                <Typography variant="caption">Eso es real. Las comisiones importan.</Typography>
-              </Paper>
-              {!calculado && (
-                <Button fullWidth variant="contained" color="info" onClick={() => setCalculado(true)}>
-                  ✅ Confirmar cálculo
-                </Button>
-              )}
+          <div className="space-y-6">
+            <p className="text-2xl font-bold">Calculadora de rendimiento neto</p>
+            <div className="space-y-3">
+              {[
+                { label: 'Monto de inversión ($)', value: monto, onChange: (v: number) => setMonto(Math.max(0, v)), min: 0, step: 1000 },
+                { label: 'Rendimiento bruto anunciado (%)', value: rendimientoBruto, onChange: (v: number) => setRendimientoBruto(Math.max(0, Math.min(50, v))), min: 0, step: 0.5 },
+                { label: 'Comisión de administración anual (%)', value: comisionAdmin, onChange: (v: number) => setComisionAdmin(Math.max(0, Math.min(10, v))), min: 0, step: 0.5 },
+                { label: 'Plazo (años)', value: plazo, onChange: (v: number) => setPlazo(Math.max(1, Math.min(30, v))), min: 1, step: 1 },
+              ].map(({ label, value, onChange, min, step: s }) => (
+                <div key={label}>
+                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{label}</label>
+                  <input
+                    type="number"
+                    value={value}
+                    onChange={(e) => onChange(Number(e.target.value))}
+                    min={min}
+                    step={s}
+                    className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-1 p-3 rounded-2xl bg-[var(--color-neutral-100)]">
+                <p className="text-xs text-[var(--color-text-secondary)]">Rendimiento bruto</p>
+                <p className="text-xl font-black">{rendimientoBruto}%</p>
+                <p className="text-xs">Recibirías: ${crecimientoBruto.toFixed(0)}</p>
+              </div>
+              <div className="flex-1 p-3 rounded-2xl border-2" style={{ borderColor: successColor, backgroundColor: successBg }}>
+                <p className="text-xs text-[var(--color-text-secondary)]">Rendimiento neto real</p>
+                <p className="text-xl font-black" style={{ color: successColor }}>{rendiNeto.toFixed(2)}%</p>
+                <p className="text-xs">Recibirías: ${crecimientoNeto.toFixed(0)}</p>
+              </div>
+            </div>
+            <div className="p-4 rounded-2xl border-2" style={{ borderColor: errorColor, backgroundColor: errorBg }}>
+              <p className="text-xs font-bold" style={{ color: errorColor }}>Impacto de comisiones en {plazo} años:</p>
+              <p className="text-2xl font-black" style={{ color: errorColor }}>-${diferencia.toFixed(0)}</p>
+              <p className="text-xs">Eso es real. Las comisiones importan.</p>
+            </div>
+            {!calculado && (
+              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setCalculado(true)}>
+                ✅ Confirmar cálculo
+              </button>
+            )}
 
-              {calculado && (
-                <Fade in>
-                  <Stack spacing={3}>
-                    <Typography variant="h5" fontWeight={700}>Comparador: 3 fondos, mismo rendimiento bruto</Typography>
-                    <Stack spacing={1.5}>
-                      {FONDOS_FICTICIOS.map((f) => {
-                        const neto = calcRendimientoNeto(f.rendimientoBruto, f.comision, ISR_RETENCION);
-                        return (
-                          <Paper key={f.nombre} sx={{ p: 2, borderRadius: 2 }}>
-                            <Stack direction="row" justifyContent="space-between">
-                              <Box>
-                                <Typography fontWeight={700}>{f.nombre}</Typography>
-                                <Typography variant="caption" color="text.secondary">Bruto: {f.rendimientoBruto}% · Comisión: {f.comision}%</Typography>
-                              </Box>
-                              <Chip label={`Neto: ${neto.toFixed(2)}%`} color={f.comision <= 1 ? 'success' : f.comision <= 2 ? 'warning' : 'error'} />
-                            </Stack>
-                          </Paper>
-                        );
-                      })}
-                    </Stack>
+            {calculado && (
+              <div className="space-y-6">
+                <p className="text-xl font-bold">Comparador: 3 fondos, mismo rendimiento bruto</p>
+                <div className="space-y-3">
+                  {FONDOS_FICTICIOS.map((f) => {
+                    const neto = calcRendimientoNeto(f.rendimientoBruto, f.comision, ISR_RETENCION);
+                    const chipColor = f.comision <= 1 ? successColor : f.comision <= 2 ? 'var(--color-brand-warning)' : errorColor;
+                    return (
+                      <div key={f.nombre} className="p-3 rounded-2xl bg-white border border-[var(--color-neutral-200)] flex justify-between items-center">
+                        <div>
+                          <p className="font-bold">{f.nombre}</p>
+                          <p className="text-xs text-[var(--color-text-secondary)]">Bruto: {f.rendimientoBruto}% · Comisión: {f.comision}%</p>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: chipColor }}>
+                          Neto: {neto.toFixed(2)}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
 
-                    <Typography variant="h5" fontWeight={700}>Simulacro: las 3 preguntas clave</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Practica formulando las preguntas que siempre debes hacer antes de invertir:
-                    </Typography>
-                    {[
-                      'Escribe cómo preguntarías: "¿Cuál es el rendimiento bruto?"',
-                      'Escribe cómo preguntarías: "¿Cuáles son las comisiones totales?"',
-                      'Escribe cómo preguntarías: "¿Cuánto ISR se retiene?"',
-                    ].map((pregunta, i) => (
-                      <FECard key={i} variant="flat" sx={{ border: 1, borderColor: respuestaSimulacro[i].trim().length >= 3 ? 'success.main' : 'divider' }}>
-                        <Typography variant="body2" sx={{ mb: 1 }}>{pregunta}</Typography>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          placeholder="Tu pregunta al asesor..."
-                          value={respuestaSimulacro[i]}
-                          onChange={(e) => setRespuestaSimulacro((prev) => prev.map((r, idx) => idx === i ? e.target.value : r))}
-                        />
-                      </FECard>
-                    ))}
-                    {simulacroListo && !simulacroHecho && (
-                      <Fade in>
-                        <Button fullWidth variant="contained" color="info" onClick={() => setSimulacroHecho(true)}>
-                          ✅ Completar simulacro
-                        </Button>
-                      </Fade>
-                    )}
-                    {simulacroHecho && (
-                      <Fade in>
-                        <FinniMessage
-                          variant="success"
-                          title="¡Simulacro completado!"
-                          message="Ahora sabes las 3 preguntas que siempre debes hacer antes de invertir. Ese hábito puede ahorrarte miles de pesos."
-                        />
-                      </Fade>
-                    )}
-                  </Stack>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+                <p className="text-xl font-bold">Simulacro: las 3 preguntas clave</p>
+                <p className="text-sm text-[var(--color-text-secondary)]">Practica formulando las preguntas que siempre debes hacer antes de invertir:</p>
+                {[
+                  'Escribe cómo preguntarías: "¿Cuál es el rendimiento bruto?"',
+                  'Escribe cómo preguntarías: "¿Cuáles son las comisiones totales?"',
+                  'Escribe cómo preguntarías: "¿Cuánto ISR se retiene?"',
+                ].map((pregunta, i) => (
+                  <FECard key={i} variant="flat" className="border" style={{ borderColor: respuestaSimulacro[i].trim().length >= 3 ? successColor : 'var(--color-neutral-200)' }}>
+                    <p className="text-sm mb-2">{pregunta}</p>
+                    <input
+                      type="text"
+                      placeholder="Tu pregunta al asesor..."
+                      value={respuestaSimulacro[i]}
+                      onChange={(e) => setRespuestaSimulacro((prev) => prev.map((r, idx) => idx === i ? e.target.value : r))}
+                      className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm"
+                    />
+                  </FECard>
+                ))}
+                {simulacroListo && !simulacroHecho && (
+                  <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setSimulacroHecho(true)}>
+                    ✅ Completar simulacro
+                  </button>
+                )}
+                {simulacroHecho && (
+                  <FinniMessage
+                    variant="success"
+                    title="¡Simulacro completado!"
+                    message="Ahora sabes las 3 preguntas que siempre debes hacer antes de invertir. Ese hábito puede ahorrarte miles de pesos."
+                  />
+                )}
+              </div>
+            )}
+          </div>
         )}
-      </Box>
+      </div>
     </LessonShell>
   );
 }

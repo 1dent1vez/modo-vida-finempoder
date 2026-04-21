@@ -1,7 +1,5 @@
+import { cn } from '@/lib/utils';
 import { useState } from 'react';
-import {
-  Box, Stack, Typography, Button, LinearProgress, Fade,
-} from '@mui/material';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -131,160 +129,146 @@ export default function L14() {
     setAnswers((prev) => ({ ...prev, [qi]: oi }));
   };
 
+  const progressValue = step === 0 ? 0 : step === 1 ? (Object.keys(answers).length / PREGUNTAS.length) * 90 : 100;
+
   return (
     <LessonShell
       id="L14"
       title="¿Tú controlas tu dinero o él te controla a ti?"
       completion={{ ready: quizDone, score }}
     >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={step === 0 ? 0 : step === 1 ? (Object.keys(answers).length / PREGUNTAS.length) * 90 : 100}
-          color="warning"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
+        </div>
 
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="¡Llegaste a la penúltima lección!"
-                message="Antes del reto final, vamos a ver qué tanto absorbiste. No es examen: es una radiografía de tu aprendizaje."
-              />
-              <FECard variant="flat" sx={{ border: 1, borderColor: 'warning.main', bgcolor: 'warning.light' }}>
-                <Typography variant="body1" fontWeight={700}>10 preguntas</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Mezcla de conceptos, situaciones y aplicaciones prácticas. Por cada respuesta recibirás retroalimentación inmediata.
-                </Typography>
-              </FECard>
-              <FinniMessage
-                variant="coach"
-                title="Tranquilo"
-                message="Si algo no quedó claro, cada explicación te dirá en qué lección puedes reforzarlo."
-              />
-              <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setStep(1)}>
-                ¡Comenzar! →
-              </Button>
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <FinniMessage
+              variant="coach"
+              title="¡Llegaste a la penúltima lección!"
+              message="Antes del reto final, vamos a ver qué tanto absorbiste. No es examen: es una radiografía de tu aprendizaje."
+            />
+            <FECard variant="flat" className="border border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10">
+              <p className="font-bold">10 preguntas</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                Mezcla de conceptos, situaciones y aplicaciones prácticas. Por cada respuesta recibirás retroalimentación inmediata.
+              </p>
+            </FECard>
+            <FinniMessage
+              variant="coach"
+              title="Tranquilo"
+              message="Si algo no quedó claro, cada explicación te dirá en qué lección puedes reforzarlo."
+            />
+            <button
+              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+              onClick={() => setStep(1)}
+            >
+              ¡Comenzar! →
+            </button>
+          </div>
         )}
 
         {step === 1 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="body2" color="text.secondary">
-                {Object.keys(answers).length}/{PREGUNTAS.length} respondidas
-              </Typography>
-              {PREGUNTAS.map((q, qi) => {
-                const answered = answers[qi] !== undefined;
-                const isCorrect = answered && answers[qi] === q.correcta;
-                return (
-                  <FECard
-                    key={qi}
-                    variant="flat"
-                    sx={{
-                      border: 2,
-                      borderColor: answered ? (isCorrect ? 'success.main' : 'error.main') : 'divider',
-                      bgcolor: answered ? (isCorrect ? 'success.light' : 'error.light') : 'background.paper',
-                    }}
-                  >
-                    <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>
-                      {qi + 1}. {q.texto}
-                    </Typography>
-                    {q.tipo === 'completar' && !answered && (
-                      <Stack spacing={1} sx={{ mb: 1 }}>
-                        {q.opciones?.map((op, oi) => (
-                          <Button
-                            key={oi}
-                            fullWidth
-                            variant="outlined"
-                            color="warning"
-                            size="small"
-                            onClick={() => answer(qi, oi)}
-                            sx={{ textAlign: 'left', justifyContent: 'flex-start', textTransform: 'none' }}
-                          >
-                            {op}
-                          </Button>
-                        ))}
-                      </Stack>
-                    )}
-                    {q.tipo !== 'completar' && !answered && (
-                      <Stack spacing={1}>
-                        {q.opciones?.map((op, oi) => (
-                          <Button
-                            key={oi}
-                            fullWidth
-                            variant="outlined"
-                            size="small"
-                            onClick={() => answer(qi, oi)}
-                            sx={{ textAlign: 'left', justifyContent: 'flex-start', textTransform: 'none', borderColor: 'warning.main' }}
-                          >
-                            {q.tipo === 'verdadero_falso' ? '' : `${['a', 'b', 'c'][oi]}) `}{op}
-                          </Button>
-                        ))}
-                      </Stack>
-                    )}
-                    {answered && (
-                      <Stack spacing={0.5}>
-                        <Typography variant="body2" fontWeight={700}>
-                          {isCorrect ? '✅ Correcto' : '❌ Incorrecto'} — Tu respuesta: {q.opciones?.[answers[qi]]}
-                        </Typography>
-                        {!isCorrect && (
-                          <Typography variant="body2">
-                            Respuesta correcta: <b>{q.opciones?.[q.correcta]}</b>
-                          </Typography>
-                        )}
-                        <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                          {q.explicacion} (Ref: {q.leccion})
-                        </Typography>
-                      </Stack>
-                    )}
-                  </FECard>
-                );
-              })}
-              {quizDone && (
-                <Fade in>
-                  <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setStep(2)}>
-                    Ver resultado final →
-                  </Button>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              {Object.keys(answers).length}/{PREGUNTAS.length} respondidas
+            </p>
+            {PREGUNTAS.map((q, qi) => {
+              const answered = answers[qi] !== undefined;
+              const isCorrect = answered && answers[qi] === q.correcta;
+              return (
+                <FECard
+                  key={qi}
+                  variant="flat"
+                  className={cn(
+                    'border-2',
+                    answered
+                      ? isCorrect ? 'border-[var(--color-brand-success)] bg-[var(--color-brand-success)]/10' : 'border-[var(--color-brand-error)] bg-[var(--color-brand-error)]/10'
+                      : 'border-[var(--color-neutral-200)]'
+                  )}
+                >
+                  <p className="font-bold text-sm mb-2">
+                    {qi + 1}. {q.texto}
+                  </p>
+                  {!answered && (
+                    <div className="space-y-1">
+                      {q.opciones?.map((op, oi) => (
+                        <button
+                          key={oi}
+                          onClick={() => answer(qi, oi)}
+                          className="w-full text-left text-sm border border-[var(--color-brand-warning)] text-[var(--color-brand-warning)] rounded-xl px-3 py-2"
+                        >
+                          {q.tipo === 'verdadero_falso' ? '' : `${['a', 'b', 'c'][oi]}) `}{op}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {answered && (
+                    <div className="space-y-1">
+                      <p className="font-bold text-sm">
+                        {isCorrect ? '✅ Correcto' : '❌ Incorrecto'} — Tu respuesta: {q.opciones?.[answers[qi]]}
+                      </p>
+                      {!isCorrect && (
+                        <p className="text-sm">
+                          Respuesta correcta: <b>{q.opciones?.[q.correcta]}</b>
+                        </p>
+                      )}
+                      <p className="text-xs text-[var(--color-text-secondary)] italic">
+                        {q.explicacion} (Ref: {q.leccion})
+                      </p>
+                    </div>
+                  )}
+                </FECard>
+              );
+            })}
+            {quizDone && (
+              <button
+                className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+                onClick={() => setStep(2)}
+              >
+                Ver resultado final →
+              </button>
+            )}
+          </div>
         )}
 
         {step === 2 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FECard variant="flat" sx={{ bgcolor: score >= 80 ? 'success.light' : score >= 60 ? 'warning.light' : 'error.light', border: 2, borderColor: score >= 80 ? 'success.main' : score >= 60 ? 'warning.main' : 'error.main', textAlign: 'center', py: 2 }}>
-                <Typography variant="h2">{correctCount}/10</Typography>
-                <Typography variant="body1" fontWeight={700}>{score}% de aciertos</Typography>
-              </FECard>
-              <FinniMessage
-                variant={score >= 80 ? 'success' : 'coach'}
-                title={score >= 80 ? '¡Excelente dominio!' : score >= 60 ? '¡Buen trabajo!' : 'Sigue practicando'}
-                message={
-                  score >= 80
-                    ? 'Dominas los conceptos del módulo. ¡Estás listo para el reto final!'
-                    : score >= 60
-                    ? 'Buen nivel. Revisa las preguntas marcadas en rojo antes del reto final.'
-                    : 'Algunos conceptos necesitan refuerzo. Repasa las lecciones señaladas.'
-                }
-              />
-              {score < 80 && (
-                <FECard variant="flat" sx={{ border: 1, borderColor: 'warning.main' }}>
-                  <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>Lecciones a reforzar:</Typography>
-                  {PREGUNTAS.filter((q, i) => answers[i] !== q.correcta).map((q, i) => (
-                    <Typography key={i} variant="body2">• {q.leccion}: {q.texto.slice(0, 50)}...</Typography>
-                  ))}
-                </FECard>
+          <div className="space-y-3">
+            <FECard
+              variant="flat"
+              className={cn(
+                'border-2 text-center py-4',
+                score >= 80 ? 'bg-[var(--color-brand-success)]/10 border-[var(--color-brand-success)]'
+                  : score >= 60 ? 'bg-[var(--color-brand-warning)]/10 border-[var(--color-brand-warning)]'
+                  : 'bg-[var(--color-brand-error)]/10 border-[var(--color-brand-error)]'
               )}
-            </Stack>
-          </Fade>
+            >
+              <p className="text-4xl">{correctCount}/10</p>
+              <p className="font-bold">{score}% de aciertos</p>
+            </FECard>
+            <FinniMessage
+              variant={score >= 80 ? 'success' : 'coach'}
+              title={score >= 80 ? '¡Excelente dominio!' : score >= 60 ? '¡Buen trabajo!' : 'Sigue practicando'}
+              message={
+                score >= 80
+                  ? 'Dominas los conceptos del módulo. ¡Estás listo para el reto final!'
+                  : score >= 60
+                  ? 'Buen nivel. Revisa las preguntas marcadas en rojo antes del reto final.'
+                  : 'Algunos conceptos necesitan refuerzo. Repasa las lecciones señaladas.'
+              }
+            />
+            {score < 80 && (
+              <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
+                <p className="font-bold text-sm mb-2">Lecciones a reforzar:</p>
+                {PREGUNTAS.filter((q, i) => answers[i] !== q.correcta).map((q, i) => (
+                  <p key={i} className="text-sm">• {q.leccion}: {q.texto.slice(0, 50)}...</p>
+                ))}
+              </FECard>
+            )}
+          </div>
         )}
-      </Box>
+      </div>
     </LessonShell>
   );
 }

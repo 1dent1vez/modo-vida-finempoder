@@ -17,6 +17,7 @@ type State = {
   hydrateFromCompletionMap: (completedMap: Record<string, boolean>) => void;
   isUnlocked: (id: string) => boolean;
   moduleProgress: number;
+  reset: () => void;
 };
 
 const initial: Lesson[] = BUDGET_LESSONS.map((lesson) => ({
@@ -31,6 +32,7 @@ export const useLessons = create<State>()(
     (set, get) => ({
       lessons: initial,
       moduleProgress: 0,
+      reset: () => set({ lessons: initial, moduleProgress: 0 }),
 
       complete: (id, score) => {
         const updated = get().lessons.map((lesson) =>

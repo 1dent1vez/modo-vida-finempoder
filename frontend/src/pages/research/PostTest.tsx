@@ -5,8 +5,8 @@ import { BASE_QUESTIONS } from './questions';
 import { useQuestionnaireSubmit } from '../../hooks/research/useResearchStatus';
 import { useNotifications } from '../../store/notifications';
 import { useAuth } from '../../store/auth';
-import { isOnboarded } from '../../utils/onboarding';
-import { nextRouteFromStatus } from '../../utils/researchGate';
+import { isOnboarded } from '@/shared/utils/onboarding';
+import { nextRouteFromStatus } from '@/shared/utils/researchGate';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ResearchStatusDTO } from '../../api/questionnaire/questionnaire.api';
 

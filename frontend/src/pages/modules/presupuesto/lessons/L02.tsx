@@ -1,7 +1,5 @@
+import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
-import {
-  Box, Stack, Typography, Chip, LinearProgress, Fade, Button,
-} from '@mui/material';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -63,6 +61,7 @@ export default function L02() {
   }, [allDone, answers, correctCount, score]);
 
   const unassigned = ITEMS.filter((i) => answers[i.id] === undefined);
+  const progressValue = step === 0 ? 0 : step === 1 ? 40 : 100;
 
   return (
     <LessonShell
@@ -70,177 +69,157 @@ export default function L02() {
       title="Tu dinero tiene nombre: ingresos fijos y variables"
       completion={{ ready: allDone, score }}
     >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={step === 0 ? 0 : step === 1 ? 40 : 100}
-          color="warning"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
+        </div>
 
-        {/* Pantalla 0 — Explicación */}
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="Finni explica 💡"
-                message="Antes de hacer un presupuesto, necesitas saber con qué cuentas. ¿Toda tu lana llega el mismo día y en la misma cantidad? ¿O depende del mes?"
-              />
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <FECard variant="flat" sx={{ flex: 1, border: 2, borderColor: 'success.main' }}>
-                  <Typography variant="h4" sx={{ mb: 1 }}>📅 Ingresos Fijos</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Llegan con regularidad y en cantidad conocida: beca mensual, mesada, trabajo con sueldo fijo.
-                  </Typography>
-                </FECard>
-                <FECard variant="flat" sx={{ flex: 1, border: 2, borderColor: 'warning.main' }}>
-                  <Typography variant="h4" sx={{ mb: 1 }}>📊 Ingresos Variables</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Llegan a veces sí, a veces no, o en cantidades distintas: freelance, ventas, propinas, proyectos.
-                  </Typography>
-                </FECard>
-              </Stack>
-              <FinniMessage
-                variant="coach"
-                title="Clave"
-                message="Ambos son válidos. La diferencia es cómo los planeas."
-              />
-              <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setStep(1)}>
-                ¡A clasificar! →
-              </Button>
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <FinniMessage
+              variant="coach"
+              title="Finni explica 💡"
+              message="Antes de hacer un presupuesto, necesitas saber con qué cuentas. ¿Toda tu lana llega el mismo día y en la misma cantidad? ¿O depende del mes?"
+            />
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <FECard variant="flat" className="flex-1 border-2 border-[var(--color-brand-success)]">
+                <p className="font-bold text-base mb-2">📅 Ingresos Fijos</p>
+                <p className="text-sm text-[var(--color-text-secondary)]">
+                  Llegan con regularidad y en cantidad conocida: beca mensual, mesada, trabajo con sueldo fijo.
+                </p>
+              </FECard>
+              <FECard variant="flat" className="flex-1 border-2 border-[var(--color-brand-warning)]">
+                <p className="font-bold text-base mb-2">📊 Ingresos Variables</p>
+                <p className="text-sm text-[var(--color-text-secondary)]">
+                  Llegan a veces sí, a veces no, o en cantidades distintas: freelance, ventas, propinas, proyectos.
+                </p>
+              </FECard>
+            </div>
+            <FinniMessage
+              variant="coach"
+              title="Clave"
+              message="Ambos son válidos. La diferencia es cómo los planeas."
+            />
+            <button
+              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+              onClick={() => setStep(1)}
+            >
+              ¡A clasificar! →
+            </button>
+          </div>
         )}
 
-        {/* Pantalla 1 — Actividad */}
         {step === 1 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="body1">
-                Toca una tarjeta y luego elige si es <b>Fijo</b> o <b>Variable</b>.
-              </Typography>
+          <div className="space-y-3">
+            <p className="text-sm">
+              Toca una tarjeta y luego elige si es <b>Fijo</b> o <b>Variable</b>.
+            </p>
+            <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2">
+              <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${(assigned / ITEMS.length) * 100}%` }} />
+            </div>
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              {assigned}/{ITEMS.length} clasificados
+            </p>
 
-              <LinearProgress
-                variant="determinate"
-                value={(assigned / ITEMS.length) * 100}
-                color="warning"
-                sx={{ height: 8, borderRadius: 4 }}
-              />
-              <Typography variant="caption" color="text.secondary">
-                {assigned}/{ITEMS.length} clasificados
-              </Typography>
-
-              {/* Cards to classify */}
-              {unassigned.length > 0 && (
-                <FECard variant="flat" sx={{ border: 1, borderColor: 'divider' }}>
-                  <Typography variant="body2" fontWeight={700} sx={{ mb: 1.5 }}>
-                    Por clasificar:
-                  </Typography>
-                  <Stack direction="row" flexWrap="wrap" gap={1} useFlexGap>
-                    {unassigned.map((item) => (
-                      <Chip
-                        key={item.id}
-                        label={item.label}
-                        onClick={() => setSelected(selected === item.id ? null : item.id)}
-                        color={selected === item.id ? 'warning' : 'default'}
-                        variant={selected === item.id ? 'filled' : 'outlined'}
-                        sx={{ fontWeight: 600, cursor: 'pointer', minHeight: 36 }}
-                      />
-                    ))}
-                  </Stack>
-                </FECard>
-              )}
-
-              {/* Classification buttons */}
-              {selected && (
-                <Fade in>
-                  <Stack direction="row" spacing={2}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      color="success"
-                      onClick={() => classify('fijo')}
-                      sx={{ fontWeight: 700 }}
+            {unassigned.length > 0 && (
+              <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
+                <p className="font-bold text-sm mb-3">Por clasificar:</p>
+                <div className="flex flex-wrap gap-2">
+                  {unassigned.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setSelected(selected === item.id ? null : item.id)}
+                      className={cn(
+                        'px-3 py-2 rounded-full text-sm font-semibold border transition-colors min-h-9',
+                        selected === item.id
+                          ? 'bg-[var(--color-brand-warning)] text-white border-[var(--color-brand-warning)]'
+                          : 'border-[var(--color-neutral-200)] text-[var(--color-text-secondary)]'
+                      )}
                     >
-                      📅 Fijo
-                    </Button>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      color="warning"
-                      onClick={() => classify('variable')}
-                      sx={{ fontWeight: 700 }}
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </FECard>
+            )}
+
+            {selected && (
+              <div className="flex gap-2">
+                <button
+                  className="flex-1 min-h-11 bg-[var(--color-brand-success)] text-white rounded-xl font-bold text-sm"
+                  onClick={() => classify('fijo')}
+                >
+                  📅 Fijo
+                </button>
+                <button
+                  className="flex-1 min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-bold text-sm"
+                  onClick={() => classify('variable')}
+                >
+                  📊 Variable
+                </button>
+              </div>
+            )}
+
+            {lastFeedback && (
+              <FECard
+                variant="flat"
+                className={cn(
+                  'border',
+                  lastFeedback.correct
+                    ? 'bg-[var(--color-brand-success)]/10 border-[var(--color-brand-success)]'
+                    : 'bg-[var(--color-brand-warning)]/10 border-[var(--color-brand-warning)]'
+                )}
+              >
+                <p className="font-bold text-sm">{lastFeedback.correct ? '✅ Correcto' : '⚠️ Casi'}</p>
+                <p className="text-sm">{FEEDBACK[lastFeedback.id]}</p>
+              </FECard>
+            )}
+
+            {Object.keys(answers).length > 0 && (
+              <div className="space-y-2">
+                {(['fijo', 'variable'] as IncomeType[]).map((type) => {
+                  const items = ITEMS.filter((i) => answers[i.id] === type);
+                  if (items.length === 0) return null;
+                  return (
+                    <FECard
+                      key={type}
+                      variant="flat"
+                      className={type === 'fijo' ? 'bg-[var(--color-brand-success)]/10' : 'bg-[var(--color-brand-warning)]/10'}
                     >
-                      📊 Variable
-                    </Button>
-                  </Stack>
-                </Fade>
-              )}
-
-              {/* Feedback */}
-              {lastFeedback && (
-                <Fade in>
-                  <FECard
-                    variant="flat"
-                    sx={{
-                      bgcolor: lastFeedback.correct ? 'success.light' : 'warning.light',
-                      border: 1,
-                      borderColor: lastFeedback.correct ? 'success.main' : 'warning.main',
-                    }}
-                  >
-                    <Typography variant="body2" fontWeight={700}>
-                      {lastFeedback.correct ? '✅ Correcto' : '⚠️ Casi'}
-                    </Typography>
-                    <Typography variant="body2">{FEEDBACK[lastFeedback.id]}</Typography>
-                  </FECard>
-                </Fade>
-              )}
-
-              {/* Classified items */}
-              {Object.keys(answers).length > 0 && (
-                <Stack spacing={1}>
-                  {(['fijo', 'variable'] as IncomeType[]).map((type) => {
-                    const items = ITEMS.filter((i) => answers[i.id] === type);
-                    if (items.length === 0) return null;
-                    return (
-                      <FECard key={type} variant="flat" sx={{ bgcolor: type === 'fijo' ? 'success.light' : 'warning.light' }}>
-                        <Typography variant="body2" fontWeight={700} sx={{ mb: 1 }}>
-                          {type === 'fijo' ? '📅 Fijos' : '📊 Variables'}:
-                        </Typography>
-                        <Stack direction="row" flexWrap="wrap" gap={1} useFlexGap>
-                          {items.map((i) => (
-                            <Chip key={i.id} label={i.label} size="small" />
-                          ))}
-                        </Stack>
-                      </FECard>
-                    );
-                  })}
-                </Stack>
-              )}
-
-              {/* Resultado */}
-              {allDone && (
-                <Fade in>
-                  <Stack spacing={2}>
-                    <FECard variant="flat" sx={{ bgcolor: 'success.light', border: 2, borderColor: 'success.main', textAlign: 'center' }}>
-                      <Typography variant="h4">Ingresos Clasificados ✓</Typography>
-                      <Typography variant="body1" fontWeight={700}>
-                        {correctCount}/8 correctos ({score}%)
-                      </Typography>
+                      <p className="font-bold text-sm mb-2">
+                        {type === 'fijo' ? '📅 Fijos' : '📊 Variables'}:
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {items.map((i) => (
+                          <span key={i.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-[var(--color-neutral-200)] font-semibold">
+                            {i.label}
+                          </span>
+                        ))}
+                      </div>
                     </FECard>
-                    <FinniMessage
-                      variant="success"
-                      title="¡Bien hecho!"
-                      message="Conocer tus ingresos es el primer paso. En la Lección 12 usaremos esta info para tu presupuesto real."
-                    />
-                  </Stack>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+                  );
+                })}
+              </div>
+            )}
+
+            {allDone && (
+              <div className="space-y-2">
+                <FECard variant="flat" className="bg-[var(--color-brand-success)]/10 border-2 border-[var(--color-brand-success)] text-center">
+                  <p className="font-bold text-base">Ingresos Clasificados ✓</p>
+                  <p className="font-bold">
+                    {correctCount}/8 correctos ({score}%)
+                  </p>
+                </FECard>
+                <FinniMessage
+                  variant="success"
+                  title="¡Bien hecho!"
+                  message="Conocer tus ingresos es el primer paso. En la Lección 12 usaremos esta info para tu presupuesto real."
+                />
+              </div>
+            )}
+          </div>
         )}
-      </Box>
+      </div>
     </LessonShell>
   );
 }

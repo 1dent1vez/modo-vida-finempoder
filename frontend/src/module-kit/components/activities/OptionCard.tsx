@@ -1,19 +1,11 @@
-// FinEmpoder — OptionCard
-// Reemplaza los Button ad-hoc de opción múltiple en lecciones.
-// Muestra feedback visual post-respuesta con ícono ✓/✗ y Fade.
-
-import { Box, Collapse, Fade, Stack, Typography } from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
+import { CheckCircle, XCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export interface OptionCardProps {
   label: string;
   selected: boolean;
-  /** true = respuesta correcta (mostrar tras responder) */
   correct?: boolean;
-  /** true = respuesta incorrecta (mostrar tras responder) */
   incorrect?: boolean;
-  /** Explicación que aparece con Collapse tras responder */
   explanation?: string;
   onSelect: () => void;
   disabled?: boolean;
@@ -30,81 +22,49 @@ export function OptionCard({
 }: OptionCardProps) {
   const answered = correct === true || incorrect === true;
 
-  const borderColor = correct
-    ? 'success.main'
-    : incorrect
-    ? 'error.main'
-    : selected
-    ? 'primary.main'
-    : 'divider';
-
-  const bgcolor = correct
-    ? 'success.light'
-    : incorrect
-    ? 'error.light'
-    : selected
-    ? 'primary.main'
-    : 'background.paper';
-
-  const textColor = selected && !answered ? 'primary.contrastText' : 'text.primary';
-
   return (
-    <Box>
-      <Box
-        component="button"
+    <div>
+      <button
+        type="button"
         onClick={disabled ? undefined : onSelect}
-        sx={{
-          width: '100%',
-          textAlign: 'left',
-          cursor: disabled ? 'default' : 'pointer',
-          border: '2px solid',
-          borderColor,
-          borderRadius: 2,
-          bgcolor,
-          p: 3,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 2,
-          transition: 'all 150ms ease',
-          outline: 'none',
-          '&:focus-visible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: 2 },
-          '&:hover:not(:disabled)': !disabled && !answered
-            ? { borderColor: 'primary.main', bgcolor: 'primary.light' }
-            : {},
-        }}
+        disabled={disabled && !answered}
+        className={cn(
+          'w-full text-left border-2 rounded-xl p-4 flex items-center justify-between gap-3 transition-all duration-150 outline-none',
+          'focus-visible:ring-2 focus-visible:ring-[var(--color-brand-primary)] focus-visible:ring-offset-2',
+          correct
+            ? 'border-[var(--color-brand-success)] bg-[var(--color-brand-success-bg)]'
+            : incorrect
+            ? 'border-[var(--color-brand-error)] bg-[var(--color-brand-error-bg)]'
+            : selected
+            ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)] text-white'
+            : 'border-[var(--color-neutral-200)] bg-white hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-info-bg)]',
+          disabled && !answered && 'cursor-default'
+        )}
       >
-        <Typography variant="body1" color={textColor} fontWeight={selected ? 600 : 400}>
+        <span className={cn('text-sm font-medium', selected && !answered && 'text-white')}>
           {label}
-        </Typography>
+        </span>
 
         {answered && (
-          <Fade in>
-            <Stack direction="row" alignItems="center">
-              {correct && <CheckCircleIcon color="success" />}
-              {incorrect && <CancelIcon color="error" />}
-            </Stack>
-          </Fade>
+          <span className="shrink-0">
+            {correct && <CheckCircle className="h-5 w-5 text-[var(--color-brand-success)]" />}
+            {incorrect && <XCircle className="h-5 w-5 text-[var(--color-brand-error)]" />}
+          </span>
         )}
-      </Box>
+      </button>
 
-      {/* Explicación con Collapse post-respuesta */}
-      <Collapse in={answered && !!explanation && (correct === true || incorrect === true)}>
-        <Box
-          sx={{
-            mt: 1,
-            p: 2,
-            borderRadius: 2,
-            bgcolor: correct ? 'success.light' : 'error.light',
-            border: '1px solid',
-            borderColor: correct ? 'success.main' : 'error.main',
-          }}
+      {answered && explanation && (correct === true || incorrect === true) && (
+        <div
+          className={cn(
+            'mt-1.5 p-3 rounded-xl border text-sm',
+            correct
+              ? 'bg-[var(--color-brand-success-bg)] border-[var(--color-brand-success)] text-[var(--color-brand-success)]'
+              : 'bg-[var(--color-brand-error-bg)] border-[var(--color-brand-error)] text-[var(--color-brand-error)]'
+          )}
         >
-          <Typography variant="body2" color={correct ? 'success.dark' : 'error.dark'}>
-            {explanation}
-          </Typography>
-        </Box>
-      </Collapse>
-    </Box>
+          {explanation}
+        </div>
+      )}
+    </div>
   );
 }

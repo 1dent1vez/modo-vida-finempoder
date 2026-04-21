@@ -1,7 +1,5 @@
+import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
-import {
-  Box, Stack, Typography, Button, LinearProgress, Fade, Chip,
-} from '@mui/material';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -97,6 +95,12 @@ function calcSemaforo(data: BudgetData): SemaforoItem[] {
   ];
 }
 
+const COLOR_MAP = {
+  success: { border: 'border-[var(--color-brand-success)]', bg: 'bg-[var(--color-brand-success)]/10', chip: 'bg-[var(--color-brand-success)]/10 text-[var(--color-brand-success)]' },
+  warning: { border: 'border-[var(--color-brand-warning)]', bg: 'bg-[var(--color-brand-warning)]/10', chip: 'bg-[var(--color-brand-warning)]/10 text-[var(--color-brand-warning)]' },
+  error: { border: 'border-[var(--color-brand-error)]', bg: 'bg-[var(--color-brand-error)]/10', chip: 'bg-[var(--color-brand-error)]/10 text-[var(--color-brand-error)]' },
+};
+
 export default function L13() {
   const [step, setStep] = useState(0);
   const [semaforo, setSemaforo] = useState<SemaforoItem[]>([]);
@@ -136,10 +140,12 @@ export default function L13() {
   if (loading) {
     return (
       <LessonShell id="L13" title="Finni te da su veredicto" completion={{ ready: false }}>
-        <Typography variant="body2" color="text.secondary">Cargando tu presupuesto...</Typography>
+        <p className="text-sm text-[var(--color-text-secondary)]">Cargando tu presupuesto...</p>
       </LessonShell>
     );
   }
+
+  const progressValue = step === 0 ? 0 : step === 1 ? 40 : 100;
 
   return (
     <LessonShell
@@ -147,108 +153,98 @@ export default function L13() {
       title="Finni te da su veredicto: ¿cómo vas?"
       completion={{ ready: allViewed || expanded.size >= semaforo.length }}
     >
-      <Box sx={{ p: 1 }}>
-        <LinearProgress
-          variant="determinate"
-          value={step === 0 ? 0 : step === 1 ? 40 : 100}
-          color="warning"
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-        />
+      <div className="p-1">
+        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
+          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
+        </div>
 
         {step === 0 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FinniMessage
-                variant="coach"
-                title="¡Ya tienes tu presupuesto!"
-                message="Déjame analizarlo. Voy a ser honesto contigo: lo que funciona bien, lo celebramos. Lo que necesita ajuste, te lo digo con respeto."
-              />
-              <FECard variant="flat" sx={{ bgcolor: 'warning.light', border: 1, borderColor: 'warning.main', textAlign: 'center', py: 2 }}>
-                <Typography variant="body2" color="text.secondary">Analizando...</Typography>
-                <LinearProgress color="warning" sx={{ mt: 1, height: 8, borderRadius: 4 }} />
-              </FECard>
-              <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setStep(1)}>
-                Ver el reporte semáforo →
-              </Button>
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <FinniMessage
+              variant="coach"
+              title="¡Ya tienes tu presupuesto!"
+              message="Déjame analizarlo. Voy a ser honesto contigo: lo que funciona bien, lo celebramos. Lo que necesita ajuste, te lo digo con respeto."
+            />
+            <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 border border-[var(--color-brand-warning)] text-center py-4">
+              <p className="text-sm text-[var(--color-text-secondary)]">Analizando...</p>
+              <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mt-2">
+                <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all w-3/4" />
+              </div>
+            </FECard>
+            <button
+              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+              onClick={() => setStep(1)}
+            >
+              Ver el reporte semáforo →
+            </button>
+          </div>
         )}
 
         {step === 1 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <Typography variant="body1" fontWeight={700}>
-                Reporte semáforo de Finni 🚦
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Toca cada indicador para ver el análisis completo.
-              </Typography>
-              <Stack spacing={2}>
-                {semaforo.map((s, i) => (
+          <div className="space-y-3">
+            <p className="font-bold">
+              Reporte semáforo de Finni 🚦
+            </p>
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              Toca cada indicador para ver el análisis completo.
+            </p>
+            <div className="space-y-2">
+              {semaforo.map((s, i) => {
+                const colors = COLOR_MAP[s.color];
+                return (
                   <FECard
                     key={i}
                     variant="flat"
-                    sx={{
-                      border: 2,
-                      borderColor: `${s.color}.main`,
-                      bgcolor: expanded.has(i) ? `${s.color}.light` : 'background.paper',
-                      cursor: 'pointer',
-                    }}
+                    className={cn('border-2 cursor-pointer transition-colors', colors.border, expanded.has(i) ? colors.bg : '')}
                     onClick={() => { toggleExpanded(i); if (expanded.size + 1 >= semaforo.length) setAllViewed(true); }}
                     role="button"
                     tabIndex={0}
                   >
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <Typography variant="body2" fontWeight={700}>{s.label}</Typography>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Chip
-                          label={s.value}
-                          color={s.color}
-                          size="small"
-                          sx={{ fontWeight: 700 }}
-                        />
-                        <Typography variant="caption">{expanded.has(i) ? '▲' : '▼'}</Typography>
-                      </Stack>
-                    </Stack>
+                    <div className="flex justify-between items-center">
+                      <p className="font-bold text-sm">{s.label}</p>
+                      <div className="flex items-center gap-2">
+                        <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold', colors.chip)}>
+                          {s.value}
+                        </span>
+                        <p className="text-xs">{expanded.has(i) ? '▲' : '▼'}</p>
+                      </div>
+                    </div>
                     {expanded.has(i) && (
-                      <Fade in>
-                        <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
-                          {s.consejo}
-                        </Typography>
-                      </Fade>
+                      <p className="text-sm mt-2 italic">
+                        {s.consejo}
+                      </p>
                     )}
                   </FECard>
-                ))}
-              </Stack>
-              {(allViewed || expanded.size >= semaforo.length) && (
-                <Fade in>
-                  <Button fullWidth variant="contained" color="warning" size="large" onClick={() => setStep(2)}>
-                    Ver calificación final →
-                  </Button>
-                </Fade>
-              )}
-            </Stack>
-          </Fade>
+                );
+              })}
+            </div>
+            {(allViewed || expanded.size >= semaforo.length) && (
+              <button
+                className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+                onClick={() => setStep(2)}
+              >
+                Ver calificación final →
+              </button>
+            )}
+          </div>
         )}
 
         {step === 2 && (
-          <Fade in>
-            <Stack spacing={3}>
-              <FECard variant="flat" sx={{ bgcolor: 'warning.light', border: 2, borderColor: 'warning.main', textAlign: 'center', py: 2 }}>
-                <Typography variant="h2">
-                  {'⭐'.repeat(stars)}{'☆'.repeat(5 - stars)}
-                </Typography>
-                <Typography variant="h4" sx={{ mt: 1 }}>{stars}/5 indicadores en verde</Typography>
-              </FECard>
-              <FinniMessage
-                variant="success"
-                title="Veredicto de Finni"
-                message={starMsg}
-              />
-            </Stack>
-          </Fade>
+          <div className="space-y-3">
+            <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 border-2 border-[var(--color-brand-warning)] text-center py-4">
+              <p className="text-4xl">
+                {'⭐'.repeat(stars)}{'☆'.repeat(5 - stars)}
+              </p>
+              <p className="font-bold text-base mt-2">{stars}/5 indicadores en verde</p>
+            </FECard>
+            <FinniMessage
+              variant="success"
+              title="Veredicto de Finni"
+              message={starMsg}
+            />
+          </div>
         )}
-      </Box>
+      </div>
     </LessonShell>
   );
 }
