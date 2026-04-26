@@ -45,7 +45,20 @@ app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
 // ── HTTP request logging (pino-http) ───────────────────
 if (env.NODE_ENV !== 'test') {
-  app.use(pinoHttp({ logger }));
+  app.use(pinoHttp({
+    logger,
+    // Mismo messageKey que el logger base para que Railway lo muestre
+    messageKey: 'message',
+    // Mensaje legible por request: "GET /api/health 200"
+    customSuccessMessage: (req, res) =>
+      `${req.method} ${req.url} ${res.statusCode}`,
+    customErrorMessage: (req, res, err) =>
+      `${req.method} ${req.url} ${res.statusCode} — ${(err as Error)?.message ?? 'error'}`,
+    // No loguear el healthcheck para no saturar los logs
+    autoLogging: {
+      ignore: (req) => req.url === '/api/health',
+    },
+  }));
 }
 
 // ── Rate limiting ──────────────────────────────────────
