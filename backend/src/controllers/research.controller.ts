@@ -6,8 +6,8 @@ const TOTAL_PER_MODULE = 15;
 
 async function buildResearchStatus(userId: string) {
   const [{ data: pre }, { data: post }, { data: lessons }] = await Promise.all([
-    supabase.from('questionnaire_results').select('finempoderindex').eq('user_id', userId).eq('type', 'pre').single(),
-    supabase.from('questionnaire_results').select('finempoderindex').eq('user_id', userId).eq('type', 'post').single(),
+    supabase.from('questionnaire_results').select('finempoderindex').eq('user_id', userId).eq('type', 'pre').maybeSingle(),
+    supabase.from('questionnaire_results').select('finempoderindex').eq('user_id', userId).eq('type', 'post').maybeSingle(),
     supabase.from('lesson_progress').select('module_id').eq('user_id', userId).eq('completed', true),
   ]);
 

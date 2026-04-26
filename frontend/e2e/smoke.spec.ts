@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 // Intercepts Supabase auth requests so the app hydrates (onAuthStateChange fires)
 // without needing real credentials in CI.
 async function mockSupabaseAuth(page: import('@playwright/test').Page) {
-  await page.route('https://placeholder.supabase.co/**', (route) =>
+  await page.route('**/auth/v1/**', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
   );
 }
@@ -35,7 +35,7 @@ test.describe('Signup page', () => {
 
   test('renders the signup form', async ({ page }) => {
     await expect(page.getByLabel('Nombre completo')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Crear Cuenta' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Siguiente' })).toBeVisible();
   });
 });
 
