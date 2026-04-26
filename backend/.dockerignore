@@ -5,4 +5,5 @@ dist
 *.log
 *.md
 test/
-tsconfig.prod.json
+.git
+.gitignore

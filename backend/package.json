@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p .",
-    "build:prod": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.prod.json",
+    "build:prod": "node --input-type=module -e \"import{rmSync}from'fs';rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.prod.json",
     "start": "node dist/index.js",
     "test": "cross-env NODE_ENV=test MOCK_GAMIFICATION=true tsx test/all.test.ts",
     "test:unit": "tsx test/gamificationHelpers.test.ts"
