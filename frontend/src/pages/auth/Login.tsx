@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLogin } from '../../hooks/auth/useLogin';
+import { useAuth } from '../../store/auth';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -18,6 +19,8 @@ type FormData = z.infer<typeof schema>;
 export default function LoginPage() {
   const navigate = useNavigate();
   const login = useLogin();
+  const token = useAuth((s) => s.token);
+  const hasHydrated = useAuth((s) => s.hydrated);
   const [showPass, setShowPass] = useState(false);
 
   const {
@@ -30,9 +33,13 @@ export default function LoginPage() {
     defaultValues: { email: '', password: '' },
   });
 
+  // Espera a que onAuthStateChange haya rehidratado el store (token + hydrated)
+  // antes de navegar, evitando la race condition que causa pantalla blanca.
   useEffect(() => {
-    if (login.isSuccess) navigate('/app');
-  }, [login.isSuccess, navigate]);
+    if (login.isSuccess && token && hasHydrated) {
+      navigate('/app', { replace: true });
+    }
+  }, [login.isSuccess, token, hasHydrated, navigate]);
 
   const onSubmit = (values: FormData) => {
     login.mutate({ email: values.email, password: values.password });
