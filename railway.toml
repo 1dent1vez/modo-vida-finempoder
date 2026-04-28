@@ -14,4 +14,4 @@ restartPolicyMaxRetries = 3
 # PORT                 = "4000"
 # SUPABASE_URL         = "https://pxjxktpdxnqiulfyskuk.supabase.co"
 # SUPABASE_SERVICE_ROLE_KEY = <desde Supabase dashboard>
-# CORS_ORIGIN          = "https://finempoder.com.mx,https://www.finempoder.com.mx"
+# CORS_ORIGIN          = "https://app.finempoder.com.mx,https://finempoder.com.mx,https://www.finempoder.com.mx"
