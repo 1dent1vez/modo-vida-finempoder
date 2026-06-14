@@ -48,3 +48,7 @@ Thumbs.db
 .tmp/
 .cache/
 .vite/
+# ECC (Everything Claude Code)
+ecc-temp/
+.agent/ecc-install-state.json
+
