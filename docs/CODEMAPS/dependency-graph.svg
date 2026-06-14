@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 650" width="100%" height="100%">
+  <defs>
+    <!-- Modern drop shadows -->
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+      <feOffset dx="0" dy="4" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.08"/>
+      </feComponentTransfer>
+      <feMerge> 
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Arrow markers -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b" />
+    </marker>
+    <marker id="arrow-sync" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#f97316" />
+    </marker>
+    <marker id="arrow-db" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#0d9488" />
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: 'Outfit', 'Inter', system-ui, sans-serif; font-size: 20px; font-weight: 700; fill: #0f172a; }
+    .subtitle { font-family: 'Inter', system-ui, sans-serif; font-size: 12px; fill: #64748b; }
+    .box-title { font-family: 'Inter', system-ui, sans-serif; font-size: 14px; font-weight: 700; }
+    .node-text { font-family: 'Inter', system-ui, sans-serif; font-size: 11px; fill: #334155; }
+    .node-title { font-family: 'Inter', system-ui, sans-serif; font-size: 12px; font-weight: 600; fill: #0f172a; }
+    .label { font-family: 'Inter', system-ui, sans-serif; font-size: 10px; font-weight: 500; fill: #64748b; text-anchor: middle; }
+    .label-orange { fill: #ea580c; font-weight: 600; }
+    .label-teal { fill: #0d9488; font-weight: 600; }
+  </style>
+
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="#fafafa" rx="12"/>
+
+  <!-- Title -->
+  <text x="25" y="40" class="title">Mapa de Dependencias e Interacción — FinEmpoder</text>
+  <text x="25" y="60" class="subtitle">Flujo de datos offline-first y sincronización con backend</text>
+
+  <!-- 1. FRONTEND BLOCK -->
+  <g filter="url(#shadow)">
+    <rect x="25" y="90" width="360" height="520" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+    <rect x="25" y="90" width="360" height="35" rx="8" fill="#f8fafc" />
+    <path d="M 25 125 L 385 125" stroke="#e2e8f0" stroke-width="1.5"/>
+    <text x="40" y="113" class="box-title" fill="#3b82f6">Frontend (React + Vite PWA)</text>
+
+    <!-- UI Components -->
+    <rect x="45" y="145" width="140" height="120" rx="6" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+    <text x="55" y="165" class="node-title">Vistas / Páginas</text>
+    <text x="55" y="185" class="node-text">• Lecciones (LessonWrapper)</text>
+    <text x="55" y="205" class="node-text">• Onboarding &amp; Tests</text>
+    <text x="55" y="225" class="node-text">• Dashboard (Home)</text>
+    <text x="55" y="245" class="node-text">• Logros &amp; Perfil</text>
+
+    <!-- Zustand Stores -->
+    <rect x="225" y="145" width="140" height="120" rx="6" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1"/>
+    <text x="235" y="165" class="node-title">Zustand Stores</text>
+    <text x="235" y="185" class="node-text">• useAuth</text>
+    <text x="235" y="205" class="node-text">• useProgress</text>
+    <text x="235" y="225" class="node-text">• useLessons</text>
+    <text x="235" y="245" class="node-text">• useNotifications</text>
+
+    <!-- Dexie DB Cache -->
+    <rect x="45" y="320" width="320" height="110" rx="6" fill="#faf5ff" stroke="#e9d5ff" stroke-width="1"/>
+    <text x="55" y="340" class="node-title">Dexie DB (IndexedDB Cache - Offline first)</text>
+    <text x="55" y="365" class="node-text">Tablas: lessonProgress (progreso local), streaks (historial de racha),</text>
+    <text x="55" y="385" class="node-text">syncQueue (cola de sincronización de acciones pendientes),</text>
+    <text x="55" y="405" class="node-text">userLessonData (persistencias internas entre pantallas)</text>
+
+    <!-- Sync Manager -->
+    <rect x="45" y="480" width="320" height="110" rx="6" fill="#fff7ed" stroke="#ffedd5" stroke-width="1"/>
+    <text x="55" y="500" class="node-title">SyncManager (Service &amp; Queue worker)</text>
+    <text x="55" y="525" class="node-text">1. Encola lecciones completadas y XP en IndexedDB.</text>
+    <text x="55" y="545" class="node-text">2. Escucha el evento 'online' del navegador.</text>
+    <text x="55" y="565" class="node-text">3. Despacha reintentos (backoff) al Backend API.</text>
+  </g>
+
+  <!-- 2. BACKEND BLOCK -->
+  <g filter="url(#shadow)">
+    <rect x="460" y="90" width="360" height="230" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+    <rect x="460" y="90" width="360" height="35" rx="8" fill="#f8fafc" />
+    <path d="M 460 125 L 820 125" stroke="#e2e8f0" stroke-width="1.5"/>
+    <text x="475" y="113" class="box-title" fill="#ec4899">Backend (Express.js API)</text>
+
+    <!-- Express Controllers & Routes -->
+    <rect x="480" y="145" width="320" height="150" rx="6" fill="#fdf2f8" stroke="#fbcfe8" stroke-width="1"/>
+    <text x="490" y="165" class="node-title">Controllers / Routes &amp; Middleware</text>
+    <text x="490" y="190" class="node-text">• /auth (authController) — Registro / perfiles</text>
+    <text x="490" y="210" class="node-text">• /progress (progressController) — Completar lecciones</text>
+    <text x="490" y="230" class="node-text">• /questionnaire — Pre/Post Tests y FinEmpoderIndex</text>
+    <text x="490" y="250" class="node-text">• /research — Filtros para admins (análisis de datos)</text>
+    <text x="490" y="270" class="node-text">└─ Helpers: computeLevel() &amp; applyStreak() (gamificación)</text>
+  </g>
+
+  <!-- 3. SUPABASE BLOCK -->
+  <g filter="url(#shadow)">
+    <rect x="460" y="380" width="360" height="230" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+    <rect x="460" y="380" width="360" height="35" rx="8" fill="#f0fdfa" />
+    <path d="M 460 415 L 820 415" stroke="#e2e8f0" stroke-width="1.5"/>
+    <text x="475" y="403" class="box-title" fill="#0d9488">Supabase Cloud (DB &amp; Auth)</text>
+
+    <!-- Supabase Services -->
+    <rect x="480" y="435" width="150" height="155" rx="6" fill="#ecfeff" stroke="#c5f6fa" stroke-width="1"/>
+    <text x="490" y="455" class="node-title">PostgreSQL Tables</text>
+    <text x="490" y="475" class="node-text">• profiles</text>
+    <text x="490" y="490" class="node-text">• lesson_progress</text>
+    <text x="490" y="505" class="node-text">• gamification</text>
+    <text x="490" y="520" class="node-text">• questionnaire_results</text>
+    <text x="490" y="535" class="node-text">• budgets</text>
+    <text x="490" y="555" class="node-text">└─ RLS Policies</text>
+    <text x="500" y="570" class="node-text">(User/Admin guards)</text>
+
+    <rect x="650" y="435" width="150" height="155" rx="6" fill="#f0fdfa" stroke="#ccfbf1" stroke-width="1"/>
+    <text x="660" y="455" class="node-title">Servicios Core</text>
+    <text x="660" y="480" class="node-text">• Supabase Auth</text>
+    <text x="660" y="495" class="node-text">  (Manejo de JWT)</text>
+    <text x="660" y="515" class="node-text">• API REST</text>
+    <text x="660" y="530" class="node-text">  (Acceso directo DB)</text>
+    <text x="660" y="550" class="node-text">• Triggers PostgreSQL</text>
+    <text x="660" y="565" class="node-text">  (set_updated_at)</text>
+  </g>
+
+  <!-- CONNECTIONS & ARROWS -->
+  <!-- UI Views -> Zustand (Read/Write) -->
+  <path d="M 185 170 L 225 170" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <path d="M 225 220 L 185 220" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <!-- UI Views -> Dexie Cache (Write offline) -->
+  <path d="M 115 265 L 115 320" stroke="#64748b" stroke-dasharray="3,3" stroke-width="1.2" marker-end="url(#arrow)"/>
+  
+  <!-- Dexie -> Sync Queue -->
+  <path d="M 205 430 L 205 480" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <!-- Sync Manager -> Backend API (Network Dispatch) -->
+  <path d="M 365 535 L 420 535 L 420 260 L 480 260" stroke="#f97316" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrow-sync)"/>
+  <text x="420" y="380" class="label label-orange" transform="rotate(-90, 420, 380)">POST /progress/lesson-completed</text>
+
+  <!-- Backend API -> Supabase DB (Write/Update) -->
+  <path d="M 640 320 L 640 380" stroke="#0d9488" stroke-width="1.5" marker-end="url(#arrow-db)"/>
+  <text x="648" y="355" class="label label-teal" style="text-anchor: start;">supabase.from()</text>
+
+  <!-- Frontend -> Supabase Auth & Direct DB (Select/Realtime) -->
+  <path d="M 365 190 L 410 190 L 410 455 L 480 455" stroke="#06b6d4" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="402" y="315" class="label" style="fill: #06b6d4;" transform="rotate(-90, 402, 315)">onAuthStateChange</text>
+</svg>
