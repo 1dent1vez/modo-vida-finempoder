@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { evaluateResearchGate, nextRouteFromStatus } from '../src/utils/researchGate';
+import { evaluateResearchGate, nextRouteFromStatus } from '../src/shared/utils/researchGate';
 
 test('redirects to pretest when not completed', () => {
   const result = evaluateResearchGate('/app', { preDone: false, postDone: false, allModulesDone: false });
