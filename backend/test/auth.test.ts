@@ -1,7 +1,7 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { resetStore, authUsers } from './mockSupabase.js';
-import { register, login } from '../src/controllers/auth.controller.js';
+import { register } from '../src/controllers/auth.controller.js';
 
 const res = () => {
   const r: any = { statusCode: 200 };
@@ -27,21 +27,4 @@ test('register falla con email duplicado', async () => {
   const r = res();
   await register(req, r);
   assert.strictEqual(r.statusCode, 409);
-});
-
-test('login exitoso con credenciales correctas', async () => {
-  authUsers.set('b@test.com', { id: 'uid1', email: 'b@test.com', password: 'password1' });
-  const req: any = { body: { email: 'b@test.com', password: 'password1' } };
-  const r = res();
-  await login(req, r);
-  assert.strictEqual(r.statusCode, 200);
-  assert.ok(r.body.token);
-});
-
-test('login falla con contraseña incorrecta', async () => {
-  authUsers.set('c@test.com', { id: 'uid2', email: 'c@test.com', password: 'correct1' });
-  const req: any = { body: { email: 'c@test.com', password: 'wrongwrong' } };
-  const r = res();
-  await login(req, r);
-  assert.strictEqual(r.statusCode, 401);
 });

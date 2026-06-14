@@ -1,8 +1,6 @@
 import type { Request, Response } from 'express';
 import { supabase } from '../lib/supabase.js';
-
-const MODULES = ['presupuesto', 'ahorro', 'inversion'] as const;
-const TOTAL_PER_MODULE = 15;
+import { MODULES, TOTAL_PER_MODULE, computeProgressPercent } from '../config/modules.js';
 
 async function buildResearchStatus(userId: string) {
   const [{ data: pre }, { data: post }, { data: lessons }] = await Promise.all([
@@ -14,7 +12,7 @@ async function buildResearchStatus(userId: string) {
   const moduleProgress: Record<string, number> = {};
   for (const mod of MODULES) {
     const completed = (lessons ?? []).filter((l) => l.module_id === mod).length;
-    moduleProgress[mod] = Math.min(100, Math.round((completed / TOTAL_PER_MODULE) * 100));
+    moduleProgress[mod] = computeProgressPercent(completed, TOTAL_PER_MODULE);
   }
   const allModulesDone = MODULES.every((m) => (moduleProgress[m] ?? 0) >= 100);
 

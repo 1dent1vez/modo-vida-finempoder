@@ -12,7 +12,6 @@ export const store: Record<string, Row[]> = {
   lesson_progress: [],
   gamification: [],
   questionnaire_results: [],
-  budgets: [],
 };
 
 export function resetStore() {
@@ -72,6 +71,13 @@ class Builder {
     return this._resolve().then(({ data, error }) => ({
       data: Array.isArray(data) ? (data[0] ?? null) : data,
       error: Array.isArray(data) && data.length === 0 ? { message: 'not found' } : error,
+    }));
+  }
+
+  maybeSingle(): Promise<{ data: any; error: any }> {
+    return this._resolve().then(({ data, error }) => ({
+      data: Array.isArray(data) ? (data[0] ?? null) : data,
+      error: null,
     }));
   }
 
