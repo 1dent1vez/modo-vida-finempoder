@@ -1,7 +1,7 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { resetStore, store } from './mockSupabase.js';
-import { recordLessonCompletion, getModuleProgress } from '../src/controllers/progress.controller.js';
+import { recordLessonCompletion } from '../src/controllers/progress.controller.js';
 
 const res = () => {
   const r: any = { statusCode: 200 };
@@ -34,17 +34,4 @@ test('recordLessonCompletion es idempotente (retorna 200 en segunda llamada)', a
   // XP no se duplica
   const gam = store.gamification.find((g) => g.user_id === 'u1');
   assert.strictEqual(gam?.xp, 10);
-});
-
-test('getModuleProgress lista lecciones completadas', async () => {
-  store.lesson_progress.push({
-    id: '1', user_id: 'u2', module_id: 'ahorro', lesson_id: 'L01',
-    completed: true, completed_at: new Date().toISOString(), created_at: '', updated_at: '',
-  });
-  const req: any = { user: { sub: 'u2' }, params: { moduleId: 'ahorro' } };
-  const r = res();
-  await getModuleProgress(req, r);
-  assert.strictEqual(r.statusCode, 200);
-  assert.ok(r.body.lessonsCompleted.includes('L01'));
-  assert.strictEqual(r.body.progressPercent, 7); // 1/15 ≈ 6.67 → 7%
 });

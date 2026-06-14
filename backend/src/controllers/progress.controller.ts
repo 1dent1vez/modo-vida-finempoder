@@ -2,9 +2,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { supabase } from '../lib/supabase.js';
 import { computeLevel, applyStreak, type GamificationRow } from '../lib/gamificationHelpers.js';
-
-const MODULES = ['presupuesto', 'ahorro', 'inversion'] as const;
-type ModuleId = (typeof MODULES)[number];
+import { MODULES, MODULE_TOTALS, computeProgressPercent } from '../config/modules.js';
 
 const moduleIdSchema = z.enum(MODULES);
 
@@ -17,12 +15,6 @@ const lessonCompletionSchema = z.object({
     .refine((v) => new Date(v) <= new Date(), { message: 'completedAt no puede ser en el futuro' })
     .optional(),
 });
-
-const MODULE_TOTALS: Record<ModuleId, number> = {
-  presupuesto: 15,
-  ahorro: 15,
-  inversion: 15,
-};
 
 async function ensureGamification(userId: string): Promise<GamificationRow> {
   const { data: existing } = await supabase
@@ -102,7 +94,7 @@ export async function recordLessonCompletion(req: Request, res: Response) {
       .eq('completed', true);
 
     const totalLessons = MODULE_TOTALS[payload.moduleId] ?? 15;
-    const progressPercent = Math.min(100, Math.round(((completedCount ?? 0) / totalLessons) * 100));
+    const progressPercent = computeProgressPercent(completedCount ?? 0, totalLessons);
 
     // Actualizar gamification si es primera vez
     const gamification = await ensureGamification(userId);

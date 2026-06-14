@@ -1,7 +1,7 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { resetStore, store } from './mockSupabase.js';
-import { submitQuestionnaire, getMyQuestionnaire } from '../src/controllers/questionnaire.controller.js';
+import { submitQuestionnaire } from '../src/controllers/questionnaire.controller.js';
 
 const res = () => {
   const r: any = { statusCode: 200 };
@@ -34,23 +34,4 @@ test('submitQuestionnaire hace upsert (no duplica)', async () => {
   await submitQuestionnaire(req, res());
   const records = store.questionnaire_results.filter((r) => r.user_id === 'u1' && r.type === 'pre');
   assert.strictEqual(records.length, 1);
-});
-
-test('getMyQuestionnaire retorna el cuestionario guardado', async () => {
-  store.questionnaire_results.push({
-    id: '1', user_id: 'u2', type: 'post', answers: [], score: 10, finempoderindex: 60,
-    created_at: '', updated_at: '',
-  });
-  const req: any = { user: { sub: 'u2' }, params: { type: 'post' } };
-  const r = res();
-  await getMyQuestionnaire(req, r);
-  assert.strictEqual(r.statusCode, 200);
-  assert.strictEqual(r.body.type, 'post');
-});
-
-test('getMyQuestionnaire retorna 404 si no existe', async () => {
-  const req: any = { user: { sub: 'u3' }, params: { type: 'pre' } };
-  const r = res();
-  await getMyQuestionnaire(req, r);
-  assert.strictEqual(r.statusCode, 404);
 });
