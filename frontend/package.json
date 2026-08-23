@@ -20,7 +20,6 @@
     "verify:all": "npm run lint && npm test && npx tsc -p tsconfig.app.json --noEmit && npm run verify:guards && npm run verify:module1 && npm run verify:module2 && npm run verify:module3"
   },
   "dependencies": {
-    "@hookform/resolvers": "^5.2.2",
     "@mdx-js/react": "^3.1.1",
     "@mdx-js/rollup": "^3.1.1",
     "@radix-ui/react-slot": "^1.2.4",
@@ -35,7 +34,6 @@
     "lucide-react": "^1.8.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-hook-form": "^7.66.0",
     "react-router-dom": "^7.9.5",
     "remark-frontmatter": "^5.0.0",
     "remark-mdx-frontmatter": "^5.2.0",
