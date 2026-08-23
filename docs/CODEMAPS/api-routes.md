@@ -4,24 +4,9 @@ Este documento detalla todas las rutas de API expuestas por el servidor de Expre
 
 ---
 
-## 🔑 Autenticación y Perfil (`/api/auth`)
+## 🔑 Autenticación
 
-### `POST /api/auth/register`
-* **Descripción:** Registra un nuevo estudiante en el sistema. Además del login en Supabase Auth, crea el registro inicial en la tabla `profiles`.
-* **Acceso:** Público (Protegido por `authLimiter`: Máximo 20 peticiones cada 15 min).
-* **Cuerpo de la Petición (`req.body`):**
-  * `id` (string, UUID): El ID generado previamente por Supabase Auth en el cliente.
-  * `name` (string): Nombre completo del estudiante.
-  * `career` (string): Carrera (ej. Ingeniería en Sistemas Computacionales).
-  * `age` (number): Edad.
-  * `phone` (string, opcional): Teléfono.
-* **Respuesta Exitosa (201 Created):**
-  ```json
-  {
-    "ok": true,
-    "user": { "id": "...", "name": "...", "career": "..." }
-  }
-  ```
+No existen rutas de autenticación en el backend. La auth ocurre **directamente desde el frontend** con **Supabase Auth** (Google OAuth y magic link / email OTP); `/api/auth` no existe y el `authLimiter` fue eliminado.
 
 ---
 

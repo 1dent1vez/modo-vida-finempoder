@@ -87,3 +87,21 @@ El código está listo, pero el flujo de Google OAuth requiere configuración fu
 
 **Backend — build** (`npm run build` en `backend/` → `tsc -p .`)
 - Resultado: PASS — salida 0.
+
+## 6. Fix menores gate Lupa
+
+**Resumen de los 3 fixes**
+- `frontend/src/pages/profile/Profile.tsx`: el botón "Registrarse" del guest mode ahora navega a `/auth` en lugar de `/signup` (ruta eliminada que caía al fallback). El botón "Iniciar sesión" queda en `/login` (que redirige a `/auth`); no se tocó nada más del archivo.
+- Docs desactualizados de la API de auth eliminada: `backend/README.md`, `docs/API.md`, `docs/CODEMAPS/api-routes.md` y `supabase/README.md` ahora documentan que la auth ocurre vía **Supabase Auth directamente desde el frontend** (Google OAuth y magic link / email OTP) y que `/api/auth` no existe (sin `authLimiter`). En `supabase/README.md` se omitió la fila de INSERT con service role (el backend ya no inserta en `profiles`).
+- `backend/test/mockSupabase.ts`: eliminados los mocks muertos `signUp` y `signInWithPassword` (y el store `authUsers` asociado). Previa verificación con grep: 0 usos en `backend/src` y `backend/test`.
+
+**SHA del commit**
+- `78cdc89715200957a7cca40a440d92d8bce4ca9e`
+
+**Outputs de verificación**
+- `grep -rn "/signup" frontend/src` → 0 resultados (rc=1).
+- `grep -rn "register\|authLimiter" backend/README.md docs/ supabase/README.md` → 4 hits, todos texto nuevo que declara la eliminación de la API (sin referencias a la API eliminada como activa): `backend/README.md:9`, `docs/API.md:19`, `docs/API.md:42`, `docs/CODEMAPS/api-routes.md:9`.
+- `grep -rn "signUp\|signInWithPassword" backend/src backend/test` → 0 usos (rc=1).
+- Frontend `npm test` → Test Files 13 passed (13), Tests 80 passed (80), Duration 2.31s.
+- Backend `npm test` → tests 8, pass 8, fail 0, duration 22ms.
+- Frontend `npm run build` (`tsc -b && vite build`) → rc=0 (PWA generada, 146 entradas precache).

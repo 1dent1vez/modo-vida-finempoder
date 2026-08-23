@@ -16,9 +16,8 @@
 | SELECT | Usuario autenticado | `auth.uid() = id` |
 | SELECT | Admin (`role = 'admin'`) | Sin restricción de id |
 | UPDATE | Usuario autenticado | `auth.uid() = id` |
-| INSERT | Backend (service role) | Bypasea RLS — ocurre en `POST /api/auth/register` antes de que el usuario tenga sesión |
 
-**Nota**: La migración 002 define `INSERT WITH CHECK (auth.uid() = id)` para usuarios autenticados. El backend usa service role y omite esa política. Si algún día el frontend necesita crear el perfil directamente (post-signup flow), la política ya está lista.
+**Nota**: La migración 002 define `INSERT WITH CHECK (auth.uid() = id)` para usuarios autenticados. El registro es por Supabase Auth desde el frontend y el backend ya no inserta en `profiles`; si algún día el frontend necesita crear el perfil directamente (post-signup flow), la política ya está lista.
 
 ---
 

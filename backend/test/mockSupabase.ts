@@ -16,10 +16,7 @@ export const store: Record<string, Row[]> = {
 
 export function resetStore() {
   for (const key of Object.keys(store)) store[key] = [];
-  authUsers.clear();
 }
-
-export const authUsers = new Map<string, { id: string; email: string; password: string }>();
 
 const now = () => new Date().toISOString();
 const uid = () => Math.random().toString(36).slice(2);
@@ -147,21 +144,6 @@ class Builder {
 (supabase as any).from = (table: string) => new Builder(table);
 
 (supabase as any).auth = {
-  signUp: async ({ email, password }: any) => {
-    if (authUsers.has(email)) {
-      return { data: { user: null, session: null }, error: { message: 'User already registered' } };
-    }
-    const id = uid();
-    authUsers.set(email, { id, email, password });
-    return { data: { user: { id, email }, session: { access_token: `mock-${id}` } }, error: null };
-  },
-  signInWithPassword: async ({ email, password }: any) => {
-    const u = authUsers.get(email);
-    if (!u || u.password !== password) {
-      return { data: { user: null, session: null }, error: { message: 'Invalid login credentials' } };
-    }
-    return { data: { user: { id: u.id, email }, session: { access_token: `mock-${u.id}` } }, error: null };
-  },
   getUser: async (token: string) => {
     if (token?.startsWith('mock-')) {
       return { data: { user: { id: token.replace('mock-', ''), email: 'test@example.com' } }, error: null };
