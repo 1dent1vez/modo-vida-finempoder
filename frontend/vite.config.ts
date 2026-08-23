@@ -136,6 +136,7 @@ export default defineConfig({
   server: {
     host: true,              // Permite acceso desde red local (móvil)
     port: 5173,
+    allowedHosts: true,       // Permite hosts del túnel (cloudflared) en dev; solo afecta dev server
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:4000', // Backend express
@@ -146,6 +147,7 @@ export default defineConfig({
   },
   preview: {
     host: true,
+    allowedHosts: true,
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:4000',

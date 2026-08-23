@@ -58,19 +58,21 @@ export default function Settings() {
           </div>
         </FECard>
 
-        {/* Sesión */}
-        <FECard variant="flat">
-          <h2 className="text-base font-bold mb-4">Sesión</h2>
-          <Button
-            variant="destructive"
-            className="w-full"
-            onClick={handleLogout}
-            aria-label="Cerrar sesión"
-          >
-            <LogOut className="h-4 w-4" />
-            Cerrar sesión
-          </Button>
-        </FECard>
+        {/* Sesión — solo usuarios logueados (en invitado no aplica cerrar sesión) */}
+        {user && (
+          <FECard variant="flat">
+            <h2 className="text-base font-bold mb-4">Sesión</h2>
+            <Button
+              variant="destructive"
+              className="w-full"
+              onClick={handleLogout}
+              aria-label="Cerrar sesión"
+            >
+              <LogOut className="h-4 w-4" />
+              Cerrar sesión
+            </Button>
+          </FECard>
+        )}
       </div>
     </div>
   );

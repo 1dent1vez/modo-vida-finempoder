@@ -9,7 +9,9 @@ export function ResearchGate({ children }: { children: React.ReactNode }) {
   const status = useResearchStatus();
   const user = useAuth((s) => s.user);
 
-  if (!user) return <Navigate to="/login" replace />;
+  // Modo invitado (sin sesión): el research gate es solo para usuarios
+  // logueados (modelo B2B2C). El invitado entra y juega de inmediato.
+  if (!user) return <>{children}</>;
   if (status.isLoading) return null;
 
   const onboardingDone = isOnboarded(user.id, user.email);

@@ -142,6 +142,9 @@ export default function Home() {
     ? user.name.split(' ')[0]
     : user?.email?.split('@')[0] ?? 'Estudiante';
 
+  // En modo invitado no mostramos datos personales: saludo genérico.
+  const greetingName = user ? displayName : 'Estudiante';
+
   const today = new Date().toLocaleDateString('es-MX', {
     weekday: 'long', day: 'numeric', month: 'long',
   });
@@ -153,10 +156,10 @@ export default function Home() {
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-xl font-bold text-white">
-            {displayName[0]?.toUpperCase() ?? 'U'}
+            {greetingName[0]?.toUpperCase() ?? 'U'}
           </div>
           <div>
-            <h1 className="text-lg font-extrabold">Hola, {displayName}</h1>
+            <h1 className="text-lg font-extrabold">Hola, {greetingName}</h1>
             <p className="text-xs capitalize text-[var(--color-text-secondary)]">{today}</p>
           </div>
         </div>

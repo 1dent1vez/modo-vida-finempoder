@@ -42,8 +42,9 @@ function PageLoader() {
 }
 
 function RootGate() {
-  const token = useAuth((s) => s.token);
-  return token ? <Navigate to="/app" replace /> : <Navigate to="/login" replace />;
+  // Guest mode (Fase 0): la raíz siempre entra a /app. Sin sesión = invitado
+  // (PrivateRoute + ResearchGate ya lo permiten); con sesión = usuario normal.
+  return <Navigate to="/app" replace />;
 }
 
 export default function App() {
