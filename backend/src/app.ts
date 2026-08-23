@@ -6,7 +6,6 @@ import rateLimit from 'express-rate-limit';
 import { pinoHttp } from 'pino-http';
 import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
-import { authRouter } from './routes/auth.js';
 import { progressRouter } from './routes/progress.js';
 import { questionnaireRouter } from './routes/questionnaire.js';
 import { researchRouter } from './routes/research.js';
@@ -72,16 +71,6 @@ const globalLimiter = rateLimit({
   skip: () => env.NODE_ENV === 'test',
 });
 
-// Auth: más estricto — 20 intentos/15min
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Demasiados intentos, intenta de nuevo más tarde.' },
-  skip: () => env.NODE_ENV === 'test',
-});
-
 app.use('/api', globalLimiter);
 
 // ── Healthcheck ────────────────────────────────────────
@@ -90,7 +79,6 @@ app.get('/api/health', (_req, res) => {
 });
 
 // ── Rutas ──────────────────────────────────────────────
-app.use('/api/auth', authLimiter, authRouter);
 app.use('/api/progress', progressRouter);
 app.use('/api/questionnaire', questionnaireRouter);
 app.use('/api/research', researchRouter);
