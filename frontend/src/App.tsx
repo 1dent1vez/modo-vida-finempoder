@@ -10,7 +10,7 @@ import { LessonWrapper } from '@/features/lessons/components/LessonWrapper';
 
 // ── Auth (static — needed at first load) ──────────────
 import LoginPage from './pages/auth/Login';
-import SignUpPage from './pages/auth/SignUp';
+import AuthCallback from './pages/auth/AuthCallback';
 
 // ── Lazy-loaded pages ─────────────────────────────────
 const Screen1 = lazy(() => import('./pages/onboarding/Screen1'));
@@ -66,8 +66,9 @@ export default function App() {
           <Route path="/onboarding/3" element={<Screen3 />} />
 
           {/* Auth público */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/login" element={<Navigate to="/auth" replace />} />
+          <Route path="/auth" element={<LoginPage />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/research/pretest" element={<PreTest />} />
           <Route path="/research/posttest" element={<PostTest />} />
 

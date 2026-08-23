@@ -9,7 +9,10 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['test/**/*.test.ts'],
+    // Los tests de lógica pura viven en test/ (node). Los de componentes
+    // (jsdom vía docblock // @vitest-environment jsdom) viven junto al
+    // código en src/, como define la sección test de vite.config.ts.
+    include: ['test/**/*.test.ts', 'src/**/*.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts', 'src/**/*.tsx'],
