@@ -19,6 +19,7 @@ const ESTRATEGIAS = [
 const CASOS = [
   { nombre: 'Laura', tipo: 'Mesada fija de $2,000/mes', estrategia: 'Porcentaje fijo: aparta $400 (20%) el día que llega la mesada.' },
   { nombre: 'Rodrigo', tipo: 'Tutorías: gana entre $800 y $3,500 según el mes', estrategia: 'Mes base ($800) + porcentaje del excedente. Automatiza el mínimo.' },
+  { nombre: 'Carmen', tipo: 'Mesera: sueldo base + propinas variables', estrategia: 'Doble fondo: aparta un mínimo fijo cada quincena y el extra de propinas lo guarda de inmediato.' },
 ];
 
 export default function L07() {
@@ -76,10 +77,10 @@ export default function L07() {
         {/* Pantalla 1 — Identificacion */}
         {step === 1 && (
           <div className="space-y-6">
-            <p className="font-bold">¿Como es tu ingreso este semestre?</p>
+            <p className="font-bold">¿Cómo es tu ingreso actualmente?</p>
             <div className="space-y-2">
               {[
-                { key: 'fijo' as const, label: 'Fijo (mesada, beca constante)', desc: 'Sabes exactamente cuánto recibirás cada mes' },
+                { key: 'fijo' as const, label: 'Fijo (sueldo, mesada o beca constante)', desc: 'Sabes exactamente cuánto recibirás cada mes' },
                 { key: 'variable' as const, label: 'Variable (freelance, ventas, tutorías)', desc: 'El monto cambia cada mes' },
                 { key: 'mixto' as const, label: 'Mixto (algo fijo + algo variable)', desc: 'Una base fija más ingresos extras' },
               ].map((o) => (

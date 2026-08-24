@@ -7,18 +7,18 @@ type MapChoice = 'ahorro' | 'seguro' | 'ambos' | null;
 type Q = 'a' | 'b' | 'c' | null;
 
 const SITUACIONES = [
-  { id: 1, text: 'Laptop descompuesta antes de examenes ($5,000)', correct: 'ahorro' as const, exp: 'Ahorro: este importe cabe en un buen fondo de emergencias.' },
+  { id: 1, text: 'Laptop descompuesta cuando más la necesitas ($5,000)', correct: 'ahorro' as const, exp: 'Ahorro: este importe cabe en un buen fondo de emergencias.' },
   { id: 2, text: 'Hospitalización de emergencia ($20,000)', correct: 'seguro' as const, exp: 'Seguro: un evento tan grande está fuera del alcance de la mayoría de los fondos.' },
   { id: 3, text: 'Mes sin ingreso por enfermedad', correct: 'ambos' as const, exp: 'Ambos: el seguro cubre el evento, el fondo cubre la brecha mientras el seguro responde.' },
   { id: 4, text: 'Multa inesperada ($500)', correct: 'ahorro' as const, exp: 'Ahorro: pequeño imprevisible que tu fondo cubre fácilmente.' },
   { id: 5, text: 'Accidente de tránsito', correct: 'seguro' as const, exp: 'Seguro: responsabilidad civil y daños pueden superar cualquier fondo.' },
-  { id: 6, text: 'Perdida de beca por 2 meses', correct: 'ambos' as const, exp: 'Ambos: fondo para los primeros meses, seguro de desempleo para mayor duración.' },
+  { id: 6, text: 'Pérdida de ingreso por 2 meses', correct: 'ambos' as const, exp: 'Ambos: fondo para los primeros meses, seguro de desempleo para mayor duración.' },
 ];
 
 const SEGUROS = [
-  { label: 'Gastos médicos mayores', desc: 'Disponible en algunas universidades públicas' },
+  { label: 'Gastos médicos mayores', desc: 'Disponible en algunas universidades o empresas' },
   { label: 'IMSS', desc: 'Si tienes trabajo formal o a través de tus padres' },
-  { label: 'Seguro de viajero', desc: 'Para intercambios o viajes largos' },
+  { label: 'Seguro de viajero', desc: 'Para viajes largos' },
   { label: 'Seguro de gadgets', desc: 'Para laptop o celular si es tu herramienta de trabajo' },
 ];
 
@@ -76,15 +76,15 @@ export default function L09() {
               <p className="text-sm font-bold mb-2">Situación 1 — Carlos:</p>
               <p className="text-sm">Tiene $3,000 en fondo de emergencias. Se enferma, gasto medico $8,000.</p>
               <p className="text-sm mt-1" style={{ color: errorColor }}>Sin seguro → vacia el fondo y sigue debiendo $5,000.</p>
-              <p className="text-sm" style={{ color: successColor }}>Con seguro medico estudiantil → paga $500 deducible, fondo intacto.</p>
+              <p className="text-sm" style={{ color: successColor }}>Con seguro médico → paga $500 deducible, fondo intacto.</p>
             </FECard>
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
               <p className="text-sm font-bold mb-2">Situación 2 — Mariana:</p>
-              <p className="text-sm">Tiene seguro de desempleo estudiantil. Pierde trabajo part-time.</p>
+              <p className="text-sm">Tiene seguro de desempleo. Pierde trabajo part-time.</p>
               <p className="text-sm mt-1" style={{ color: successColor }}>El seguro cubre 3 meses de ingreso básico. Fondo intacto para otra situación.</p>
             </FECard>
             <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
-              <p className="text-sm font-bold mb-2">Seguros basicos para universitarios:</p>
+              <p className="text-sm font-bold mb-2">Seguros básicos para quien empieza:</p>
               {SEGUROS.map((s) => (
                 <div key={s.label} className="flex gap-2 items-start mb-1">
                   <p className="text-sm">•</p>

@@ -16,8 +16,10 @@ const CATEGORIAS = [
   { label: 'Laptop', min: 8000, max: 15000, emoji: '💻' },
   { label: 'Viaje de graduación', min: 5000, max: 12000, emoji: '✈️' },
   { label: 'Fondo de emergencias', min: 3000, max: 6000, emoji: '🛡️' },
+  { label: 'Pagar deudas', min: 3000, max: 10000, emoji: '💳' },
   { label: 'Curso o certificación', min: 2000, max: 5000, emoji: '📚' },
   { label: 'Celular', min: 4000, max: 10000, emoji: '📱' },
+  { label: 'Herramienta de trabajo', min: 2000, max: 8000, emoji: '🛠️' },
   { label: 'La mía (personalizada)', min: 0, max: 0, emoji: '🎯' },
 ];
 
@@ -105,7 +107,7 @@ export default function L05() {
         {/* Pantalla 1 — Galeria */}
         {step === 1 && (
           <div className="space-y-6">
-            <p className="font-bold">Metas comunes entre universitarios — toca una para preseleccionarla:</p>
+            <p className="font-bold">Metas comunes — toca una para preseleccionarla:</p>
             <div className="space-y-2">
               {CATEGORIAS.map((cat) => {
                 const isSelected = meta === cat.label || (cat.label === 'La mía (personalizada)' && !CATEGORIAS.slice(0, -1).some((c) => c.label === meta));
@@ -150,7 +152,7 @@ export default function L05() {
             <p className="font-bold">Define tu meta de ahorro:</p>
             <input
               type="text"
-              placeholder="¿Cuál es tu meta de ahorro? Ej: Laptop para la escuela"
+              placeholder="¿Cuál es tu meta de ahorro? Ej: Laptop para el trabajo o la escuela"
               value={meta}
               onChange={(e) => setMeta(e.target.value)}
               className="w-full border border-[var(--color-neutral-200)] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-success)]"
