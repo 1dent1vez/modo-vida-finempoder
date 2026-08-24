@@ -1,4 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import confetti from 'canvas-confetti';
 import { ArrowRight, ArrowLeft, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import FECard from '../../shared/components/FECard';
@@ -8,6 +9,7 @@ import { Button } from '../../shared/components/ui/button';
 import { cn } from '@/lib/utils';
 import { lessonProgressRepository } from '../../db/lessonProgress.repository';
 import { resolveLessonCompletion, type LessonCompletion } from '../lessonContract';
+import { COMPLETION_MESSAGES } from './lessonCompletionMessages';
 import { LockedLessonScreen } from './LockedLessonScreen';
 import { useLessons } from '../../store/lessons';
 import { useProgress } from '../../store/progress';
@@ -37,6 +39,30 @@ const MODULE_BUTTON_CLASS: Record<string, string> = {
   info: '',
 };
 
+function useReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = () => setReduced(mq.matches);
+    if (typeof mq.addEventListener === 'function') {
+      mq.addEventListener('change', onChange);
+      return () => mq.removeEventListener('change', onChange);
+    }
+    if (typeof mq.addListener === 'function') {
+      mq.addListener(onChange);
+      return () => mq.removeListener(onChange);
+    }
+    return undefined;
+  }, []);
+
+  return reduced;
+}
+
 export type LessonShellCoreProps = {
   id: string;
   title: string;
@@ -64,6 +90,9 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
   const [requiredLessonId, setRequiredLessonId] = useState<string | null>(null);
   const [persisting, setPersisting] = useState(false);
   const once = useRef(false);
+  const confettiFired = useRef(false);
+  const reducedMotion = useReducedMotion();
+  const [xp, setXp] = useState(0);
 
   const completion = useMemo(
     () => resolveLessonCompletion({
@@ -72,6 +101,14 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
       completion: props.completion,
     }),
     [props.completeWhen, props.score, props.completion]
+  );
+
+  const completionMessage = useMemo(
+    () =>
+      completed
+        ? COMPLETION_MESSAGES[Math.floor(Math.random() * COMPLETION_MESSAGES.length)]
+        : null,
+    [completed]
   );
 
   const hydrateFromRepository = useCallback(async () => {
@@ -151,6 +188,54 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
     recordActivity,
   ]);
 
+  useEffect(() => {
+    if (!completed || reducedMotion || confettiFired.current) return;
+    confettiFired.current = true;
+    confetti({ particleCount: 120, spread: 70, origin: { y: 0.7 } });
+  }, [completed, reducedMotion]);
+
+  useEffect(() => {
+    if (!completed) return;
+    const target = completion.score ?? 100;
+    if (reducedMotion) {
+      setXp(target);
+      return;
+    }
+
+    const duration = 800;
+    const start = performance.now();
+    let frameId: number | null = null;
+    let cancelled = false;
+
+    const schedule = (cb: FrameRequestCallback) => {
+      if (typeof window.requestAnimationFrame === 'function') {
+        frameId = window.requestAnimationFrame(cb);
+      } else {
+        frameId = window.setTimeout(() => cb(performance.now()), 16);
+      }
+    };
+
+    const step = () => {
+      if (cancelled) return;
+      const t = Math.min(1, (performance.now() - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setXp(Math.round(eased * target));
+      if (t < 1) schedule(step);
+    };
+
+    schedule(step);
+    return () => {
+      cancelled = true;
+      if (frameId !== null) {
+        if (typeof window.cancelAnimationFrame === 'function') {
+          window.cancelAnimationFrame(frameId);
+        } else {
+          window.clearTimeout(frameId);
+        }
+      }
+    };
+  }, [completed, completion.score, reducedMotion]);
+
   const previousPath = useMemo(() => getPreviousLessonPath(config, props.id), [config, props.id]);
   const nextPath = useMemo(() => getNextLessonPath(config, props.id), [config, props.id]);
   const nextLessonId = getNextLessonId(config, props.id);
@@ -202,15 +287,34 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
 
         {completed && (
           <div className="mt-6 animate-[fadeIn_200ms_ease-in]">
+            <div className="mb-4 flex items-center justify-center gap-3">
+              <span
+                data-testid="xp-counter"
+                className="rounded-full bg-[var(--color-brand-success)]/10 px-4 py-2 text-lg font-extrabold text-[var(--color-brand-success)]"
+              >
+                +{xp} XP
+              </span>
+              {!reducedMotion && (
+                <span
+                  data-testid="xp-float"
+                  className="text-sm font-bold text-[var(--color-brand-success)]"
+                  style={{ animation: 'finniXpFloat 900ms ease-out both' }}
+                >
+                  +{completion.score ?? 100} XP
+                </span>
+              )}
+              <style>{`@keyframes finniXpFloat { 0% { opacity: 0; transform: translateY(6px); } 100% { opacity: 1; transform: translateY(0); } }`}</style>
+            </div>
             <FinniMessage
               variant="success"
               title="Lección completada"
-              message={
-                nextLessonId
-                  ? `Desbloqueaste ${nextLessonId}. Puedes continuar cuando quieras.`
-                  : 'Completaste este bloque del módulo.'
-              }
+              message={completionMessage ?? '¡Lección completada!'}
             />
+            <p className="mt-2 text-center text-xs text-[var(--color-text-secondary)]">
+              {nextLessonId
+                ? `Desbloqueaste ${nextLessonId}. Puedes continuar cuando quieras.`
+                : 'Completaste este bloque del módulo.'}
+            </p>
             {persisting && (
               <p className="mt-2 text-xs text-[var(--color-text-secondary)]">Guardando progreso...</p>
             )}
