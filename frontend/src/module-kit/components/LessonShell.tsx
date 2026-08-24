@@ -8,6 +8,7 @@ import { PageHeader } from '../../shared/components/PageHeader';
 import { Button } from '../../shared/components/ui/button';
 import { cn } from '@/lib/utils';
 import { lessonProgressRepository } from '../../db/lessonProgress.repository';
+import { lessonResumeRepository } from '../../db/lessonResume.repository';
 import { resolveLessonCompletion, type LessonCompletion } from '../lessonContract';
 import { COMPLETION_MESSAGES } from './lessonCompletionMessages';
 import { LockedLessonScreen } from './LockedLessonScreen';
@@ -151,6 +152,7 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
     const persistCompletion = async () => {
       try {
         await lessonProgressRepository.setCompleted(moduleId, props.id);
+        await lessonResumeRepository.clear(moduleId, props.id);
 
         const alreadyLegacy = useLessons
           .getState()

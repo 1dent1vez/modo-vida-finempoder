@@ -1,8 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 type IngresoType = 'fijo' | 'variable' | 'mixto' | null;
 type Estrategia = 'porcentaje' | 'doble_fondo' | 'mes_base' | null;
@@ -24,6 +26,13 @@ const CASOS = [
 
 export default function L07() {
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('ahorro', 'L07');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
   const [ingresoType, setIngresoType] = useState<IngresoType>(null);
   const [ingreso1, setIngreso1] = useState('');
   const [ingreso2, setIngreso2] = useState('');
@@ -50,6 +59,20 @@ export default function L07() {
   return (
     <LessonShell id="L07" title="Cuando tu ingreso es impredecible" completion={{ ready: canComplete }}>
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
         </div>

@@ -1,8 +1,10 @@
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 type Classification = 'planned' | 'unplanned' | null;
 
@@ -28,6 +30,13 @@ const GASTOS = [
 
 export default function L01() {
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('presupuesto', 'L01');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
   const [quincenaAnswer, setQuincenaAnswer] = useState<string | null>(null);
   const [classifications, setClassifications] = useState<Record<string, Classification>>({});
 
@@ -53,6 +62,20 @@ export default function L01() {
       completion={{ ready: allClassified }}
     >
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
         </div>

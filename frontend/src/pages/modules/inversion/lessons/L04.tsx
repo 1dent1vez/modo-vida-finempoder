@@ -3,6 +3,8 @@ import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 const ORDEN = [
   { num: 1, titulo: 'Gastos básicos del mes cubiertos', color: 'var(--color-brand-error)' },
@@ -18,6 +20,13 @@ const successBg = 'var(--color-brand-success-bg)';
 
 export default function L04() {
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('inversion', 'L04');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
   const [ingreso, setIngreso] = useState(3500);
   const [gastos, setGastos] = useState(2200);
   const [fondoEmergencias, setFondoEmergencias] = useState(0);
@@ -53,6 +62,20 @@ export default function L04() {
   return (
     <LessonShell id="L04" title="Invierte solo lo que puedes 'no ver' un tiempo" completion={{ ready: guardado }}>
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${(step / 3) * 100}%`, backgroundColor: infoColor }} />
         </div>

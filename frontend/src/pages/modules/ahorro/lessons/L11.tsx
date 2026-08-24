@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 const successColor = 'var(--color-brand-success)';
 const successBg    = 'var(--color-brand-success-bg)';
@@ -18,6 +20,13 @@ const FINNI_MSGS = [
 
 export default function L11() {
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('ahorro', 'L11');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
   const [accepted, setAccepted] = useState(false);
   const [dayAmounts, setDayAmounts] = useState<string[]>(['', '', '']);
   const [dayCompleted, setDayCompleted] = useState<boolean[]>([false, false, false]);
@@ -47,6 +56,20 @@ export default function L11() {
   return (
     <LessonShell id="L11" title="Micro-reto: ahorra 3 días seguidos" completion={{ ready: allDone }}>
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
         </div>

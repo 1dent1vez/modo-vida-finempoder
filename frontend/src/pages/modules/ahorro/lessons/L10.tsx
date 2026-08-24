@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 type Q = 'a' | 'b' | 'c' | null;
 
@@ -29,6 +31,13 @@ const errorBg = 'var(--color-brand-error-bg)';
 
 export default function L10() {
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('ahorro', 'L10');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [q1, setQ1] = useState<Q>(null);
   const [q2, setQ2] = useState<Q>(null);
@@ -58,6 +67,20 @@ export default function L10() {
   return (
     <LessonShell id="L10" title="El IPAB: el guardian de tu dinero" completion={{ ready: quizDone, score: score / 4 }}>
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
         </div>

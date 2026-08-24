@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 type BridgeAnswer = 'nada' | 'algo' | 'planeado' | null;
 type ReflexAnswer = 'a' | 'b' | 'depende' | null;
@@ -38,6 +40,13 @@ const RUTAS = [
 
 export default function L01() {
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('ahorro', 'L01');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
   const [bridge, setBridge] = useState<BridgeAnswer>(null);
   const [rutaExpanded, setRutaExpanded] = useState<string | null>(null);
   const [reflex, setReflex] = useState<ReflexAnswer>(null);
@@ -51,6 +60,20 @@ export default function L01() {
   return (
     <LessonShell id="L01" title="Ahorro primero: el hábito que cambia todo" completion={{ ready: quizDone }}>
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
         </div>

@@ -3,6 +3,8 @@ import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 type Instrumento = 'cetes' | 'fondoBalanceado' | 'acciones';
 type Portafolio = Record<Instrumento, number>;
@@ -30,6 +32,13 @@ const warnBg = 'var(--color-brand-warning-bg)';
 
 export default function L09() {
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('inversion', 'L09');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
   const [portafolio, setPortafolio] = useState<Portafolio>({ cetes: 400, fondoBalanceado: 300, acciones: 300 });
   const [portafolioConfirmado, setPortafolioConfirmado] = useState(false);
   const [perfilGuardado, setPerfilGuardado] = useState<string | null>(null);
@@ -85,6 +94,20 @@ export default function L09() {
       completion={{ ready: portafolioConfirmado }}
     >
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: infoColor }} />
         </div>

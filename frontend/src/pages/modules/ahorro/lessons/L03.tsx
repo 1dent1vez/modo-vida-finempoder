@@ -1,7 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 type Q1 = 'a' | 'b' | 'c' | null;
 type Q2 = 'a' | 'b' | 'c' | null;
@@ -29,6 +31,13 @@ const AUDIO_SCRIPT = [
 
 export default function L03() {
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('ahorro', 'L03');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
   const [audioRead, setAudioRead] = useState(false);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [monto, setMonto] = useState('5000');
@@ -57,6 +66,20 @@ export default function L03() {
   return (
     <LessonShell id="L03" title="Tu dinero en el banco trabaja por ti" completion={{ ready: audioRead && quizDone, score: score / 2 }}>
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
         </div>

@@ -3,6 +3,8 @@ import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 type MetaData = { nombre?: string; monto?: number; aportacionMensual?: number } | null;
 type PlanData = { totalPlanado?: number; horizon?: number } | null;
@@ -65,6 +67,13 @@ function buildIndicadores(meta: MetaData, plan: PlanData, reto: RetoData): Indic
 
 export default function L13() {
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('ahorro', 'L13');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
   const [loading, setLoading] = useState(true);
   const [indicadores, setIndicadores] = useState<Indicador[]>([]);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
@@ -114,6 +123,20 @@ export default function L13() {
   return (
     <LessonShell id="L13" title="Finni dice: cómo vas con tu ahorro" completion={{ ready: allViewed && answered }}>
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: 'var(--color-brand-success)' }} />
         </div>

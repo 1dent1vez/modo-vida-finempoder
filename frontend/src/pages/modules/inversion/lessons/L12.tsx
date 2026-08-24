@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 // Dato referencial INEGI 2024
 const INFLACION_MEXICO_2024 = 4.66;
@@ -25,6 +27,13 @@ const warnBg = 'var(--color-brand-warning-bg)';
 
 export default function L12() {
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('inversion', 'L12');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
   const [rendimientoUsuario, setRendimientoUsuario] = useState(10);
   const [inflacionUsuario, setInflacionUsuario] = useState(INFLACION_MEXICO_2024);
   const [montoCalc, setMontoCalc] = useState(10000);
@@ -49,6 +58,20 @@ export default function L12() {
       completion={{ ready: calculado }}
     >
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: infoColor }} />
         </div>

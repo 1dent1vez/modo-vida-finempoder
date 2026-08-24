@@ -1,9 +1,11 @@
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CheckCircle } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 const HERRAMIENTAS = [
   {
@@ -50,6 +52,13 @@ const PASOS_TUTORIAL = [
 
 export default function L11() {
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('presupuesto', 'L11');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
   const [favoritas, setFavoritas] = useState<Set<string>>(new Set());
   const [tutorialStep, setTutorialStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
@@ -85,6 +94,20 @@ export default function L11() {
       completion={{ ready: allTutorialDone }}
     >
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
         </div>

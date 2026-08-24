@@ -3,6 +3,8 @@ import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 type Horizon = 1 | 3 | 6;
 type MetaData = { nombre?: string; monto?: number; aportacionMensual?: number } | null;
@@ -21,6 +23,13 @@ const PLAN_DESCRIPTIONS: Record<Horizon, { title: string; desc: string }> = {
 
 export default function L06() {
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('ahorro', 'L06');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
   const [horizon, setHorizon] = useState<Horizon | null>(null);
   const [metaData, setMetaData] = useState<MetaData>(null);
   const [weekAmounts, setWeekAmounts] = useState<Record<number, string>>({});
@@ -55,6 +64,20 @@ export default function L06() {
   return (
     <LessonShell id="L06" title="Tu plan de ahorro: 1, 3 o 6 meses" completion={{ ready: canComplete }}>
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
         </div>

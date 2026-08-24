@@ -4,6 +4,8 @@ import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 const SUGERENCIAS = ['Un viaje', 'Una laptop', 'Ropa nueva', 'Fondo de emergencias', 'Un regalo especial'];
 
@@ -17,6 +19,13 @@ const SMART_LETTERS = [
 
 export default function L09() {
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('presupuesto', 'L09');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
 
   const [queQuieres, setQueQuieres] = useState('');
   const [monto, setMonto] = useState('');
@@ -63,6 +72,20 @@ export default function L09() {
       completion={{ ready: allValid }}
     >
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
         </div>

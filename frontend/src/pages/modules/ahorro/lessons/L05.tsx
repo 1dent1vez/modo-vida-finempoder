@@ -3,6 +3,8 @@ import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 type SmartGoal = { queQuieres?: string; monto?: number; aportacionMensual?: number } | null;
 
@@ -25,6 +27,13 @@ const CATEGORIAS = [
 
 export default function L05() {
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('ahorro', 'L05');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
   const [smartGoal, setSmartGoal] = useState<SmartGoal>(null);
   const [meta, setMeta] = useState('');
   const [monto, setMonto] = useState('');
@@ -79,6 +88,20 @@ export default function L05() {
   return (
     <LessonShell id="L05" title="Ponle nombre a tu ahorro: define tu meta" completion={{ ready: formValid }}>
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
         </div>

@@ -4,6 +4,8 @@ import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
 import { useAuth } from '../../../../store/auth';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 const INSTRUMENTOS_SIM = [
   { key: 'cetes28',        nombre: 'CETES 28 días',                   tasaAnual: 0.100, riesgo: 1, emoji: '🔵' },
@@ -64,6 +66,13 @@ const riesgoColor = (r: number) => r <= 2 ? successColor : r === 3 ? warnColor :
 export default function L15() {
   const userName = useAuth((s) => s.user?.name);
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('inversion', 'L15');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
   const [perfilRiesgo, setPerfilRiesgo] = useState<string>('moderado');
   const [capitalInicial, setCapitalInicial] = useState(5000);
   const [planData, setPlanData] = useState<{ instrumento?: string; plazoMeses?: number } | null>(null);
@@ -177,6 +186,20 @@ export default function L15() {
       completion={{ ready: simulacionCompleta }}
     >
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${progressStepPct}%`, backgroundColor: infoColor }} />
         </div>

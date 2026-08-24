@@ -4,6 +4,8 @@ import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 const GASTOS_HORMIGA = [
   { id: 'cafe', label: 'Café matutino', amount: 45, emoji: '☕' },
@@ -22,6 +24,13 @@ type PersonalGasto = { nombre: string; monto: string };
 
 export default function L03() {
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('presupuesto', 'L03');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
   const [found, setFound] = useState<Set<string>>(new Set());
   const [personalGastos, setPersonalGastos] = useState<PersonalGasto[]>([
     { nombre: '', monto: '' },
@@ -68,6 +77,20 @@ export default function L03() {
       completion={{ ready: allFound && personalValid }}
     >
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
         </div>

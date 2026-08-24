@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 const TIPOS_COMISION = [
   { tipo: 'Por administración', desc: 'Cobro anual del fondo por gestionar tu dinero.', ejemplo: '2% anual' },
@@ -37,6 +39,13 @@ const errorBg = 'var(--color-brand-error-bg)';
 
 export default function L11() {
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('inversion', 'L11');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
   const [monto, setMonto] = useState(10000);
   const [rendimientoBruto, setRendimientoBruto] = useState(10);
   const [comisionAdmin, setComisionAdmin] = useState(2);
@@ -61,6 +70,20 @@ export default function L11() {
       completion={{ ready: calculado && simulacroHecho }}
     >
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: infoColor }} />
         </div>

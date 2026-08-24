@@ -1,8 +1,10 @@
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 const infoColor    = 'var(--color-brand-info)';
 const infoBg       = 'var(--color-brand-info-bg)';
@@ -27,6 +29,13 @@ function calcRendimiento(monto: number, plazo: number): number {
 
 export default function L06() {
   const [step, setStep] = useState(0);
+
+  const resume = useLessonResume('inversion', 'L06');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
   const [flipped, setFlipped] = useState<boolean[]>([false, false, false]);
   const [montoSim, setMontoSim] = useState<number | 'custom'>(100);
   const [customMonto, setCustomMonto] = useState(200);
@@ -50,6 +59,20 @@ export default function L06() {
       completion={{ ready: simulado }}
     >
       <div className="p-1">
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${progressPct}%`, backgroundColor: infoColor }} />
         </div>
