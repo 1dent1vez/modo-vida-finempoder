@@ -116,7 +116,7 @@ export default function AhorroIndex() {
             className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold"
             style={{
               backgroundColor: paceOk ? 'var(--color-brand-success-bg)' : 'var(--color-brand-warning-bg)',
-              color: paceOk ? '#059669' : '#D97706',
+              color: paceOk ? successColor : warnColor,
               border: `1px solid ${paceOk ? successColor : warnColor}`,
             }}
           >
