@@ -89,7 +89,7 @@ export default function L04() {
         {step === 1 && (
           <div className="space-y-6">
             <p className="text-2xl font-bold">Simulación: flujo de dinero</p>
-            <p className="text-sm text-[var(--color-text-secondary)]">Estudiante ficticio con $3,500/mes. Observa cómo se distribuye:</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">Caso ficticio con $3,500/mes. Observa cómo se distribuye:</p>
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
               {[
                 { label: 'Ingreso mensual', valor: 3500, color: successColor },

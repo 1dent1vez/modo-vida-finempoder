@@ -120,7 +120,7 @@ export default function L13() {
             <FinniMessage
               variant="coach"
               title="¡Es momento de juntar todo lo que aprendiste!"
-              message="Hoy vas a construir tu plan personal de inversión. No el de un experto con millones — el tuyo, con tu situación real, como estudiante mexicano."
+              message="Hoy vas a construir tu plan personal de inversión. No el de un experto con millones — el tuyo, con tu situación real, como mexicano que empieza."
             />
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
               <p className="font-bold mb-2">Un plan de inversión básico tiene 4 componentes:</p>

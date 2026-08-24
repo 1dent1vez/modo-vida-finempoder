@@ -97,7 +97,7 @@ export default function L05() {
                 </div>
               ))}
             </div>
-            <FinniMessage variant="coach" title="Para estudiantes que empiezan" message="Las opciones más accesibles son CETES, fondos de inversión de bajo riesgo y plataformas de micro-inversión reguladas." />
+            <FinniMessage variant="coach" title="Para quien empieza" message="Las opciones más accesibles son CETES, fondos de inversión de bajo riesgo y plataformas de micro-inversión reguladas." />
             <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setStep(1)}>
               Comparar instrumentos →
             </button>
