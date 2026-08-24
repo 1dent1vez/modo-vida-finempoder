@@ -62,7 +62,7 @@ export default function L10() {
             <div className="p-4 rounded-2xl border-2" style={{ backgroundColor: errorBg, borderColor: errorColor }}>
               <div className="flex items-center gap-2 mb-2">
                 <span>⚠️</span>
-                <p className="font-extrabold" style={{ color: '#DC2626' }}>Alerta</p>
+                <p className="font-extrabold" style={{ color: 'var(--color-brand-error)' }}>Alerta</p>
               </div>
               <p className="text-sm">
                 Cada año, miles de mexicanos pierden sus ahorros en esquemas fraudulentos que prometen rendimientos imposibles. Hoy aprendes a detectarlos antes de caer.
@@ -119,7 +119,7 @@ export default function L10() {
                     style={{
                       backgroundColor: done ? (correcto ? successBg : errorBg) : casoActivo === i ? warnBg : 'transparent',
                       borderColor: done ? (correcto ? successColor : errorColor) : casoActivo === i ? warnColor : 'var(--color-neutral-200)',
-                      color: done ? (correcto ? '#059669' : '#DC2626') : casoActivo === i ? '#D97706' : 'var(--color-text-secondary)',
+                      color: done ? (correcto ? 'var(--color-brand-success)' : 'var(--color-brand-error)') : casoActivo === i ? 'var(--color-brand-warning)' : 'var(--color-text-secondary)',
                     }}
                     onClick={() => setCasoActivo(i)}
                   >
@@ -169,7 +169,7 @@ export default function L10() {
                       <div className="space-y-4">
                         <span
                           className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold"
-                          style={correcto ? { backgroundColor: successBg, color: '#059669' } : { backgroundColor: errorBg, color: '#DC2626' }}
+                          style={correcto ? { backgroundColor: successBg, color: 'var(--color-brand-success)' } : { backgroundColor: errorBg, color: 'var(--color-brand-error)' }}
                         >
                           {correcto ? '✅ Decisión correcta' : '❌ Esta era una trampa'}
                         </span>

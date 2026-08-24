@@ -105,7 +105,7 @@ export default function L01() {
                 </div>
                 <div className="p-4 rounded-xl" style={{ backgroundColor: errorBg }}>
                   <p className="text-xs text-[var(--color-text-secondary)]">LÍNEA C — Diferencia real</p>
-                  <p className="text-xl font-extrabold" style={{ color: '#DC2626' }}>${(invested - savedReal).toFixed(0)} de ventaja al invertir</p>
+                  <p className="text-xl font-extrabold" style={{ color: 'var(--color-brand-error)' }}>${(invested - savedReal).toFixed(0)} de ventaja al invertir</p>
                 </div>
               </div>
               <p className="text-sm mt-4 italic">"La diferencia no es suerte. Es el tiempo y el conocimiento."</p>
@@ -140,7 +140,7 @@ export default function L01() {
                     </>
                   ) : (
                     <>
-                      <p className="text-xs font-bold" style={{ color: '#059669' }}>✅ REALIDAD</p>
+                      <p className="text-xs font-bold" style={{ color: 'var(--color-brand-success)' }}>✅ REALIDAD</p>
                       <p className="text-base font-bold">{m.realidad}</p>
                     </>
                   )}

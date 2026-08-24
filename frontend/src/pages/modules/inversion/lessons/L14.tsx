@@ -14,9 +14,9 @@ interface Indicador {
 }
 
 const colorVars = {
-  verde:   { bg: 'var(--color-brand-success-bg)', border: 'var(--color-brand-success)',  text: '#059669', emoji: '🟢' },
-  amarillo:{ bg: 'var(--color-brand-warning-bg)', border: 'var(--color-brand-warning)',  text: '#D97706', emoji: '🟡' },
-  rojo:    { bg: 'var(--color-brand-error-bg)',   border: 'var(--color-brand-error)',    text: '#DC2626', emoji: '🔴' },
+  verde:   { bg: 'var(--color-brand-success-bg)', border: 'var(--color-brand-success)',  text: 'var(--color-brand-success)', emoji: '🟢' },
+  amarillo:{ bg: 'var(--color-brand-warning-bg)', border: 'var(--color-brand-warning)',  text: 'var(--color-brand-warning)', emoji: '🟡' },
+  rojo:    { bg: 'var(--color-brand-error-bg)',   border: 'var(--color-brand-error)',    text: 'var(--color-brand-error)', emoji: '🔴' },
 };
 
 function semIcon(estado: Semaforo) {

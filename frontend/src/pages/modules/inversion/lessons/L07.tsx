@@ -110,7 +110,7 @@ export default function L07() {
                       <div key={row.aspecto} className="flex py-1.5 border-b border-[var(--color-neutral-200)]">
                         <p className="text-xs font-bold w-[35%]">{row.aspecto}</p>
                         <p className="text-xs w-[32.5%]" style={{ color: '#B45309' }}>{row.fondos}</p>
-                        <p className="text-xs w-[32.5%]" style={{ color: '#059669' }}>{row.acciones}</p>
+                        <p className="text-xs w-[32.5%]" style={{ color: 'var(--color-brand-success)' }}>{row.acciones}</p>
                       </div>
                     ))}
                   </div>

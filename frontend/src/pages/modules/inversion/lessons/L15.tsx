@@ -233,7 +233,7 @@ export default function L15() {
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold border" style={{ color: successColor, borderColor: successColor }}>
                           {(inst.tasaAnual * 100).toFixed(1)}%/año
                         </span>
-                        <span className="font-extrabold text-sm min-w-[36px] text-right" style={{ color: '#D97706' }}>{pct}%</span>
+                        <span className="font-extrabold text-sm min-w-[36px] text-right" style={{ color: 'var(--color-brand-warning)' }}>{pct}%</span>
                       </div>
                     </div>
                     <div className="flex gap-2 items-center">
@@ -253,7 +253,7 @@ export default function L15() {
                 { label: `Instrumentos: ${instrumentosUsados} ≥ 2 ${diversificadoMinimo ? '✓' : '✗'}`, ok: diversificadoMinimo },
                 { label: concentradoDeMas ? '⚠ Muy concentrado' : '✓ Diversificado', ok: !concentradoDeMas },
               ].map(({ label, ok }) => (
-                <span key={label} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: ok ? successBg : 'var(--color-brand-error-bg)', color: ok ? '#059669' : '#DC2626', border: `1px solid ${ok ? successColor : errorColor}` }}>
+                <span key={label} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: ok ? successBg : 'var(--color-brand-error-bg)', color: ok ? 'var(--color-brand-success)' : 'var(--color-brand-error)', border: `1px solid ${ok ? successColor : errorColor}` }}>
                   {label}
                 </span>
               ))}
@@ -304,7 +304,7 @@ export default function L15() {
               <div className="space-y-4">
                 <div className="p-4 rounded-2xl border" style={{ backgroundColor: successBg, borderColor: successColor }}>
                   <p className="text-sm font-bold">Decisión: {decisionTomada}</p>
-                  <p className="text-xl font-black" style={{ color: '#059669' }}>Portafolio: ${valorPortafolio.toFixed(0)}</p>
+                  <p className="text-xl font-black" style={{ color: 'var(--color-brand-success)' }}>Portafolio: ${valorPortafolio.toFixed(0)}</p>
                   <p className="text-xs" style={{ color: valorPortafolio > capitalInicial ? successColor : errorColor }}>
                     {valorPortafolio > capitalInicial ? '📈' : '📉'} {((valorPortafolio - capitalInicial) / capitalInicial * 100).toFixed(1)}% vs capital inicial
                   </p>
@@ -348,7 +348,7 @@ export default function L15() {
               <p className="text-4xl">{superoInflacion ? '🏆' : '📊'}</p>
               <p className="text-2xl font-black mt-2">${valorPortafolio.toFixed(0)}</p>
               <p className="text-base">Rendimiento: <strong>{rendimientoFinal.toFixed(2)}%</strong> en 12 meses</p>
-              <span className="inline-flex items-center mt-2 px-3 py-1 rounded-full text-sm font-bold" style={{ backgroundColor: superoInflacion ? successBg : warnBg, color: superoInflacion ? '#059669' : '#D97706', border: `1px solid ${superoInflacion ? successColor : warnColor}` }}>
+              <span className="inline-flex items-center mt-2 px-3 py-1 rounded-full text-sm font-bold" style={{ backgroundColor: superoInflacion ? successBg : warnBg, color: superoInflacion ? 'var(--color-brand-success)' : 'var(--color-brand-warning)', border: `1px solid ${superoInflacion ? successColor : warnColor}` }}>
                 {superoInflacion ? `✅ Superaste la inflación (${(INFLACION_SIM * 100).toFixed(0)}%)` : `⚠️ No superaste la inflación (${(INFLACION_SIM * 100).toFixed(0)}%)`}
               </span>
             </div>
@@ -404,8 +404,8 @@ export default function L15() {
                 {[
                   { label: 'Lecciones completadas', val: '45 lecciones (3 módulos)' },
                   { label: 'Badges desbloqueados', val: '💰 🌱 📈 (3/3)' },
-                  { label: 'Rendimiento en simulador', val: `${rendimientoFinal >= 0 ? '+' : ''}${rendimientoFinal.toFixed(2)}%`, color: rendimientoFinal >= 0 ? '#059669' : '#DC2626' },
-                  { label: 'Inflación superada', val: superoInflacion ? 'Sí ✅' : 'No — sigue practicando', color: superoInflacion ? '#059669' : '#D97706' },
+                  { label: 'Rendimiento en simulador', val: `${rendimientoFinal >= 0 ? '+' : ''}${rendimientoFinal.toFixed(2)}%`, color: rendimientoFinal >= 0 ? 'var(--color-brand-success)' : 'var(--color-brand-error)' },
+                  { label: 'Inflación superada', val: superoInflacion ? 'Sí ✅' : 'No — sigue practicando', color: superoInflacion ? 'var(--color-brand-success)' : 'var(--color-brand-warning)' },
                 ].map(({ label, val, color }) => (
                   <div key={label} className="flex justify-between">
                     <span className="text-sm text-[var(--color-text-secondary)]">{label}</span>

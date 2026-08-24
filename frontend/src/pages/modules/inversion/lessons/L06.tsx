@@ -214,7 +214,7 @@ export default function L06() {
                 </div>
                 <div>
                   <p className="text-xs text-[var(--color-text-secondary)]">Ganas en {plazoSim} días</p>
-                  <p className="text-base font-extrabold" style={{ color: '#059669' }}>+${rendimiento.toFixed(2)}</p>
+                  <p className="text-base font-extrabold" style={{ color: 'var(--color-brand-success)' }}>+${rendimiento.toFixed(2)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-[var(--color-text-secondary)]">Recibes al vencimiento</p>

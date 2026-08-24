@@ -96,7 +96,7 @@ export default function L04() {
                 { label: '− Gastos fijos y variables', valor: -2200, color: 'var(--color-brand-error)' },
                 { label: '− Fondo de emergencias', valor: -300, color: 'var(--color-brand-warning)' },
                 { label: '− Ahorro meta', valor: -200, color: infoColor },
-                { label: '= Capital de inversión', valor: 800, color: '#059669' },
+                { label: '= Capital de inversión', valor: 800, color: 'var(--color-brand-success)' },
               ].map((row) => (
                 <div key={row.label} className="flex justify-between py-2 border-b border-[var(--color-neutral-200)]">
                   <p className="text-sm">{row.label}</p>
@@ -137,7 +137,7 @@ export default function L04() {
             </div>
             <div className="p-4 rounded-xl border-2" style={{ backgroundColor: capitalInversion > 0 ? successBg : 'var(--color-neutral-100)', borderColor: capitalInversion > 0 ? successColor : 'var(--color-border)' }}>
               <p className="text-sm">Capital disponible para inversión:</p>
-              <p className="text-3xl font-black" style={{ color: capitalInversion > 0 ? '#059669' : 'var(--color-text-secondary)' }}>${capitalInversion.toLocaleString()}</p>
+              <p className="text-3xl font-black" style={{ color: capitalInversion > 0 ? 'var(--color-brand-success)' : 'var(--color-text-secondary)' }}>${capitalInversion.toLocaleString()}</p>
             </div>
             <FinniMessage
               variant={fm.tipo === 'si' ? 'success' : 'coach'}

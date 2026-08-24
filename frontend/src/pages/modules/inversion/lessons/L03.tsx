@@ -15,9 +15,9 @@ const CONCEPTOS: { nombre: string; emoji: string; color: ConceptoColor; def: str
 ];
 
 const colorVars: Record<ConceptoColor, { bg: string; border: string; text: string }> = {
-  success: { bg: 'var(--color-brand-success-bg)', border: 'var(--color-brand-success)', text: '#059669' },
-  error:   { bg: 'var(--color-brand-error-bg)',   border: 'var(--color-brand-error)',   text: '#DC2626' },
-  warning: { bg: 'var(--color-brand-warning-bg)', border: 'var(--color-brand-warning)', text: '#D97706' },
+  success: { bg: 'var(--color-brand-success-bg)', border: 'var(--color-brand-success)', text: 'var(--color-brand-success)' },
+  error:   { bg: 'var(--color-brand-error-bg)',   border: 'var(--color-brand-error)',   text: 'var(--color-brand-error)' },
+  warning: { bg: 'var(--color-brand-warning-bg)', border: 'var(--color-brand-warning)', text: 'var(--color-brand-warning)' },
   info:    { bg: 'var(--color-brand-info-bg)',     border: 'var(--color-brand-info)',    text: '#4B73F0' },
 };
 
