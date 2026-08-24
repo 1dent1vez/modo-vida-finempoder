@@ -13,18 +13,18 @@ const errorBg = 'var(--color-brand-error-bg)';
 
 const BENEFICIOS = [
   { title: 'Rendimientos', example: '$5,000 al 3% = $150 anuales sin hacer nada', detail: 'El banco te paga por dejarle usar tu dinero temporalmente. Es tu derecho, no un regalo.' },
-  { title: 'Proteccion IPAB', example: 'Hasta ~3 millones de pesos garantizados por el gobierno', detail: 'Si tu banco quiebra, el IPAB te devuelve tu dinero. No pasa con tu alcancia.' },
-  { title: 'Historial financiero', example: 'Tener cuenta activa mejora tu perfil para creditos futuros', detail: 'Los bancos y empleadores verifican tu historial. Una cuenta activa construye tu reputacion.' },
-  { title: 'Disciplina automatica', example: '"Lo que no ves, no lo gastas"', detail: 'Separar el ahorro en cuenta diferente hace que no lo toques por impulso.' },
+  { title: 'Protección IPAB', example: 'Hasta ~3 millones de pesos garantizados por el gobierno', detail: 'Si tu banco quiebra, el IPAB te devuelve tu dinero. No pasa con tu alcancía.' },
+  { title: 'Historial financiero', example: 'Tener cuenta activa mejora tu perfil para créditos futuros', detail: 'Los bancos y empleadores verifican tu historial. Una cuenta activa construye tu reputación.' },
+  { title: 'Disciplina automática', example: '"Lo que no ves, no lo gastas"', detail: 'Separar el ahorro en cuenta diferente hace que no lo toques por impulso.' },
 ];
 
 const TASAS_REF = [3, 5, 8, 10];
 
 const AUDIO_SCRIPT = [
   '"Los intereses son el pago que el banco te hace por dejarle usar tu dinero temporalmente. No es un regalo: es tu derecho."',
-  '"Si tienes $5,000 en una cuenta con 3% de rendimiento anual, al año tendras $5,150. Sin mover un dedo."',
-  '"Ahora imagina que esos $150 tambien generan interes el siguiente año. Eso se llama interes compuesto, y lo veremos mas a fondo en la Leccion 12."',
-  '"El IPAB protege tus depositos en bancos autorizados hasta 400,000 UDIs (aproximadamente 3 millones de pesos). Si tu banco quiebra, el gobierno te regresa tu dinero."',
+  '"Si tienes $5,000 en una cuenta con 3% de rendimiento anual, al año tendrás $5,150. Sin mover un dedo."',
+  '"Ahora imagina que esos $150 también generan interés el siguiente año. Eso se llama interés compuesto, y lo veremos más a fondo en la Lección 12."',
+  '"El IPAB protege tus depósitos en bancos autorizados hasta 400,000 UDIs (aproximadamente 3 millones de pesos). Si tu banco quiebra, el gobierno te regresa tu dinero."',
 ];
 
 export default function L03() {
@@ -64,13 +64,13 @@ export default function L03() {
         {/* Pantalla 0 — Apertura */}
         {step === 0 && (
           <div className="space-y-6">
-            <FinniMessage variant="coach" title="Tu dinero puede generar dinero" message="¿Sabias que tu dinero en el banco puede generar dinero sin que hagas nada? No mucho, pero algo. Y ese algo, sumado mes a mes, importa." />
+            <FinniMessage variant="coach" title="Tu dinero puede generar dinero" message="¿Sabías que tu dinero en el banco puede generar dinero sin que hagas nada? No mucho, pero algo. Y ese algo, sumado mes a mes, importa." />
             <FECard variant="flat" className="border" style={{ borderColor: successColor, backgroundColor: successBg }}>
-              <p className="font-bold text-sm mb-1">Ejemplo rapido:</p>
+              <p className="font-bold text-sm mb-1">Ejemplo rápido:</p>
               <p className="text-sm">$5,000 al 3% anual = <b>$5,150</b> al final del año. Sin hacer nada.</p>
             </FECard>
             <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
-              Ver la explicacion completa →
+              Ver la explicación completa →
             </button>
           </div>
         )}
@@ -78,7 +78,7 @@ export default function L03() {
         {/* Pantalla 1 — Transcripcion */}
         {step === 1 && (
           <div className="space-y-6">
-            <p className="font-bold">Finni explica (transcripcion):</p>
+            <p className="font-bold">Finni explica (transcripción):</p>
             <div className="space-y-3">
               {AUDIO_SCRIPT.map((line, i) => (
                 <FECard key={i} variant="flat" className="border border-[var(--color-neutral-200)]">
@@ -112,13 +112,13 @@ export default function L03() {
                     <span className="text-xs">{expanded.has(i) ? '▲' : '▼'}</span>
                   </div>
                   <p className="text-xs text-[var(--color-text-secondary)]">{b.example}</p>
-                  {expanded.has(i) && <p className="text-sm mt-2" style={{ color: '#059669' }}>{b.detail}</p>}
+                  {expanded.has(i) && <p className="text-sm mt-2" style={{ color: successColor }}>{b.detail}</p>}
                 </FECard>
               ))}
             </div>
 
             <FECard variant="flat" className="border" style={{ borderColor: successColor }}>
-              <p className="font-bold text-sm mb-3">Calculadora basica</p>
+              <p className="font-bold text-sm mb-3">Calculadora básica</p>
               <div className="space-y-3">
                 <input
                   type="number"
@@ -138,7 +138,7 @@ export default function L03() {
                       style={{
                         borderColor: successColor,
                         backgroundColor: tasa === t ? successColor : 'transparent',
-                        color: tasa === t ? 'white' : '#059669',
+                        color: tasa === t ? 'white' : successColor,
                       }}
                     >
                       {t}%
@@ -156,8 +156,8 @@ export default function L03() {
                 />
                 {montoNum > 0 && plazoNum > 0 && (
                   <FECard variant="flat" className="text-center py-3" style={{ backgroundColor: successBg }}>
-                    <p className="text-xs text-[var(--color-text-secondary)]">Al final tendrias:</p>
-                    <p className="text-2xl font-extrabold" style={{ color: '#059669' }}>
+                    <p className="text-xs text-[var(--color-text-secondary)]">Al final tendrías:</p>
+                    <p className="text-2xl font-extrabold" style={{ color: successColor }}>
                       ${resultado.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                     </p>
                   </FECard>
@@ -174,15 +174,15 @@ export default function L03() {
         {/* Pantalla 3 — Quiz */}
         {step === 3 && (
           <div className="space-y-6">
-            <p className="text-2xl font-bold">Quiz de comprension</p>
+            <p className="text-2xl font-bold">Quiz de comprensión</p>
 
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="font-bold mb-3">1. ¿Cuanto protege el IPAB por persona por banco?</p>
+              <p className="font-bold mb-3">1. ¿Cuánto protege el IPAB por persona por banco?</p>
               <div className="space-y-2">
                 {[
                   { key: 'a', label: 'A) $500,000' },
                   { key: 'b', label: 'B) ~3 millones de pesos' },
-                  { key: 'c', label: 'C) Todo el saldo sin limite' },
+                  { key: 'c', label: 'C) Todo el saldo sin límite' },
                 ].map((o) => (
                   <button
                     key={o.key}
@@ -199,7 +199,7 @@ export default function L03() {
                 ))}
               </div>
               {q1 && (
-                <p className="text-xs mt-2 font-semibold" style={{ color: q1 === 'b' ? '#059669' : '#DC2626' }}>
+                <p className="text-xs mt-2 font-semibold" style={{ color: q1 === 'b' ? successColor : errorColor }}>
                   {q1 === 'b' ? '✅ ¡Correcto! Hasta 400,000 UDIs ≈ 3 millones.' : '❌ Son ~3 millones de pesos (400,000 UDIs).'}
                 </p>
               )}
@@ -207,7 +207,7 @@ export default function L03() {
 
             {q1 && (
               <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-                <p className="font-bold mb-3">2. ¿Que es el interes que ganas en tu cuenta de ahorro?</p>
+                <p className="font-bold mb-3">2. ¿Qué es el interés que ganas en tu cuenta de ahorro?</p>
                 <div className="space-y-2">
                   {[
                     { key: 'a', label: 'A) Un favor del banco' },
@@ -229,7 +229,7 @@ export default function L03() {
                   ))}
                 </div>
                 {q2 && (
-                  <p className="text-xs mt-2 font-semibold" style={{ color: q2 === 'b' ? '#059669' : '#DC2626' }}>
+                <p className="text-xs mt-2 font-semibold" style={{ color: q2 === 'b' ? successColor : errorColor }}>
                     {q2 === 'b' ? '✅ ¡Correcto! Es tu derecho, no un regalo.' : '❌ El banco te paga porque usa tu dinero. Es tu derecho.'}
                   </p>
                 )}
@@ -237,7 +237,7 @@ export default function L03() {
             )}
 
             {quizDone && (
-              <FinniMessage variant="success" title={`${score}/2 correctas`} message="Verifica que tu banco este registrado en el IPAB: ipab.gob.mx" />
+              <FinniMessage variant="success" title={`${score}/2 correctas`} message="Verifica que tu banco esté registrado en el IPAB: ipab.gob.mx" />
             )}
           </div>
         )}

@@ -7,9 +7,9 @@ import { lessonDataRepository } from '../../../../db/lessonData.repository';
 type MetaData = { nombre?: string; monto?: number; aportacionMensual?: number } | null;
 
 const TASAS = [
-  { label: 'Cuenta ahorro basica', value: 3 },
+  { label: 'Cuenta ahorro básica', value: 3 },
   { label: 'CETES', value: 8 },
-  { label: 'Fondos de inversion', value: 10 },
+  { label: 'Fondos de inversión', value: 10 },
   { label: 'Acciones (estimado)', value: 15 },
 ];
 
@@ -72,7 +72,7 @@ export default function L12() {
   const progress = step === 0 ? 0 : step === 1 ? 33 : step === 2 ? 66 : 100;
 
   return (
-    <LessonShell id="L12" title="El dinero que se multiplica: interes compuesto" completion={{ ready: used }}>
+    <LessonShell id="L12" title="El dinero que se multiplica: interés compuesto" completion={{ ready: used }}>
       <div className="p-1">
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
@@ -81,15 +81,15 @@ export default function L12() {
         {/* Pantalla 0 — Explicacion visual */}
         {step === 0 && (
           <div className="space-y-6">
-            <FinniMessage variant="coach" title="La octava maravilla del mundo" message='Einstein dijo que el interes compuesto es la octava maravilla del mundo. Quien lo entiende, lo gana. Quien no, lo paga.' />
+            <FinniMessage variant="coach" title="La octava maravilla del mundo" message='Einstein dijo que el interés compuesto es la octava maravilla del mundo. Quien lo entiende, lo gana. Quien no, lo paga.' />
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="text-sm font-bold mb-2">Interes simple:</p>
-              <p className="text-sm">Ganas interes solo sobre tu capital original.</p>
+              <p className="text-sm font-bold mb-2">Interés simple:</p>
+              <p className="text-sm">Ganas interés solo sobre tu capital original.</p>
               <p className="text-xs text-[var(--color-text-secondary)]">$1,000 al 5% anual = $50 al año, siempre.</p>
             </FECard>
             <FECard variant="flat" className="border-2" style={{ borderColor: successColor, backgroundColor: successBg }}>
               <p className="text-sm font-bold mb-2">Interes compuesto:</p>
-              <p className="text-sm">Ganas interes sobre tu capital MAS los intereses anteriores.</p>
+              <p className="text-sm">Ganas interés sobre tu capital MÁS los intereses anteriores.</p>
               <div className="mt-2 space-y-0.5">
                 <p className="text-xs">Año 1: $1,000 → +$50 → total <b>$1,050</b></p>
                 <p className="text-xs">Año 2: $1,050 → +$52.50 → total <b>$1,102.50</b></p>
@@ -114,7 +114,7 @@ export default function L12() {
                 })}
               </div>
             </FECard>
-            <FinniMessage variant="coach" title="El ingrediente secreto es el tiempo" message="Entre mas pronto empieces, mas trabaja el compuesto por ti." />
+            <FinniMessage variant="coach" title="El ingrediente secreto es el tiempo" message="Entre más pronto empieces, más trabaja el compuesto por ti." />
             <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
               Usar el simulador →
             </button>
@@ -124,7 +124,7 @@ export default function L12() {
         {/* Pantalla 1 — Simulador */}
         {step === 1 && (
           <div className="space-y-6">
-            <p className="text-base font-bold">Simulador de interes compuesto:</p>
+            <p className="text-base font-bold">Simulador de interés compuesto:</p>
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
               <div className="space-y-4">
                 <div>
@@ -162,17 +162,17 @@ export default function L12() {
             </FECard>
 
             <FECard variant="flat" className="border-2" style={{ borderColor: successColor, backgroundColor: successBg }}>
-              <p className="text-sm font-bold mb-2">Con interes compuesto al {tasa}%:</p>
+              <p className="text-sm font-bold mb-2">Con interés compuesto al {tasa}%:</p>
               <div className="space-y-1.5">
                 <div className="flex justify-between"><p className="text-sm">1 año:</p><p className="text-sm font-bold">${fmt(resultado1)}</p></div>
                 <div className="flex justify-between"><p className="text-sm">3 años:</p><p className="text-sm font-bold">${fmt(resultado3)}</p></div>
-                <div className="flex justify-between"><p className="text-sm">{anos} años:</p><p className="text-sm font-bold" style={{ color: '#059669' }}>${fmt(resultado5)}</p></div>
+                <div className="flex justify-between"><p className="text-sm">{anos} años:</p><p className="text-sm font-bold" style={{ color: successColor }}>${fmt(resultado5)}</p></div>
               </div>
               <div className="flex justify-between mt-3 pt-2 border-t border-[var(--color-neutral-200)]">
-                <p className="text-xs text-[var(--color-text-secondary)]">Vs interes simple ({anos}a):</p>
+                <p className="text-xs text-[var(--color-text-secondary)]">Vs interés simple ({anos}a):</p>
                 <p className="text-xs">${fmt(simple5)}</p>
               </div>
-              <p className="text-xs" style={{ color: '#059669' }}>Diferencia: +${fmt(resultado5 - simple5)} solo por el compuesto</p>
+              <p className="text-xs" style={{ color: successColor }}>Diferencia: +${fmt(resultado5 - simple5)} solo por el compuesto</p>
             </FECard>
 
             {metaData?.nombre && mesesMeta !== null && (
@@ -192,11 +192,11 @@ export default function L12() {
         {/* Pantalla 2 — Cierre */}
         {step === 2 && (
           <div className="space-y-6">
-            <FinniMessage variant="success" title="El mejor momento para empezar fue ayer" message="El segundo mejor momento es hoy. Con los numeros que ves, cada mes que pasa sin empezar es dinero que no trabajara para ti." />
+            <FinniMessage variant="success" title="El mejor momento para empezar fue ayer" message="El segundo mejor momento es hoy. Con los números que ves, cada mes que pasa sin empezar es dinero que no trabajará para ti." />
             <FECard variant="flat" className="border text-center py-4" style={{ borderColor: successColor, backgroundColor: successBg }}>
               <p className="text-2xl font-bold">Tu simulacion:</p>
               <p className="text-base">${capital.toLocaleString()} capital + ${aportMensual.toLocaleString()}/mes al {tasa}% durante {anos} años</p>
-              <p className="text-2xl font-bold mt-2" style={{ color: '#059669' }}>= ${fmt(resultado5)}</p>
+              <p className="text-2xl font-bold mt-2" style={{ color: successColor }}>= ${fmt(resultado5)}</p>
             </FECard>
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
               <div className="space-y-1">

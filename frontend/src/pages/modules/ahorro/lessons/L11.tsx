@@ -11,9 +11,9 @@ const warnColor    = 'var(--color-brand-warning)';
 const warnBg       = 'var(--color-brand-warning-bg)';
 
 const FINNI_MSGS = [
-  '¡Primer dia completado! Ya llevas {monto} hacia tu meta.',
-  '¡Dos dias seguidos! Estas construyendo algo real.',
-  '¡Lo lograste! Tres dias seguidos. Eso ya es el inicio de un habito real.',
+  '¡Primer día completado! Ya llevas {monto} hacia tu meta.',
+  '¡Dos días seguidos! Estás construyendo algo real.',
+  '¡Lo lograste! Tres días seguidos. Eso ya es el inicio de un hábito real.',
 ];
 
 export default function L11() {
@@ -45,7 +45,7 @@ export default function L11() {
   const progress = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 50 : 100;
 
   return (
-    <LessonShell id="L11" title="Micro-reto: ahorra 3 dias seguidos" completion={{ ready: allDone }}>
+    <LessonShell id="L11" title="Micro-reto: ahorra 3 días seguidos" completion={{ ready: allDone }}>
       <div className="p-1">
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
@@ -54,23 +54,23 @@ export default function L11() {
         {/* Pantalla 0 — Apertura motivacional */}
         {step === 0 && (
           <div className="space-y-6">
-            <FinniMessage variant="coach" title="¡Es hora de pasar a la practica!" message="Este micro-reto es simple: aparta algo cada dia durante 3 dias. No importa si son $10 o $100. Lo que importa es el habito." />
+            <FinniMessage variant="coach" title="¡Es hora de pasar a la práctica!" message="Este micro-reto es simple: aparta algo cada día durante 3 días. No importa si son $10 o $100. Lo que importa es el hábito." />
             <FECard variant="flat" className="border" style={{ borderColor: successColor }}>
-              <p className="font-bold mb-2">Como funciona el reto:</p>
+              <p className="font-bold mb-2">Cómo funciona el reto:</p>
               <div className="space-y-1">
-                <p className="text-sm">1. Aparta un monto (el que puedas) cada dia</p>
-                <p className="text-sm">2. Registralo aqui en FinEmpoder</p>
-                <p className="text-sm">3. Recibe confirmacion de Finni</p>
+                <p className="text-sm">1. Aparta un monto (el que puedas) cada día</p>
+                <p className="text-sm">2. Regístralo aquí en FinEmpoder</p>
+                <p className="text-sm">3. Recibe confirmación de Finni</p>
               </div>
-              <span className="inline-flex items-center mt-3 px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: warnBg, color: '#D97706', border: `1px solid ${warnColor}` }}>
+              <span className="inline-flex items-center mt-3 px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: warnBg, color: warnColor, border: `1px solid ${warnColor}` }}>
                 Badge: Constancia de 3 🔥
               </span>
             </FECard>
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
               <p className="text-sm font-bold mb-1">Reglas:</p>
-              <p className="text-sm">• No hay monto minimo. $5 cuenta.</p>
-              <p className="text-sm">• Puede ser transferencia, alcancia fisica, o efectivo.</p>
-              <p className="text-sm">• Si fallas un dia, el contador reinicia. Sin culpa.</p>
+              <p className="text-sm">• No hay monto mínimo. $5 cuenta.</p>
+              <p className="text-sm">• Puede ser transferencia, alcancía física, o efectivo.</p>
+              <p className="text-sm">• Si fallas un día, el contador reinicia. Sin culpa.</p>
             </FECard>
             <button
               className="w-full min-h-11 text-white rounded-xl font-semibold text-sm"
@@ -82,18 +82,18 @@ export default function L11() {
           </div>
         )}
 
-        {/* Pantalla 1 — Contador de dias */}
+        {/* Pantalla 1 — Contador de días */}
         {accepted && step >= 1 && step < 3 && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <p className="font-bold">Tu progreso:</p>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: completedDays === 3 ? successBg : completedDays > 0 ? warnBg : 'var(--color-neutral-100)', color: completedDays === 3 ? '#059669' : completedDays > 0 ? '#D97706' : 'var(--color-text-secondary)', border: `1px solid ${completedDays === 3 ? successColor : completedDays > 0 ? warnColor : 'var(--color-neutral-200)'}` }}>
-                {completedDays}/3 dias
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: completedDays === 3 ? successBg : completedDays > 0 ? warnBg : 'var(--color-neutral-100)', color: completedDays === 3 ? successColor : completedDays > 0 ? warnColor : 'var(--color-text-secondary)', border: `1px solid ${completedDays === 3 ? successColor : completedDays > 0 ? warnColor : 'var(--color-neutral-200)'}` }}>
+                {completedDays}/3 días
               </span>
             </div>
             <FECard variant="flat" className="text-center py-4 border-2" style={{ backgroundColor: successBg, borderColor: successColor }}>
               <p className="text-4xl font-extrabold">{completedDays}/3</p>
-              <p className="text-sm text-[var(--color-text-secondary)]">dias consecutivos</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">días consecutivos</p>
             </FECard>
             <div className="space-y-4">
               {[0, 1, 2].map((idx) => (
@@ -107,19 +107,19 @@ export default function L11() {
                   }}
                 >
                   <div className="flex justify-between items-center mb-2">
-                    <p className="text-sm font-bold">Dia {idx + 1}</p>
+                    <p className="text-sm font-bold">Día {idx + 1}</p>
                     {dayCompleted[idx] && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: successBg, color: '#059669', border: `1px solid ${successColor}` }}>✅ Completado</span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: successBg, color: successColor, border: `1px solid ${successColor}` }}>✅ Completado</span>
                     )}
                   </div>
                   {dayCompleted[idx] ? (
                     <div className="space-y-1">
-                      <p className="text-sm" style={{ color: '#059669' }}>${parseFloat(dayAmounts[idx] || '0').toLocaleString()} apartados</p>
+                      <p className="text-sm" style={{ color: successColor }}>${parseFloat(dayAmounts[idx] || '0').toLocaleString()} apartados</p>
                       <p className="text-sm italic">{FINNI_MSGS[idx]?.replace('{monto}', `$${parseFloat(dayAmounts[idx] || '0').toLocaleString()}`)}</p>
                     </div>
                   ) : idx === completedDays ? (
                     <div className="space-y-2">
-                      <p className="text-xs text-[var(--color-text-secondary)]">¿Cuanto apartas hoy?</p>
+                      <p className="text-xs text-[var(--color-text-secondary)]">¿Cuánto apartas hoy?</p>
                       <div className="flex gap-3">
                         <input
                           type="number"
@@ -144,7 +144,7 @@ export default function L11() {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-xs text-[var(--color-text-secondary)]">Completa el dia {idx} primero</p>
+                    <p className="text-xs text-[var(--color-text-secondary)]">Completa el día {idx} primero</p>
                   )}
                 </FECard>
               ))}
@@ -163,22 +163,22 @@ export default function L11() {
             <FECard variant="flat" className="text-center py-8 border-[3px]" style={{ backgroundColor: warnBg, borderColor: warnColor }}>
               <p className="text-6xl mb-2">🏆</p>
               <p className="text-2xl font-bold mt-1">Constancia de 3 🔥</p>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">Badge desbloqueado · 3 dias consecutivos</p>
+              <p className="text-sm text-[var(--color-text-secondary)] mt-1">Badge desbloqueado · 3 días consecutivos</p>
               <p className="font-bold mt-2">Total ahorrado: ${totalAcumulado.toLocaleString()}</p>
             </FECard>
-            <FinniMessage variant="success" title="3 dias seguidos. Eso ya es el inicio de un habito real." message="La ciencia dice que los habitos comienzan a formarse con repeticion constante. Acabas de dar el primer paso." />
+            <FinniMessage variant="success" title="3 días seguidos. Eso ya es el inicio de un hábito real." message="La ciencia dice que los hábitos comienzan a formarse con repetición constante. Acabas de dar el primer paso." />
             {!extendReto && (
               <FECard variant="flat" className="border" style={{ borderColor: successColor }}>
-                <p className="text-sm font-bold mb-2">¿Quieres continuar el reto 7 dias mas?</p>
+                <p className="text-sm font-bold mb-2">¿Quieres continuar el reto 7 días más?</p>
                 <div className="flex gap-2">
-                  <button className="flex-1 py-2 rounded-xl text-sm font-semibold text-white" style={{ backgroundColor: successColor }} onClick={() => setExtendReto(true)}>¡Si, continuar!</button>
+                  <button className="flex-1 py-2 rounded-xl text-sm font-semibold text-white" style={{ backgroundColor: successColor }} onClick={() => setExtendReto(true)}>¡Sí, continuar!</button>
                   <button className="flex-1 py-2 rounded-xl text-sm font-semibold border border-[var(--color-neutral-200)] text-[var(--color-text-secondary)]">No por ahora</button>
                 </div>
               </FECard>
             )}
             {extendReto && (
               <FECard variant="flat" className="text-center border" style={{ backgroundColor: successBg, borderColor: successColor }}>
-                <p className="text-sm font-bold">¡Excelente! Sigue registrando tus ahorros en las proximas lecciones.</p>
+                <p className="text-sm font-bold">¡Excelente! Sigue registrando tus ahorros en las próximas lecciones.</p>
               </FECard>
             )}
           </div>

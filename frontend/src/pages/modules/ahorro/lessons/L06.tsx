@@ -15,8 +15,8 @@ const infoBg = 'var(--color-brand-info-bg)';
 const HORIZON_WEEKS: Record<Horizon, number> = { 1: 4, 3: 13, 6: 26 };
 const PLAN_DESCRIPTIONS: Record<Horizon, { title: string; desc: string }> = {
   1: { title: 'Plan 1 mes', desc: 'Para metas pequeñas o fondo de emergencias inicial. Requiere disciplina alta.' },
-  3: { title: 'Plan 3 meses', desc: 'El mas recomendado para comenzar. Permite ajustes y tiene resultados visibles.' },
-  6: { title: 'Plan 6 meses', desc: 'Para metas medianas. Requiere constancia. La clave es la automatizacion.' },
+  3: { title: 'Plan 3 meses', desc: 'El más recomendado para comenzar. Permite ajustes y tiene resultados visibles.' },
+  6: { title: 'Plan 6 meses', desc: 'Para metas medianas. Requiere constancia. La clave es la automatización.' },
 };
 
 export default function L06() {
@@ -62,7 +62,7 @@ export default function L06() {
         {/* Pantalla 0 — Apertura */}
         {step === 0 && (
           <div className="space-y-6">
-            <FinniMessage variant="coach" title="El plan es el como" message="Tener una meta es el que. El plan es el como. Hoy vamos a construir tu plan de ahorro semana a semana." />
+            <FinniMessage variant="coach" title="El plan es el cómo" message="Tener una meta es el qué. El plan es el cómo. Hoy vamos a construir tu plan de ahorro semana a semana." />
             <div className="space-y-3">
               {([1, 3, 6] as Horizon[]).map((h) => (
                 <FECard key={h} variant="flat" className="border border-[var(--color-neutral-200)]">
@@ -71,7 +71,7 @@ export default function L06() {
                 </FECard>
               ))}
             </div>
-            <FinniMessage variant="coach" title="El plan perfecto no existe" message="El plan que tu realmente vas a seguir, ese existe. Empecemos por ahi." />
+            <FinniMessage variant="coach" title="El plan perfecto no existe" message="El plan que tú realmente vas a seguir, ese existe. Empecemos por ahí." />
             <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
               Elegir mi horizonte →
             </button>
@@ -81,7 +81,7 @@ export default function L06() {
         {/* Pantalla 1 — Selector de horizonte */}
         {step === 1 && (
           <div className="space-y-6">
-            <p className="font-bold">¿Cuanto tiempo dura tu plan?</p>
+            <p className="font-bold">¿Cuánto tiempo dura tu plan?</p>
             {metaData?.nombre && (
               <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
                 <p className="text-xs">Tu meta: <b>{metaData.nombre}</b> — ${metaData.monto?.toLocaleString()}</p>
@@ -121,7 +121,7 @@ export default function L06() {
                 className="px-2 py-0.5 rounded-full text-xs font-bold"
                 style={{
                   backgroundColor: weeksWithAmount >= requiredFilled ? successBg : 'var(--color-neutral-100)',
-                  color: weeksWithAmount >= requiredFilled ? '#059669' : 'var(--color-text-secondary)',
+                  color: weeksWithAmount >= requiredFilled ? successColor : 'var(--color-text-secondary)',
                   border: `1px solid ${weeksWithAmount >= requiredFilled ? successColor : 'var(--color-neutral-200)'}`,
                 }}
               >
@@ -135,7 +135,7 @@ export default function L06() {
                 <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mt-1">
                   <div className="h-2 rounded-full transition-all" style={{ width: `${pctAlcanzado}%`, backgroundColor: successColor }} />
                 </div>
-                <p className="text-xs mt-1" style={{ color: '#059669' }}>{pctAlcanzado.toFixed(0)}% planeado</p>
+                <p className="text-xs mt-1" style={{ color: successColor }}>{pctAlcanzado.toFixed(0)}% planeado</p>
               </FECard>
             )}
 
@@ -175,7 +175,7 @@ export default function L06() {
               <p className="text-2xl font-bold">✅ Plan guardado</p>
               <p className="text-sm text-[var(--color-text-secondary)] mt-1">{horizon && PLAN_DESCRIPTIONS[horizon].title} · ${totalPlanado.toLocaleString()} planeados</p>
             </FECard>
-            <FinniMessage variant="success" title="Tu plan esta listo" message="Cada semana recibirás un aviso para aportar a tu meta. La constancia es lo que distingue a quien ahorra de quien intenta ahorrar." />
+            <FinniMessage variant="success" title="Tu plan está listo" message="Cada semana recibirás un aviso para aportar a tu meta. La constancia es lo que distingue a quien ahorra de quien intenta ahorrar." />
           </div>
         )}
       </div>

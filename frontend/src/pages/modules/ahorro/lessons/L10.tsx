@@ -8,8 +8,8 @@ type Q = 'a' | 'b' | 'c' | null;
 const CUBRE = [
   { label: 'Cuentas de ahorro', si: true },
   { label: 'Cuentas de cheques', si: true },
-  { label: 'Depositos a plazo', si: true },
-  { label: 'Depositos en UDIs', si: true },
+  { label: 'Depósitos a plazo', si: true },
+  { label: 'Depósitos en UDIs', si: true },
   { label: 'Inversiones en bolsa', si: false },
   { label: 'Seguros de vida', si: false },
   { label: 'SIEFOREs (AFORE)', si: false },
@@ -17,9 +17,9 @@ const CUBRE = [
 ];
 
 const TIMELINE = [
-  { dia: 'Dia 1', evento: 'Tu banco cierra sus puertas.' },
-  { dia: 'Dia 30', evento: 'El IPAB interviene y audita las cuentas.' },
-  { dia: 'Dia 90', evento: 'Recibes tu dinero de vuelta (hasta el limite protegido).' },
+  { dia: 'Día 1', evento: 'Tu banco cierra sus puertas.' },
+  { dia: 'Día 30', evento: 'El IPAB interviene y audita las cuentas.' },
+  { dia: 'Día 90', evento: 'Recibes tu dinero de vuelta (hasta el límite protegido).' },
 ];
 
 const successColor = 'var(--color-brand-success)';
@@ -49,10 +49,10 @@ export default function L10() {
   const progress = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 60 : step === 3 ? 80 : 100;
 
   const quizItems = [
-    { q: q1, set: setQ1, correct: 'b', question: '1. ¿Cuanto protege el IPAB por persona por banco?', opts: [{ key: 'a', label: 'A) $500,000' }, { key: 'b', label: 'B) ~3 millones de pesos' }, { key: 'c', label: 'C) Sin limite' }], fb: { ok: '¡Correcto! 400,000 UDIs ≈ 3 millones.', fail: 'Son ~3 millones (400,000 UDIs).' } },
-    { q: q2, set: setQ2, correct: 'b', question: '2. ¿El IPAB cubre las inversiones en bolsa?', opts: [{ key: 'a', label: 'A) Si' }, { key: 'b', label: 'B) No' }], fb: { ok: '¡Correcto! Solo depositos en cuentas bancarias autorizadas.', fail: 'Las inversiones en bolsa NO estan cubiertas por el IPAB.' } },
-    { q: q3, set: setQ3, correct: 'b', question: '3. ¿Que organismo supervisa los bancos en Mexico?', opts: [{ key: 'a', label: 'A) SAT' }, { key: 'b', label: 'B) CNBV' }, { key: 'c', label: 'C) IMSS' }], fb: { ok: '¡Correcto! Comision Nacional Bancaria y de Valores.', fail: 'Es la CNBV — Comision Nacional Bancaria y de Valores.' } },
-    { q: q4, set: setQ4, correct: 'a', question: '4. Tienes $80,000 en cuenta de ahorro en un banco autorizado que quiebra. ¿Estarias cubierto?', opts: [{ key: 'a', label: 'A) Si, estoy dentro del limite IPAB' }, { key: 'b', label: 'B) No, lo perderia todo' }], fb: { ok: '¡Correcto! $80,000 esta muy por debajo del limite.', fail: '$80,000 esta muy por debajo del limite de ~3 millones.' } },
+    { q: q1, set: setQ1, correct: 'b', question: '1. ¿Cuánto protege el IPAB por persona por banco?', opts: [{ key: 'a', label: 'A) $500,000' }, { key: 'b', label: 'B) ~3 millones de pesos' }, { key: 'c', label: 'C) Sin límite' }], fb: { ok: '¡Correcto! 400,000 UDIs ≈ 3 millones.', fail: 'Son ~3 millones (400,000 UDIs).' } },
+    { q: q2, set: setQ2, correct: 'b', question: '2. ¿El IPAB cubre las inversiones en bolsa?', opts: [{ key: 'a', label: 'A) Sí' }, { key: 'b', label: 'B) No' }], fb: { ok: '¡Correcto! Solo depósitos en cuentas bancarias autorizadas.', fail: 'Las inversiones en bolsa NO están cubiertas por el IPAB.' } },
+    { q: q3, set: setQ3, correct: 'b', question: '3. ¿Qué organismo supervisa los bancos en México?', opts: [{ key: 'a', label: 'A) SAT' }, { key: 'b', label: 'B) CNBV' }, { key: 'c', label: 'C) IMSS' }], fb: { ok: '¡Correcto! Comisión Nacional Bancaria y de Valores.', fail: 'Es la CNBV — Comisión Nacional Bancaria y de Valores.' } },
+    { q: q4, set: setQ4, correct: 'a', question: '4. Tienes $80,000 en cuenta de ahorro en un banco autorizado que quiebra. ¿Estarías cubierto?', opts: [{ key: 'a', label: 'A) Sí, estoy dentro del límite IPAB' }, { key: 'b', label: 'B) No, lo perdería todo' }], fb: { ok: '¡Correcto! $80,000 está muy por debajo del límite.', fail: '$80,000 está muy por debajo del límite de ~3 millones.' } },
   ];
 
   return (
@@ -65,15 +65,15 @@ export default function L10() {
         {/* Pantalla 0 — Apertura */}
         {step === 0 && (
           <div className="space-y-6">
-            <FinniMessage variant="coach" title="¿Y si mañana tu banco cerrara?" message="¿Perderias todo tu dinero? La respuesta depende de donde tengas ese dinero. Si esta en un banco autorizado… estas protegido." />
+            <FinniMessage variant="coach" title="¿Y si mañana tu banco cerrara?" message="¿Perderías todo tu dinero? La respuesta depende de dónde tengas ese dinero. Si está en un banco autorizado… estás protegido." />
             <FECard variant="flat" className="border-2" style={{ borderColor: successColor, backgroundColor: successBg }}>
               <p className="text-base font-bold mb-2">El IPAB</p>
-              <p className="text-sm">Instituto para la Proteccion al Ahorro Bancario — es el organismo del gobierno mexicano que garantiza tus depositos bancarios.</p>
+              <p className="text-sm">Instituto para la Protección al Ahorro Bancario — es el organismo del gobierno mexicano que garantiza tus depósitos bancarios.</p>
               <p className="text-sm mt-2">Protege hasta <b>400,000 UDIs por persona por banco</b> (≈ 3 millones de pesos en 2024).</p>
-              <p className="text-sm mt-2" style={{ color: '#059669' }}>No importa si el banco quiebra mañana: si tu saldo esta por debajo del limite, lo recuperas.</p>
+              <p className="text-sm mt-2" style={{ color: successColor }}>No importa si el banco quiebra mañana: si tu saldo está por debajo del límite, lo recuperas.</p>
             </FECard>
             <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
-              ¿Que cubre y que NO? →
+              ¿Qué cubre y qué NO? →
             </button>
           </div>
         )}
@@ -82,7 +82,7 @@ export default function L10() {
         {step === 1 && (
           <div className="space-y-6">
             <p className="text-base font-bold">Productos bancarios — ¿cubiertos?</p>
-            <p className="text-xs text-[var(--color-text-secondary)]">Toca cada uno para mas detalle. Clave: solo bancos autorizados y supervisados por la CNBV.</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">Toca cada uno para más detalle. Clave: solo bancos autorizados y supervisados por la CNBV.</p>
             <div className="space-y-2">
               {CUBRE.map((item, i) => (
                 <FECard
@@ -104,17 +104,17 @@ export default function L10() {
                     </span>
                   </div>
                   {expanded.has(i) && (
-                    <p className="text-xs mt-1.5" style={{ color: item.si ? '#059669' : '#DC2626' }}>
+                    <p className="text-xs mt-1.5" style={{ color: item.si ? successColor : errorColor }}>
                       {item.si
                         ? 'Protegido hasta el limite del IPAB en bancos autorizados.'
-                        : 'Este producto no esta garantizado por el IPAB. Verifica antes de invertir.'}
+                        : 'Este producto no está garantizado por el IPAB. Verifica antes de invertir.'}
                     </p>
                   )}
                 </FECard>
               ))}
             </div>
 
-            <p className="text-base font-bold mt-2">¿Que pasa si mi banco quiebra?</p>
+            <p className="text-base font-bold mt-2">¿Qué pasa si mi banco quiebra?</p>
             <div className="space-y-3">
               {TIMELINE.map((t, i) => (
                 <FECard key={i} variant="flat" className="border" style={{ borderColor: successBg }}>
@@ -126,7 +126,7 @@ export default function L10() {
               ))}
             </div>
 
-            <FinniMessage variant="coach" title="Dato de confianza" message="Desde 1999, el IPAB ha protegido a miles de ahorradores en Mexico. Tu dinero esta mas seguro de lo que crees." />
+            <FinniMessage variant="coach" title="Dato de confianza" message="Desde 1999, el IPAB ha protegido a miles de ahorradores en México. Tu dinero está más seguro de lo que crees." />
             <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(2)}>
               Quiz de 4 preguntas →
             </button>
@@ -167,7 +167,7 @@ export default function L10() {
               );
             })}
             {quizDone && (
-              <FinniMessage variant="success" title={`${score}/4 correctas`} message="Accion pendiente: verifica que tu banco este registrado en el IPAB hoy en ipab.gob.mx" />
+              <FinniMessage variant="success" title={`${score}/4 correctas`} message="Acción pendiente: verifica que tu banco esté registrado en el IPAB hoy en ipab.gob.mx" />
             )}
           </div>
         )}

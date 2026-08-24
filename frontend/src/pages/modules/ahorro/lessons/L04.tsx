@@ -14,14 +14,14 @@ const warnColor = 'var(--color-brand-warning)';
 const warnBg = 'var(--color-brand-warning-bg)';
 
 const CARDS: { id: string; label: string; correct: 'aliado' | 'saboteador'; tip: string }[] = [
-  { id: 'c1', label: 'Transferencia automatica el dia de cobro', correct: 'aliado', tip: 'Si lo haces manual, es mas probable que lo pospongas.' },
-  { id: 'c2', label: 'Meta clara y visible (foto en pantalla de bloqueo)', correct: 'aliado', tip: 'Una imagen concreta activa la motivacion de continuar.' },
-  { id: 'c3', label: 'Notificaciones de progreso de ahorro', correct: 'aliado', tip: 'Ver que llevas $500 de $2,000 activa la motivacion.' },
-  { id: 'c4', label: 'Amigos con cultura de ahorro', correct: 'aliado', tip: 'El entorno social influye mas de lo que creemos.' },
+  { id: 'c1', label: 'Transferencia automática el día de cobro', correct: 'aliado', tip: 'Si lo haces manual, es más probable que lo pospongas.' },
+  { id: 'c2', label: 'Meta clara y visible (foto en pantalla de bloqueo)', correct: 'aliado', tip: 'Una imagen concreta activa la motivación de continuar.' },
+  { id: 'c3', label: 'Notificaciones de progreso de ahorro', correct: 'aliado', tip: 'Ver que llevas $500 de $2,000 activa la motivación.' },
+  { id: 'c4', label: 'Amigos con cultura de ahorro', correct: 'aliado', tip: 'El entorno social influye más de lo que creemos.' },
   { id: 'c5', label: 'Cuenta de ahorro separada de la del gasto diario', correct: 'aliado', tip: 'Lo que no ves facilmente, no lo gastas.' },
-  { id: 'c6', label: 'Notificaciones de ofertas y compras en linea', correct: 'saboteador', tip: 'Activan el gasto impulsivo. Desactivarlas ayuda mucho.' },
+  { id: 'c6', label: 'Notificaciones de ofertas y compras en línea', correct: 'saboteador', tip: 'Activan el gasto impulsivo. Desactivarlas ayuda mucho.' },
   { id: 'c7', label: 'Amigos que siempre proponen planes costosos', correct: 'saboteador', tip: 'La presion social puede boicotear el mejor plan.' },
-  { id: 'c8', label: 'No tener una meta concreta ("ahorro para algo algun dia")', correct: 'saboteador', tip: 'El ahorro sin nombre no dura. Necesita proposito.' },
+  { id: 'c8', label: 'No tener una meta concreta ("ahorro para algo algún día")', correct: 'saboteador', tip: 'El ahorro sin nombre no dura. Necesita propósito.' },
   { id: 'c9', label: 'Mezclar el ahorro con el dinero del gasto cotidiano', correct: 'saboteador', tip: 'El dinero mezclado siempre termina en gasto.' },
   { id: 'c10', label: 'Revisar el saldo del ahorro muy seguido', correct: 'saboteador', tip: 'La tentacion de tocarlo aumenta cada vez que lo ves.' },
 ];
@@ -79,9 +79,9 @@ export default function L04() {
         {/* Pantalla 0 — Apertura */}
         {step === 0 && (
           <div className="space-y-6">
-            <FinniMessage variant="coach" title="Ahorrar es una decision de comportamiento" message="Hay cosas en tu vida que te ayudan a ahorrar… y otras que trabajan en tu contra sin que lo notes." />
+            <FinniMessage variant="coach" title="Ahorrar es una decisión de comportamiento" message="Hay cosas en tu vida que te ayudan a ahorrar… y otras que trabajan en tu contra sin que lo notes." />
             <FECard variant="flat" className="border" style={{ borderColor: successColor }}>
-              <p className="text-sm">En esta leccion vas a clasificar 10 tarjetas: <b>aliados</b> (te ayudan) vs <b>saboteadores</b> (te boicotean). Luego veras cuales tienes en tu vida.</p>
+              <p className="text-sm">En esta lección vas a clasificar 10 tarjetas: <b>aliados</b> (te ayudan) vs <b>saboteadores</b> (te boicotean). Luego verás cuáles tienes en tu vida.</p>
             </FECard>
             <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
               Clasificar las 10 tarjetas →
@@ -119,7 +119,7 @@ export default function L04() {
                         onClick={() => classify(c.id, 'aliado')}
                         disabled={!!ans}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold border-2 disabled:cursor-default transition-colors"
-                        style={{ borderColor: successColor, backgroundColor: ans === 'aliado' ? successColor : 'transparent', color: ans === 'aliado' ? 'white' : '#059669' }}
+                        style={{ borderColor: successColor, backgroundColor: ans === 'aliado' ? successColor : 'transparent', color: ans === 'aliado' ? 'white' : successColor }}
                       >
                         ✅ Aliado
                       </button>
@@ -127,13 +127,13 @@ export default function L04() {
                         onClick={() => classify(c.id, 'saboteador')}
                         disabled={!!ans}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold border-2 disabled:cursor-default transition-colors"
-                        style={{ borderColor: errorColor, backgroundColor: ans === 'saboteador' ? errorColor : 'transparent', color: ans === 'saboteador' ? 'white' : '#DC2626' }}
+                        style={{ borderColor: errorColor, backgroundColor: ans === 'saboteador' ? errorColor : 'transparent', color: ans === 'saboteador' ? 'white' : errorColor }}
                       >
                         ❌ Saboteador
                       </button>
                     </div>
                     {showFeedback[c.id] && (
-                      <p className="text-xs mt-1" style={{ color: isCorrect ? '#059669' : '#DC2626' }}>
+                      <p className="text-xs mt-1" style={{ color: isCorrect ? successColor : errorColor }}>
                         {isCorrect ? '✅ Correcto. ' : `❌ Es un ${c.correct}. `}{c.tip}
                       </p>
                     )}
@@ -143,7 +143,7 @@ export default function L04() {
             </div>
             {allClassified && (
               <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(2)}>
-                Mi autoevaluacion →
+                Mi autoevaluación →
               </button>
             )}
           </div>
@@ -152,7 +152,7 @@ export default function L04() {
         {/* Pantalla 2 — Autoevaluacion + compromiso */}
         {step === 2 && (
           <div className="space-y-6">
-            <p className="font-bold">¿Cuales saboteadores tienes en tu vida ahora?</p>
+            <p className="font-bold">¿Cuáles saboteadores tienes en tu vida ahora?</p>
             <div className="space-y-2">
               {CARDS.filter((c) => c.correct === 'saboteador').map((c) => (
                 <FECard
@@ -174,7 +174,7 @@ export default function L04() {
 
             {mySaboteadores.length > 0 && (
               <FECard variant="flat" className="border" style={{ borderColor: warnColor, backgroundColor: warnBg }}>
-                <p className="font-bold text-sm mb-2">Plan de accion de Finni:</p>
+                <p className="font-bold text-sm mb-2">Plan de acción de Finni:</p>
                 <div className="space-y-1">
                   {mySaboteadores.map((id) => (
                     <p key={id} className="text-sm">→ {ACCIONES[id]}</p>
@@ -212,7 +212,7 @@ export default function L04() {
         {/* Pantalla 3 — Cierre */}
         {step === 3 && (
           <div className="space-y-6">
-            <FinniMessage variant="success" title="Tu perfil de ahorrador esta guardado" message="Conoces tus aliados y tus saboteadores. Eso ya es una ventaja enorme sobre quien ni siquiera los identifica." />
+            <FinniMessage variant="success" title="Tu perfil de ahorrador está guardado" message="Conoces tus aliados y tus saboteadores. Eso ya es una ventaja enorme sobre quien ni siquiera los identifica." />
             <FECard variant="flat" className="border" style={{ borderColor: successColor, backgroundColor: successBg }}>
               <p className="font-bold text-sm">Tu aliado esta semana:</p>
               <p className="text-sm">{aliadosCards.find((c) => c.id === aliadoElegido)?.label ?? aliadoElegido}</p>

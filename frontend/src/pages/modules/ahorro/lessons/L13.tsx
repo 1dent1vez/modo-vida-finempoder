@@ -17,9 +17,9 @@ type Indicador = {
 };
 
 const COLOR_MAP: Record<IndicadorColor, { main: string; bg: string; dark: string }> = {
-  success: { main: 'var(--color-brand-success)', bg: 'var(--color-brand-success-bg)', dark: '#059669' },
-  warning: { main: 'var(--color-brand-warning)', bg: 'var(--color-brand-warning-bg)', dark: '#B45309' },
-  error:   { main: 'var(--color-brand-error)',   bg: 'var(--color-brand-error-bg)',   dark: '#DC2626' },
+  success: { main: 'var(--color-brand-success)', bg: 'var(--color-brand-success-bg)', dark: 'var(--color-brand-success)' },
+  warning: { main: 'var(--color-brand-warning)', bg: 'var(--color-brand-warning-bg)', dark: 'var(--color-brand-warning)' },
+  error:   { main: 'var(--color-brand-error)',   bg: 'var(--color-brand-error-bg)',   dark: 'var(--color-brand-error)' },
 };
 
 function buildIndicadores(meta: MetaData, plan: PlanData, reto: RetoData): Indicador[] {
@@ -38,9 +38,9 @@ function buildIndicadores(meta: MetaData, plan: PlanData, reto: RetoData): Indic
   return [
     {
       label: 'Consistencia',
-      valor: `${dayAmounts.length} dias registrados`,
+      valor: `${dayAmounts.length} días registrados`,
       color: consistencia,
-      comentario: consistencia === 'success' ? 'Completaste los 3 dias del micro-reto. Excelente consistencia.' : consistencia === 'warning' ? 'Has empezado. Sigue registrando para consolidar el habito.' : 'Aun no has registrado ahorro. ¿Que necesita cambiar para que funcione?',
+      comentario: consistencia === 'success' ? 'Completaste los 3 días del micro-reto. Excelente consistencia.' : consistencia === 'warning' ? 'Has empezado. Sigue registrando para consolidar el hábito.' : 'Aún no has registrado ahorro. ¿Qué necesita cambiar para que funcione?',
     },
     {
       label: 'Progreso hacia la meta',
@@ -50,15 +50,15 @@ function buildIndicadores(meta: MetaData, plan: PlanData, reto: RetoData): Indic
     },
     {
       label: 'Monto promedio',
-      valor: promedio > 0 ? `$${promedio.toFixed(0)}/dia` : 'Sin datos',
+      valor: promedio > 0 ? `$${promedio.toFixed(0)}/día` : 'Sin datos',
       color: promedioColor,
-      comentario: promedioColor === 'success' ? 'Tu promedio esta cerca o supera lo planeado. ¡Sigue asi!' : promedioColor === 'warning' ? 'Tu promedio es menor al planeado pero ya hay avance.' : 'Comienza a registrar ahorros diarios para ver tu promedio.',
+      comentario: promedioColor === 'success' ? 'Tu promedio está cerca o supera lo planeado. ¡Sigue así!' : promedioColor === 'warning' ? 'Tu promedio es menor al planeado pero ya hay avance.' : 'Comienza a registrar ahorros diarios para ver tu promedio.',
     },
     {
       label: 'Tendencia',
       valor: tendenciaColor === 'success' ? 'Al alza' : tendenciaColor === 'warning' ? 'Estable' : 'Sin registro',
       color: tendenciaColor,
-      comentario: tendenciaColor === 'success' ? 'Tu ritmo de ahorro se mantiene o mejora. Excelente.' : tendenciaColor === 'warning' ? 'Hay avance pero puedes acelerar el ritmo.' : 'Empieza el reto de 3 dias para ver tu tendencia.',
+      comentario: tendenciaColor === 'success' ? 'Tu ritmo de ahorro se mantiene o mejora. Excelente.' : tendenciaColor === 'warning' ? 'Hay avance pero puedes acelerar el ritmo.' : 'Empieza el reto de 3 días para ver tu tendencia.',
     },
   ];
 }
@@ -105,14 +105,14 @@ export default function L13() {
 
   if (loading) {
     return (
-      <LessonShell id="L13" title="Finni dice: como vas con tu ahorro" completion={{ ready: false }}>
+      <LessonShell id="L13" title="Finni dice: cómo vas con tu ahorro" completion={{ ready: false }}>
         <p className="text-sm text-[var(--color-text-secondary)]">Cargando tu progreso...</p>
       </LessonShell>
     );
   }
 
   return (
-    <LessonShell id="L13" title="Finni dice: como vas con tu ahorro" completion={{ ready: allViewed && answered }}>
+    <LessonShell id="L13" title="Finni dice: cómo vas con tu ahorro" completion={{ ready: allViewed && answered }}>
       <div className="p-1">
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: 'var(--color-brand-success)' }} />
@@ -121,8 +121,8 @@ export default function L13() {
         {/* Pantalla 0 — Dashboard de progreso */}
         {step === 0 && (
           <div className="space-y-6">
-            <FinniMessage variant="coach" title="Revision de habito" message="Es momento de ver como vas con tu habito de ahorro. No para juzgar, sino para ayudarte a llegar a tu meta." />
-            <p className="text-base font-bold">4 indicadores — toca cada uno para ver el analisis:</p>
+            <FinniMessage variant="coach" title="Revisión de hábito" message="Es momento de ver cómo vas con tu hábito de ahorro. No para juzgar, sino para ayudarte a llegar a tu meta." />
+            <p className="text-base font-bold">4 indicadores — toca cada uno para ver el análisis:</p>
             <div className="space-y-4">
               {indicadores.map((ind, i) => {
                 const c = COLOR_MAP[ind.color];
@@ -164,7 +164,7 @@ export default function L13() {
         {/* Pantalla 1 — Pregunta abierta */}
         {step === 1 && (
           <div className="space-y-6">
-            <FinniMessage variant="coach" title="Una pregunta honesta" message="¿Hay algo que te este dificultando ahorrar esta semana? No te preguntes por que fallaste — preguntate que necesita cambiar para que funcione." />
+            <FinniMessage variant="coach" title="Una pregunta honesta" message="¿Hay algo que te esté dificultando ahorrar esta semana? No te preguntes por qué fallaste — pregúntate qué necesita cambiar para que funcione." />
             <div className="space-y-1">
               <label className="block text-sm font-medium text-[var(--color-text-primary)]">Tu respuesta (privada, solo para ti)</label>
               <textarea
@@ -181,7 +181,7 @@ export default function L13() {
               onClick={() => void handleSave()}
               disabled={dificultad.trim().length < 3}
             >
-              Guardar y cerrar la revision →
+              Guardar y cerrar la revisión →
             </button>
           </div>
         )}
@@ -189,7 +189,7 @@ export default function L13() {
         {/* Pantalla 2 — Cierre */}
         {step === 2 && answered && (
           <div className="space-y-6">
-            <FinniMessage variant="success" title="Revision completada" message="Conoces donde estas. Eso ya es un paso enorme. El siguiente paso es hacer un ajuste, por pequeño que sea." />
+            <FinniMessage variant="success" title="Revisión completada" message="Conoces dónde estás. Eso ya es un paso enorme. El siguiente paso es hacer un ajuste, por pequeño que sea." />
             <FECard variant="flat" className="border" style={{ borderColor: 'var(--color-brand-success)', backgroundColor: 'var(--color-brand-success-bg)' }}>
               <p className="text-sm font-bold mb-2">Estado general:</p>
               <div className="space-y-2">

@@ -8,16 +8,16 @@ type Q = 'a' | 'b' | 'c' | null;
 
 const SITUACIONES = [
   { id: 1, text: 'Laptop descompuesta antes de examenes ($5,000)', correct: 'ahorro' as const, exp: 'Ahorro: este importe cabe en un buen fondo de emergencias.' },
-  { id: 2, text: 'Hospitalizacion de emergencia ($20,000)', correct: 'seguro' as const, exp: 'Seguro: un evento tan grande esta fuera del alcance de la mayoria de fondos.' },
+  { id: 2, text: 'Hospitalización de emergencia ($20,000)', correct: 'seguro' as const, exp: 'Seguro: un evento tan grande está fuera del alcance de la mayoría de los fondos.' },
   { id: 3, text: 'Mes sin ingreso por enfermedad', correct: 'ambos' as const, exp: 'Ambos: el seguro cubre el evento, el fondo cubre la brecha mientras el seguro responde.' },
-  { id: 4, text: 'Multa inesperada ($500)', correct: 'ahorro' as const, exp: 'Ahorro: pequeño imprevisible que tu fondo cubre facilmente.' },
-  { id: 5, text: 'Accidente de transito', correct: 'seguro' as const, exp: 'Seguro: responsabilidad civil y danos pueden superar cualquier fondo.' },
-  { id: 6, text: 'Perdida de beca por 2 meses', correct: 'ambos' as const, exp: 'Ambos: fondo para los primeros meses, seguro de desempleo para mayor duracion.' },
+  { id: 4, text: 'Multa inesperada ($500)', correct: 'ahorro' as const, exp: 'Ahorro: pequeño imprevisible que tu fondo cubre fácilmente.' },
+  { id: 5, text: 'Accidente de tránsito', correct: 'seguro' as const, exp: 'Seguro: responsabilidad civil y daños pueden superar cualquier fondo.' },
+  { id: 6, text: 'Perdida de beca por 2 meses', correct: 'ambos' as const, exp: 'Ambos: fondo para los primeros meses, seguro de desempleo para mayor duración.' },
 ];
 
 const SEGUROS = [
-  { label: 'Gastos medicos mayores', desc: 'Disponible en algunas universidades publicas' },
-  { label: 'IMSS', desc: 'Si tienes trabajo formal o a traves de tus padres' },
+  { label: 'Gastos médicos mayores', desc: 'Disponible en algunas universidades públicas' },
+  { label: 'IMSS', desc: 'Si tienes trabajo formal o a través de tus padres' },
   { label: 'Seguro de viajero', desc: 'Para intercambios o viajes largos' },
   { label: 'Seguro de gadgets', desc: 'Para laptop o celular si es tu herramienta de trabajo' },
 ];
@@ -56,9 +56,9 @@ export default function L09() {
   const progress = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 60 : step === 3 ? 80 : 100;
 
   const quizOpts = [
-    { q: q1, set: setQ1, correct: 'b', opts: [{ key: 'a', label: 'A) Solo el fondo de emergencias' }, { key: 'b', label: 'B) Un seguro medico' }, { key: 'c', label: 'C) Pedir prestado' }], question: '1. Una emergencia medica de $25,000. ¿Que conviene?', fb: { ok: 'Correcto. Para gastos tan grandes, el seguro es indispensable.', fail: 'Un seguro medico es el mas adecuado para montos elevados.' } },
+    { q: q1, set: setQ1, correct: 'b', opts: [{ key: 'a', label: 'A) Solo el fondo de emergencias' }, { key: 'b', label: 'B) Un seguro médico' }, { key: 'c', label: 'C) Pedir prestado' }], question: '1. Una emergencia médica de $25,000. ¿Qué conviene?', fb: { ok: 'Correcto. Para gastos tan grandes, el seguro es indispensable.', fail: 'Un seguro médico es el más adecuado para montos elevados.' } },
     { q: q2, set: setQ2, correct: 'a', opts: [{ key: 'a', label: 'A) Mi fondo de emergencias' }, { key: 'b', label: 'B) Un seguro' }, { key: 'c', label: 'C) Una tarjeta de credito' }], question: '2. Una multa de $400. ¿Que usas?', fb: { ok: 'Correcto. Para imprevistos pequeños, el fondo es perfecto.', fail: 'Para imprevistos pequeños usa el fondo de emergencias.' } },
-    { q: q3, set: setQ3, correct: 'b', opts: [{ key: 'a', label: 'A) Solo el fondo de emergencias' }, { key: 'b', label: 'B) Fondo para los primeros meses + seguro de desempleo si disponible' }, { key: 'c', label: 'C) Solo el seguro' }], question: '3. Perdiste tu trabajo part-time por 4 meses. ¿La mejor estrategia?', fb: { ok: 'Correcto. La dupla ahorro + seguro es la estrategia optima.', fail: 'La combinacion de ambos es la estrategia mas solida.' } },
+    { q: q3, set: setQ3, correct: 'b', opts: [{ key: 'a', label: 'A) Solo el fondo de emergencias' }, { key: 'b', label: 'B) Fondo para los primeros meses + seguro de desempleo si disponible' }, { key: 'c', label: 'C) Solo el seguro' }], question: '3. Perdiste tu trabajo part-time por 4 meses. ¿La mejor estrategia?', fb: { ok: 'Correcto. La dupla ahorro + seguro es la estrategia óptima.', fail: 'La combinación de ambos es la estrategia más sólida.' } },
   ];
 
   return (
@@ -73,15 +73,15 @@ export default function L09() {
           <div className="space-y-6">
             <FinniMessage variant="coach" title="La dupla imbatible" message="El ahorro te protege de lo que ya sabes que podria pasar. El seguro te protege de lo que no imaginas que podria pasar. Juntos son imbatibles." />
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="text-sm font-bold mb-2">Situacion 1 — Carlos:</p>
+              <p className="text-sm font-bold mb-2">Situación 1 — Carlos:</p>
               <p className="text-sm">Tiene $3,000 en fondo de emergencias. Se enferma, gasto medico $8,000.</p>
               <p className="text-sm mt-1" style={{ color: errorColor }}>Sin seguro → vacia el fondo y sigue debiendo $5,000.</p>
               <p className="text-sm" style={{ color: successColor }}>Con seguro medico estudiantil → paga $500 deducible, fondo intacto.</p>
             </FECard>
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="text-sm font-bold mb-2">Situacion 2 — Mariana:</p>
+              <p className="text-sm font-bold mb-2">Situación 2 — Mariana:</p>
               <p className="text-sm">Tiene seguro de desempleo estudiantil. Pierde trabajo part-time.</p>
-              <p className="text-sm mt-1" style={{ color: successColor }}>El seguro cubre 3 meses de ingreso basico. Fondo intacto para otra situacion.</p>
+              <p className="text-sm mt-1" style={{ color: successColor }}>El seguro cubre 3 meses de ingreso básico. Fondo intacto para otra situación.</p>
             </FECard>
             <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
               <p className="text-sm font-bold mb-2">Seguros basicos para universitarios:</p>
@@ -104,7 +104,7 @@ export default function L09() {
         {/* Pantalla 1 — Mapa de 6 situaciones */}
         {step === 1 && (
           <div className="space-y-6">
-            <p className="text-base font-bold">¿Que herramienta usarias en cada situacion?</p>
+            <p className="text-base font-bold">¿Qué herramienta usarías en cada situación?</p>
             <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>
               {Object.values(mapAnswers).filter(Boolean).length}/{SITUACIONES.length}
             </span>
@@ -140,7 +140,7 @@ export default function L09() {
                       ))}
                     </div>
                     {showMapFeedback[s.id] && (
-                      <p className="text-xs mt-2" style={{ color: isCorrect ? '#059669' : '#DC2626' }}>
+                      <p className="text-xs mt-2" style={{ color: isCorrect ? successColor : errorColor }}>
                         {isCorrect ? '✅ ' : '❌ '}{s.exp}
                       </p>
                     )}
@@ -150,7 +150,7 @@ export default function L09() {
             </div>
             {mapDone && (
               <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(2)}>
-                Quiz rapido →
+                Quiz rápido →
               </button>
             )}
           </div>
@@ -159,7 +159,7 @@ export default function L09() {
         {/* Pantalla 2 — Quiz 3 preguntas */}
         {step === 2 && (
           <div className="space-y-6">
-            <p className="text-2xl font-bold">Quiz: ¿cuando conviene cada uno?</p>
+            <p className="text-2xl font-bold">Quiz: ¿cuándo conviene cada uno?</p>
             {quizOpts.map(({ q, set, correct, opts, question, fb }, idx) => {
               if (idx > 0 && quizOpts[idx - 1]!.q === null) return null;
               return (
@@ -190,7 +190,7 @@ export default function L09() {
               );
             })}
             {quizDone && (
-              <FinniMessage variant="success" title={`${score}/3 correctas`} message="No necesitas el seguro perfecto. Necesitas empezar con el mas basico que puedas costear." />
+              <FinniMessage variant="success" title={`${score}/3 correctas`} message="No necesitas el seguro perfecto. Necesitas empezar con el más básico que puedas costear." />
             )}
           </div>
         )}

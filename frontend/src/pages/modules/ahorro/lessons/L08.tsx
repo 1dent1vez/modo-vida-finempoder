@@ -10,7 +10,7 @@ type MetaData = { nombre?: string; aportacionMensual?: number } | null;
 const SITUACIONES = [
   { id: 1, label: 'Laptop descompuesta', costo: '$3,000–$8,000' },
   { id: 2, label: 'Mes sin beca/mesada', costo: '$1,500–$3,000' },
-  { id: 3, label: 'Emergencia medica', costo: '$2,000–$10,000' },
+  { id: 3, label: 'Emergencia médica', costo: '$2,000–$10,000' },
   { id: 4, label: 'Falla de transporte personal', costo: '$1,000–$5,000' },
   { id: 5, label: 'Perdida de trabajo part-time', costo: '$800–$3,500/mes' },
 ];
@@ -88,21 +88,21 @@ export default function L08() {
         {/* Pantalla 0 — Apertura */}
         {step === 0 && (
           <div className="space-y-6">
-            <FinniMessage variant="coach" title="El fondo de emergencias es tu red" message="Imagina que mañana se descompone tu laptop justo antes de examenes. ¿Tienes algo guardado para eso? El fondo de emergencias es esa red que atrapa antes del desastre." />
+            <FinniMessage variant="coach" title="El fondo de emergencias es tu red" message="Imagina que mañana se descompone tu laptop justo antes de exámenes. ¿Tienes algo guardado para eso? El fondo de emergencias es esa red que atrapa antes del desastre." />
             <FECard variant="flat" className="border" style={{ borderColor: successColor }}>
-              <p className="text-sm font-bold mb-2">¿Que es un fondo de emergencias?</p>
+              <p className="text-sm font-bold mb-2">¿Qué es un fondo de emergencias?</p>
               <p className="text-sm">Dinero guardado especificamente para imprevistos. No es para el viaje, no es para la tele nueva. Es para cuando la vida sorprende.</p>
               <div className="mt-3 space-y-1">
-                <p className="text-xs" style={{ color: '#059669' }}>✅ 3 meses de gastos basicos — si tienes apoyo familiar</p>
-                <p className="text-xs" style={{ color: '#059669' }}>✅ 6 meses — si eres mas independiente</p>
+                <p className="text-xs" style={{ color: successColor }}>✅ 3 meses de gastos básicos — si tienes apoyo familiar</p>
+                <p className="text-xs" style={{ color: successColor }}>✅ 6 meses — si eres más independiente</p>
               </div>
             </FECard>
             <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
-              <p className="text-xs font-bold">¿Donde guardarlo?</p>
-              <p className="text-sm">Cuenta separada, accesible pero no tan facil de retirar. CETES a 28 dias o cuenta con rendimiento son opciones ideales.</p>
+              <p className="text-xs font-bold">¿Dónde guardarlo?</p>
+              <p className="text-sm">Cuenta separada, accesible pero no tan fácil de retirar. CETES a 28 días o cuenta con rendimiento son opciones ideales.</p>
             </FECard>
             <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
-              ¿Que situaciones te preocupan? →
+              ¿Qué situaciones te preocupan? →
             </button>
           </div>
         )}
@@ -110,7 +110,7 @@ export default function L08() {
         {/* Pantalla 1 — Tarjetas de situaciones */}
         {step === 1 && (
           <div className="space-y-6">
-            <p className="text-base font-bold">Toca las situaciones que te han pasado o podrian pasarte:</p>
+            <p className="text-base font-bold">Toca las situaciones que te han pasado o podrían pasarte:</p>
             <div className="space-y-3">
               {SITUACIONES.map((s) => (
                 <FECard
@@ -134,7 +134,7 @@ export default function L08() {
             </div>
             {selectedSituaciones.size > 0 && (
               <FECard variant="flat" className="border" style={{ borderColor: warnColor, backgroundColor: warnBg }}>
-                <p className="text-sm font-bold">{selectedSituaciones.size} situacion(es) identificadas. El fondo de emergencias te protege de estas.</p>
+                <p className="text-sm font-bold">{selectedSituaciones.size} situación(es) identificadas. El fondo de emergencias te protege de estas.</p>
               </FECard>
             )}
             <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(2)}>
@@ -153,18 +153,18 @@ export default function L08() {
               </FECard>
             )}
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-[var(--color-text-primary)]">Tus gastos basicos mensuales ($)</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)]">Tus gastos básicos mensuales ($)</label>
               <input type="number" value={gastosMensuales} onChange={(e) => setGastosMensuales(e.target.value)} min={0} className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm" />
-              <p className="text-xs text-[var(--color-text-secondary)]">Lo minimo para vivir un mes dificil: comida, transporte, servicios</p>
+              <p className="text-xs text-[var(--color-text-secondary)]">Lo mínimo para vivir un mes difícil: comida, transporte, servicios</p>
             </div>
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-[var(--color-text-primary)]">¿Cuanto puedes apartar mensualmente? ($)</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)]">¿Cuánto puedes apartar mensualmente? ($)</label>
               <input type="number" value={aportacion} onChange={(e) => setAportacion(e.target.value)} min={0} className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm" />
             </div>
             {canCalculate && (
               <div className="space-y-3">
                 <FECard variant="flat" className="border-2" style={{ borderColor: successColor, backgroundColor: successBg }}>
-                  <p className="text-sm font-bold">Meta minima (3 meses):</p>
+                  <p className="text-sm font-bold">Meta mínima (3 meses):</p>
                   <p className="text-3xl font-black">${metaMinima.toLocaleString()}</p>
                   <p className="text-xs text-[var(--color-text-secondary)]">Lo alcanzas en {mesesMinima} meses apartando ${aportNum.toLocaleString()}/mes</p>
                 </FECard>
@@ -177,7 +177,7 @@ export default function L08() {
             )}
             {metaData?.nombre && (
               <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-                <p className="text-xs text-[var(--color-text-secondary)]">💡 Finni recomienda: primero el fondo minimo (${metaMinima.toLocaleString()}), luego tu meta de "{metaData.nombre}"</p>
+                <p className="text-xs text-[var(--color-text-secondary)]">💡 Finni recomienda: primero el fondo mínimo (${metaMinima.toLocaleString()}), luego tu meta de "{metaData.nombre}"</p>
               </FECard>
             )}
             {canCalculate && (
@@ -194,16 +194,16 @@ export default function L08() {
             <FECard variant="flat" className="border-2 text-center py-4" style={{ borderColor: successColor, backgroundColor: successBg }}>
               <p className="text-3xl">🛡️ Fondo de emergencias</p>
               <div className="flex gap-2 justify-center mt-2 flex-wrap">
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>Meta minima: ${metaMinima.toLocaleString()}</span>
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>Meta mínima: ${metaMinima.toLocaleString()}</span>
                 <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: warnColor }}>Meta ideal: ${metaIdeal.toLocaleString()}</span>
               </div>
             </FECard>
             <FinniMessage variant="success" title="No necesitas llegar de golpe" message="Construye el fondo gradualmente. Incluso $500 ahorrados ya te protegen de pequeños imprevistos." />
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="text-sm font-bold">Donde guardarlo:</p>
+              <p className="text-sm font-bold">Dónde guardarlo:</p>
               {aportNum < 500
-                ? <p className="text-sm">Cuenta de ahorro basica (sin comisiones)</p>
-                : <p className="text-sm">CETES a 28 dias — cetesdirecto.com (rendimiento adicional)</p>
+                ? <p className="text-sm">Cuenta de ahorro básica (sin comisiones)</p>
+                : <p className="text-sm">CETES a 28 días — cetesdirecto.com (rendimiento adicional)</p>
               }
             </FECard>
           </div>

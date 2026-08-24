@@ -8,16 +8,17 @@ type SmartGoal = { queQuieres?: string; monto?: number; aportacionMensual?: numb
 
 const successColor = 'var(--color-brand-success)';
 const successBg = 'var(--color-brand-success-bg)';
+const warnColor = 'var(--color-brand-warning)';
 const infoColor = 'var(--color-brand-info)';
 const infoBg = 'var(--color-brand-info-bg)';
 
 const CATEGORIAS = [
   { label: 'Laptop', min: 8000, max: 15000, emoji: '💻' },
-  { label: 'Viaje de graduacion', min: 5000, max: 12000, emoji: '✈️' },
+  { label: 'Viaje de graduación', min: 5000, max: 12000, emoji: '✈️' },
   { label: 'Fondo de emergencias', min: 3000, max: 6000, emoji: '🛡️' },
-  { label: 'Curso o certificacion', min: 2000, max: 5000, emoji: '📚' },
+  { label: 'Curso o certificación', min: 2000, max: 5000, emoji: '📚' },
   { label: 'Celular', min: 4000, max: 10000, emoji: '📱' },
-  { label: 'La mia (personalizada)', min: 0, max: 0, emoji: '🎯' },
+  { label: 'La mía (personalizada)', min: 0, max: 0, emoji: '🎯' },
 ];
 
 export default function L05() {
@@ -83,14 +84,14 @@ export default function L05() {
         {/* Pantalla 0 — Apertura */}
         {step === 0 && (
           <div className="space-y-6">
-            <FinniMessage variant="coach" title="El ahorro sin nombre no dura" message="¿Para que estas ahorrando? Si respondes 'para el futuro' o 'por si acaso', necesitamos trabajar eso." />
+            <FinniMessage variant="coach" title="El ahorro sin nombre no dura" message="¿Para qué estás ahorrando? Si respondes 'para el futuro' o 'por si acaso', necesitamos trabajar eso." />
             <FECard variant="flat" className="border" style={{ borderColor: successColor, backgroundColor: successBg }}>
               <p className="font-bold text-sm">Dato:</p>
-              <p className="text-sm">Las personas con una meta especifica ahorran en promedio <b>3 veces mas</b> que quienes ahorran "en general". No es motivacion. Es estructura.</p>
+              <p className="text-sm">Las personas con una meta específica ahorran en promedio <b>3 veces más</b> que quienes ahorran "en general". No es motivación. Es estructura.</p>
             </FECard>
             {smartGoal?.queQuieres && (
               <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
-                <p className="text-xs font-bold">De tu modulo anterior:</p>
+                <p className="text-xs font-bold">De tu módulo anterior:</p>
                 <p className="text-sm">Meta: {smartGoal.queQuieres}</p>
                 {smartGoal.monto && <p className="text-sm">Monto: ${smartGoal.monto.toLocaleString()}</p>}
               </FECard>
@@ -107,7 +108,7 @@ export default function L05() {
             <p className="font-bold">Metas comunes entre universitarios — toca una para preseleccionarla:</p>
             <div className="space-y-2">
               {CATEGORIAS.map((cat) => {
-                const isSelected = meta === cat.label || (cat.label === 'La mia (personalizada)' && !CATEGORIAS.slice(0, -1).some((c) => c.label === meta));
+                const isSelected = meta === cat.label || (cat.label === 'La mía (personalizada)' && !CATEGORIAS.slice(0, -1).some((c) => c.label === meta));
                 return (
                   <FECard
                     key={cat.label}
@@ -115,7 +116,7 @@ export default function L05() {
                     className="border cursor-pointer"
                     style={{ borderColor: isSelected ? successColor : 'var(--color-neutral-200)' }}
                     onClick={() => {
-                      if (cat.label !== 'La mia (personalizada)') {
+                      if (cat.label !== 'La mía (personalizada)') {
                         setMeta(cat.label);
                         if (cat.min > 0) setMonto(String(Math.round((cat.min + cat.max) / 2)));
                       } else {
@@ -128,7 +129,7 @@ export default function L05() {
                     <div className="flex justify-between items-center">
                       <p className="text-sm font-semibold">{cat.emoji} {cat.label}</p>
                       {cat.min > 0 && (
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-full border" style={{ borderColor: successColor, color: '#059669' }}>
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full border" style={{ borderColor: successColor, color: successColor }}>
                           ${cat.min.toLocaleString()}-${cat.max.toLocaleString()}
                         </span>
                       )}
@@ -149,14 +150,14 @@ export default function L05() {
             <p className="font-bold">Define tu meta de ahorro:</p>
             <input
               type="text"
-              placeholder="¿Cual es tu meta de ahorro? Ej: Laptop para la escuela"
+              placeholder="¿Cuál es tu meta de ahorro? Ej: Laptop para la escuela"
               value={meta}
               onChange={(e) => setMeta(e.target.value)}
               className="w-full border border-[var(--color-neutral-200)] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-success)]"
             />
             <input
               type="number"
-              placeholder="¿Cuanto dinero necesitas exactamente? ($)"
+              placeholder="¿Cuánto dinero necesitas exactamente? ($)"
               min={0}
               value={monto}
               onChange={(e) => setMonto(e.target.value)}
@@ -170,7 +171,7 @@ export default function L05() {
             />
             <input
               type="number"
-              placeholder="¿Cuanto puedes apartar por mes? ($)"
+              placeholder="¿Cuánto puedes apartar por mes? ($)"
               min={0}
               value={aportacion}
               onChange={(e) => setAportacion(e.target.value)}
@@ -182,7 +183,7 @@ export default function L05() {
                 <p className="font-bold text-sm mb-1">¡A ese ritmo, alcanzas tu meta en {fechaCalculada.meses} meses!</p>
                 <p className="text-xs text-[var(--color-text-secondary)]">Fecha estimada: {fechaCalculada.fecha}</p>
                 {aportNecesaria && aportNecesaria !== aportNum && (
-                  <p className="text-xs mt-1" style={{ color: '#D97706' }}>Para llegar a tu fecha objetivo necesitas apartar ${aportNecesaria.toLocaleString()}/mes.</p>
+                  <p className="text-xs mt-1" style={{ color: warnColor }}>Para llegar a tu fecha objetivo necesitas apartar ${aportNecesaria.toLocaleString()}/mes.</p>
                 )}
               </FECard>
             )}
@@ -203,10 +204,10 @@ export default function L05() {
               <p className="font-bold mt-2">{meta}</p>
               <div className="flex justify-center gap-2 mt-2 flex-wrap">
                 <span className="px-3 py-1 rounded-full text-sm font-bold text-white" style={{ backgroundColor: successColor }}>${montoNum.toLocaleString()}</span>
-                <span className="px-3 py-1 rounded-full text-sm font-bold border" style={{ borderColor: successColor, color: '#059669' }}>${aportNum.toLocaleString()}/mes</span>
+                <span className="px-3 py-1 rounded-full text-sm font-bold border" style={{ borderColor: successColor, color: successColor }}>${aportNum.toLocaleString()}/mes</span>
               </div>
             </FECard>
-            <FinniMessage variant="success" title="Tu meta esta guardada" message="En la proxima leccion construiremos el plan semana a semana." />
+            <FinniMessage variant="success" title="Tu meta está guardada" message="En la próxima lección construiremos el plan semana a semana." />
           </div>
         )}
       </div>

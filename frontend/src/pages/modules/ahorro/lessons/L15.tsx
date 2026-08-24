@@ -6,15 +6,16 @@ import { lessonDataRepository } from '../../../../db/lessonData.repository';
 
 const successColor = 'var(--color-brand-success)';
 const successBg    = 'var(--color-brand-success-bg)';
+const warnColor    = 'var(--color-brand-warning)';
 
 type MetaData = { nombre?: string; monto?: number; aportacionMensual?: number } | null;
 type PlanData = { totalPlanado?: number; horizon?: number } | null;
 type RetoData = { totalAcumulado?: number; dayAmounts?: number[] } | null;
 
 const CONCEPTOS_CLAVE = [
-  { emoji: '🔄', titulo: 'Ahorro primero',    desc: 'Apartar antes de gastar es el habito mas poderoso.' },
-  { emoji: '🏦', titulo: 'Ahorro formal',     desc: 'Proteccion IPAB + rendimientos + historial financiero.' },
-  { emoji: '🎯', titulo: 'Meta con nombre',   desc: 'El ahorro sin proposito no dura.' },
+  { emoji: '🔄', titulo: 'Ahorro primero',    desc: 'Apartar antes de gastar es el hábito más poderoso.' },
+  { emoji: '🏦', titulo: 'Ahorro formal',     desc: 'Protección IPAB + rendimientos + historial financiero.' },
+  { emoji: '🎯', titulo: 'Meta con nombre',   desc: 'El ahorro sin propósito no dura.' },
   { emoji: '📅', titulo: 'Plan semanal',      desc: 'La constancia supera la cantidad.' },
   { emoji: '💹', titulo: 'Interes compuesto', desc: 'El tiempo es tu mejor aliado para crecer.' },
   { emoji: '🛡️', titulo: 'Fondo de emergencias', desc: 'Tu red de seguridad antes de invertir.' },
@@ -63,14 +64,14 @@ export default function L15() {
 
   if (loading) {
     return (
-      <LessonShell id="L15" title="Reto final: cierra tu modulo de ahorro" completion={{ ready: false }}>
+      <LessonShell id="L15" title="Reto final: cierra tu módulo de ahorro" completion={{ ready: false }}>
         <p className="text-sm text-[var(--color-text-secondary)]">Cargando datos...</p>
       </LessonShell>
     );
   }
 
   return (
-    <LessonShell id="L15" title="Reto final: cierra tu modulo de ahorro" completion={{ ready: canComplete }}>
+    <LessonShell id="L15" title="Reto final: cierra tu módulo de ahorro" completion={{ ready: canComplete }}>
       <div className="p-1">
         <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
           <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
@@ -82,25 +83,25 @@ export default function L15() {
             <FECard variant="flat" className="text-center py-6 border-2" style={{ backgroundColor: successBg, borderColor: successColor }}>
               <p className="text-4xl">🌱</p>
               <p className="text-xl font-bold mt-2">¡El reto final!</p>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">Modulo 2 · Ahorro</p>
+              <p className="text-sm text-[var(--color-text-secondary)] mt-1">Módulo 2 · Ahorro</p>
             </FECard>
-            <FinniMessage variant="coach" title="Hoy no solo cierras el modulo" message="Demuestras que el habito de ahorro ya es parte de ti." />
+            <FinniMessage variant="coach" title="Hoy no solo cierras el módulo" message="Demuestras que el hábito de ahorro ya es parte de ti." />
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="text-sm font-bold mb-2">En este modulo:</p>
+              <p className="text-sm font-bold mb-2">En este módulo:</p>
               {[
-                '✅ Definiste tu meta de ahorro con proposito y plazo',
+                '✅ Definiste tu meta de ahorro con propósito y plazo',
                 '✅ Construiste tu plan semana a semana',
-                '✅ Conociste las herramientas del ahorro formal en Mexico',
-                '✅ Completaste el micro-reto de 3 dias',
-                '✅ Aprendiste sobre interes compuesto, IPAB y seguros',
+                '✅ Conociste las herramientas del ahorro formal en México',
+                '✅ Completaste el micro-reto de 3 días',
+                '✅ Aprendiste sobre interés compuesto, IPAB y seguros',
                 '✅ Registraste tu ahorro de forma constante',
               ].map((item) => <p key={item} className="text-sm py-0.5">{item}</p>)}
             </FECard>
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
               <p className="text-sm font-bold mb-1">El reto tiene 3 partes:</p>
               <p className="text-sm">Parte 1: Confirma tu monto total ahorrado</p>
-              <p className="text-sm">Parte 2: Autoevaluacion honesta (3 preguntas)</p>
-              <p className="text-sm">Parte 3: Define tu proxima meta + acceso a Modulo 3</p>
+              <p className="text-sm">Parte 2: Autoevaluación honesta (3 preguntas)</p>
+              <p className="text-sm">Parte 3: Define tu próxima meta + acceso a Módulo 3</p>
             </FECard>
             <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
               ¡Empezar el reto final! →
@@ -111,27 +112,27 @@ export default function L15() {
         {/* Pantalla 1 — Parte 1: Monto total */}
         {step === 1 && (
           <div className="space-y-6">
-            <p className="text-xl font-bold">Parte 1: Tu ahorro del modulo</p>
+            <p className="text-xl font-bold">Parte 1: Tu ahorro del módulo</p>
             {totalAcumulado > 0 && (
               <FECard variant="flat" className="border" style={{ backgroundColor: successBg, borderColor: successColor }}>
                 <p className="text-sm font-bold">✅ Datos del micro-reto precargados: ${totalAcumulado.toLocaleString()}</p>
-                <p className="text-xs text-[var(--color-text-secondary)]">Puedes ajustar si ahorraste mas por otros medios</p>
+                <p className="text-xs text-[var(--color-text-secondary)]">Puedes ajustar si ahorraste más por otros medios</p>
               </FECard>
             )}
             <input
               type="number"
               min={0}
-              placeholder="Monto total ahorrado durante el modulo ($)"
+              placeholder="Monto total ahorrado durante el módulo ($)"
               value={montoTotal}
               onChange={(e) => setMontoTotal(e.target.value)}
               className="w-full border border-[var(--color-neutral-200)] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-success)]"
             />
-            <p className="text-xs text-[var(--color-text-secondary)] -mt-4">Cualquier monto es valido. Lo importante es el habito.</p>
+            <p className="text-xs text-[var(--color-text-secondary)] -mt-4">Cualquier monto es válido. Lo importante es el hábito.</p>
             {metaData?.nombre && (
               <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
                 <p className="text-xs">Tu meta: "{metaData.nombre}" — ${metaData.monto?.toLocaleString()}</p>
                 {metaData.monto && montoNum > 0 && (
-                  <p className="text-xs" style={{ color: '#059669' }}>Avance: {Math.min(100, (montoNum / metaData.monto) * 100).toFixed(0)}% de tu meta</p>
+                  <p className="text-xs" style={{ color: successColor }}>Avance: {Math.min(100, (montoNum / metaData.monto) * 100).toFixed(0)}% de tu meta</p>
                 )}
               </FECard>
             )}
@@ -143,16 +144,16 @@ export default function L15() {
           </div>
         )}
 
-        {/* Pantalla 2 — Parte 2: Autoevaluacion */}
+        {/* Pantalla 2 — Parte 2: Autoevaluación */}
         {step === 2 && (
           <div className="space-y-6">
-            <p className="text-xl font-bold">Parte 2: Autoevaluacion honesta</p>
-            <FinniMessage variant="coach" title="No hay respuestas incorrectas" message="Esta autoevaluacion es solo para ti. La honestidad te ayuda a mejorar." />
+            <p className="text-xl font-bold">Parte 2: Autoevaluación honesta</p>
+            <FinniMessage variant="coach" title="No hay respuestas incorrectas" message="Esta autoevaluación es solo para ti. La honestidad te ayuda a mejorar." />
             <div className="space-y-3">
               {[
-                { label: '¿Cuantas semanas mantuviste el habito?', val: semanasHabito, set: setSemanasHabito, placeholder: 'Ej: 3 semanas, o "no lo segui formalmente"', multiline: false },
-                { label: '¿Que te resulto mas dificil?', val: masDificil, set: setMasDificil, placeholder: 'Describe tu mayor reto...', multiline: true },
-                { label: '¿Que cambiarias para el proximo mes?', val: cambiaria, set: setCambiaria, placeholder: 'Un ajuste concreto...', multiline: true },
+                { label: '¿Cuántas semanas mantuviste el hábito?', val: semanasHabito, set: setSemanasHabito, placeholder: 'Ej: 3 semanas, o "no lo seguí formalmente"', multiline: false },
+                { label: '¿Qué te resultó más difícil?', val: masDificil, set: setMasDificil, placeholder: 'Describe tu mayor reto...', multiline: true },
+                { label: '¿Qué cambiarías para el próximo mes?', val: cambiaria, set: setCambiaria, placeholder: 'Un ajuste concreto...', multiline: true },
               ].map((field) =>
                 field.multiline ? (
                   <textarea
@@ -177,17 +178,17 @@ export default function L15() {
             </div>
             {autoEvalValid && (
               <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(3)}>
-                Parte 3: Proxima meta →
+                Parte 3: Próxima meta →
               </button>
             )}
           </div>
         )}
 
-        {/* Pantalla 3 — Parte 3: Proxima meta + M3 */}
+        {/* Pantalla 3 — Parte 3: Próxima meta + M3 */}
         {step === 3 && (
           <div className="space-y-6">
-            <p className="text-xl font-bold">Parte 3: Tu proxima meta</p>
-            <FinniMessage variant="coach" title="El Modulo 3 te espera" message="¿Podrias invertir parte de ese ahorro? En el Modulo 3 de Inversion te mostraremos como hacer crecer lo que ahorras." />
+            <p className="text-xl font-bold">Parte 3: Tu próxima meta</p>
+            <FinniMessage variant="coach" title="El Módulo 3 te espera" message="¿Podrías invertir parte de ese ahorro? En el Módulo 3 de Inversión te mostraremos cómo hacer crecer lo que ahorras." />
             <input
               type="text"
               placeholder="Ej: Seguir ahorrando para mi laptop..."
@@ -208,8 +209,8 @@ export default function L15() {
             <FECard variant="flat" className="border" style={{ backgroundColor: successBg, borderColor: successColor }}>
               <p className="text-sm font-bold mb-2">✅ Partes completadas:</p>
               <p className="text-sm">1. Monto total confirmado: ${montoNum.toLocaleString()}</p>
-              <p className="text-sm">2. Autoevaluacion completada ({semanasHabito})</p>
-              <p className="text-sm">3. Proxima meta definida{proximaMeta ? `: "${proximaMeta}"` : ''}</p>
+              <p className="text-sm">2. Autoevaluación completada ({semanasHabito})</p>
+              <p className="text-sm">3. Próxima meta definida{proximaMeta ? `: "${proximaMeta}"` : ''}</p>
             </FECard>
             {totalPlanado > 0 && (
               <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
@@ -219,7 +220,7 @@ export default function L15() {
                 </div>
                 <div className="flex justify-between mt-1">
                   <span className="text-xs">Real:</span>
-                  <span className="text-xs font-bold" style={{ color: montoNum >= totalPlanado * 0.5 ? '#059669' : '#D97706' }}>${montoNum.toLocaleString()}</span>
+                  <span className="text-xs font-bold" style={{ color: montoNum >= totalPlanado * 0.5 ? successColor : warnColor }}>${montoNum.toLocaleString()}</span>
                 </div>
               </FECard>
             )}
@@ -240,11 +241,11 @@ export default function L15() {
             <FECard variant="flat" className="text-center py-8 border-[3px]" style={{ backgroundColor: successBg, borderColor: successColor }}>
               <p className="text-6xl mb-2">🏆</p>
               <p className="text-2xl font-bold mt-1">Ahorrador Constante 🌱</p>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">Badge desbloqueado · Modulo 2 completado</p>
+              <p className="text-sm text-[var(--color-text-secondary)] mt-1">Badge desbloqueado · Módulo 2 completado</p>
             </FECard>
-            <FinniMessage variant="success" title="¡Lo lograste!" message="Ahora tienes un habito que muchos adultos nunca desarrollan. Eso vale mas que cualquier cantidad que hayas ahorrado." />
+            <FinniMessage variant="success" title="¡Lo lograste!" message="Ahora tienes un hábito que muchos adultos nunca desarrollan. Eso vale más que cualquier cantidad que hayas ahorrado." />
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="font-bold mb-3">Lo que aprendiste en Modulo 2:</p>
+              <p className="font-bold mb-3">Lo que aprendiste en Módulo 2:</p>
               <div className="space-y-2">
                 {CONCEPTOS_CLAVE.map((c) => (
                   <div key={c.titulo} className="flex gap-3 items-start">
@@ -262,7 +263,7 @@ export default function L15() {
               className="block w-full min-h-11 text-white rounded-xl font-semibold text-sm text-center leading-[44px]"
               style={{ backgroundColor: successColor }}
             >
-              📈 Comenzar Modulo 3: Inversion
+              📈 Comenzar Módulo 3: Inversión
             </a>
           </div>
         )}
