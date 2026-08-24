@@ -10,6 +10,7 @@ const EXAMPLES = [
   { label: '$2,500', amount: 2500 },
   { label: '$3,000', amount: 3000 },
   { label: '$5,000', amount: 5000 },
+  { label: '$8,000', amount: 8000 },
 ];
 
 export default function L05() {
@@ -88,7 +89,7 @@ export default function L05() {
             <FinniMessage
               variant="coach"
               title="La regla 50-30-20"
-              message="Existe una regla simple que puede cambiar tu forma de ver el dinero. Aplica aunque ganes $1,500 o $5,000."
+              message="Existe una regla simple que puede cambiar tu forma de ver el dinero. Aplica aunque ganes $1,500 o $8,000."
             />
             <div className="space-y-2">
               {[

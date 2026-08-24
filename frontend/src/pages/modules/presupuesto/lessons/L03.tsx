@@ -112,7 +112,7 @@ export default function L03() {
         {step === 1 && (
           <div className="space-y-3">
             <p className="text-sm">
-              Toca todos los gastos hormiga que encuentres en tu semana universitaria. ¡Hay 10!
+              Toca todos los gastos hormiga que encuentres en tu semana. ¡Hay 10!
             </p>
             <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2">
               <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${(found.size / GASTOS_HORMIGA.length) * 100}%` }} />

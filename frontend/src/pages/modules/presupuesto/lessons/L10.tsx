@@ -12,7 +12,7 @@ const HISTORIAS = [
   },
   {
     nombre: 'Andrés',
-    resumen: 'No recibió su beca este mes por error administrativo.',
+    resumen: 'No recibió su sueldo este mes por error administrativo.',
     acciones: 'Negoció plazos con servicios, buscó ingreso alternativo temporal, evitó contraer deudas.',
   },
   {

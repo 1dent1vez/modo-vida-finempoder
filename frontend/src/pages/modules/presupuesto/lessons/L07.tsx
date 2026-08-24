@@ -15,7 +15,7 @@ const ESCENARIOS: {
   {
     id: 'A',
     situacion: 'Se acabó el pase del metro ($300)',
-    contexto: 'Tienes $320 y faltan 12 días para tu próxima mesada.',
+    contexto: 'Tienes $320 y faltan 12 días para tu próximo ingreso.',
     opciones: [
       { id: 'a1', label: 'Cancelar cena con amigos del viernes', consecuencia: 'Ahorraste $300. Te quedaste sin salida del viernes.', score: 70 },
       { id: 'a2', label: 'Pausar streaming este mes', consecuencia: 'Ahorraste $99. Aún necesitas $201 más.', score: 50 },
@@ -24,8 +24,8 @@ const ESCENARIOS: {
   },
   {
     id: 'B',
-    situacion: 'Examen sorpresa: necesitas imprimir urgente ($80)',
-    contexto: 'Tienes $320 disponibles. El examen es mañana.',
+    situacion: 'Necesitas imprimir un documento urgente ($80)',
+    contexto: 'Tienes $320 disponibles. Lo necesitas para mañana.',
     opciones: [
       { id: 'b1', label: 'Pedir prestado a un amigo', consecuencia: 'Resuelves el problema hoy. Recuerda pagar después.', score: 70 },
       { id: 'b2', label: 'Usar parte del presupuesto de comida', consecuencia: 'Pagas las impresiones pero comerás más sencillo esta semana.', score: 80 },
@@ -91,7 +91,7 @@ export default function L07() {
             <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 border-2 border-[var(--color-brand-warning)] text-center py-4">
               <p className="font-bold">💬 Mensaje bancario</p>
               <p className="font-bold text-base mt-2">Saldo disponible: $320</p>
-              <p className="text-sm text-[var(--color-text-secondary)]">Faltan 12 días para tu próxima mesada.</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">Faltan 12 días para tu próximo ingreso.</p>
             </FECard>
             <FinniMessage
               variant="coach"

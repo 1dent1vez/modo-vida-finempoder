@@ -72,7 +72,7 @@ export default function L09() {
             <FinniMessage
               variant="coach"
               title="¿Qué es una meta SMART?"
-              message={`"Quiero ahorrar" no es una meta. "Quiero ahorrar $3,000 para mi viaje de graduación en 6 meses apartando $500 al mes" — eso sí es una meta. ¿Notas la diferencia?`}
+              message={`"Quiero ahorrar" no es una meta. "Quiero ahorrar $3,000 para un viaje en 6 meses apartando $500 al mes" — eso sí es una meta. ¿Notas la diferencia?`}
             />
             <div className="space-y-2">
               {SMART_LETTERS.map((s) => (
@@ -183,7 +183,7 @@ export default function L09() {
                     Deberías apartar: <b>${aporteMensual.toLocaleString()}/mes</b>
                   </p>
                   <p className="text-xs text-[var(--color-text-secondary)]">
-                    {isAlcanzable ? '✅ Es alcanzable para un universitario típico' : '⚠️ Es exigente. Considera aumentar el plazo.'}
+                    {isAlcanzable ? '✅ Es alcanzable para un ingreso típico' : '⚠️ Es exigente. Considera aumentar el plazo.'}
                   </p>
                 </FECard>
               </FECard>

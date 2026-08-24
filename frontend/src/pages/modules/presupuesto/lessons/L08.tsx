@@ -34,9 +34,21 @@ const SITUACIONES: { id: string; desc: string; correct: GastoType; explicacion: 
   },
   {
     id: 's5',
-    desc: 'Salir a comer con amigos para celebrar una calificación ($200)',
+    desc: 'Salir a comer con amigos para celebrar un logro ($200)',
     correct: 'emocional',
     explicacion: 'Gasto emocional planificado. Si entra en tu presupuesto de deseos, está bien.',
+  },
+  {
+    id: 's6',
+    desc: 'Comprar ropa de trabajo para tu nuevo empleo ($400)',
+    correct: 'racional',
+    explicacion: 'Es una necesidad para tu trabajo. Decisión racional y planificada.',
+  },
+  {
+    id: 's7',
+    desc: 'Comprar comida de oficina para consolarte después de un día pesado ($120)',
+    correct: 'emocional',
+    explicacion: 'Es una respuesta emocional al estrés del trabajo. Puede ser válido si es consciente.',
   },
 ];
 

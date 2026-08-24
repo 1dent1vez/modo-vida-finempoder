@@ -153,7 +153,7 @@ export default function L15() {
               <p className="text-xs font-bold">Ejemplos de Finni:</p>
               <p className="text-xs block">• "Esta semana no gastaré más de $X en cafetería"</p>
               <p className="text-xs block">• "Registraré todos mis gastos cada noche antes de dormir"</p>
-              <p className="text-xs block">• "Destinaré $X a mi meta de ahorro el día que llegue mi mesada"</p>
+              <p className="text-xs block">• "Destinaré $X a mi meta de ahorro el día que llegue mi quincena o mesada"</p>
             </FECard>
             <div className="space-y-2">
               {compromisos.map((c, i) => (

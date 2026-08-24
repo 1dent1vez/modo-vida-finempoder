@@ -17,10 +17,10 @@ const PAGOS = ['Efectivo', 'Tarjeta', 'App de pago', 'Transferencia'];
 
 const MOMENTOS = [
   { id: 'desayuno', time: '8:00 AM', evento: 'Desayuno', detalle: 'Tacos en la entrada', monto: 65, categoria: 'Alimentación' },
-  { id: 'transporte', time: '8:45 AM', evento: 'Transporte', detalle: 'Camión al TecToluca', monto: 22, categoria: 'Transporte' },
-  { id: 'almuerzo', time: '1:30 PM', evento: 'Almuerzo', detalle: 'Comedor escolar', monto: 95, categoria: 'Alimentación' },
+  { id: 'transporte', time: '8:45 AM', evento: 'Transporte', detalle: 'Camión a la oficina', monto: 22, categoria: 'Transporte' },
+  { id: 'almuerzo', time: '1:30 PM', evento: 'Almuerzo', detalle: 'Comedor de la oficina', monto: 95, categoria: 'Alimentación' },
   { id: 'fotocopia', time: '3:00 PM', evento: 'Fotocopia', detalle: 'Papelería', monto: 14, categoria: 'Educación' },
-  { id: 'cafe', time: '5:00 PM', evento: 'Café tarde', detalle: 'Cafetería del campus', monto: 52, categoria: 'Alimentación' },
+  { id: 'cafe', time: '5:00 PM', evento: 'Café tarde', detalle: 'Cafetería del trabajo', monto: 52, categoria: 'Alimentación' },
 ];
 
 type RegistroEntry = { categoria: string; metodoPago: string };
@@ -131,9 +131,9 @@ export default function L04() {
         {step === 1 && (
           <div className="space-y-3">
             <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 text-center py-4">
-              <p className="font-bold text-base">El día de Mariana 📚</p>
+              <p className="font-bold text-base">El día de Mariana 📅</p>
               <p className="text-sm text-[var(--color-text-secondary)]">
-                Mariana es estudiante de 2do semestre. Registra sus 5 gastos del día.
+                Mariana trabaja y estudia. Registra sus 5 gastos del día.
               </p>
             </FECard>
             <p className="text-sm">

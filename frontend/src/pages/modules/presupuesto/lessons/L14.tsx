@@ -43,15 +43,15 @@ const PREGUNTAS: Pregunta[] = [
     leccion: 'Lección 5',
   },
   {
-    texto: 'Con $320 y 12 días para tu mesada, ¿qué priorizas primero?',
+    texto: 'Con $320 y 12 días para tu próximo ingreso, ¿qué priorizas primero?',
     tipo: 'multiple',
     opciones: [
       'La salida con amigos del sábado',
-      'El transporte para llegar al TecToluca',
+      'El transporte para llegar al trabajo o la escuela',
       'Renovar tu suscripción de streaming',
     ],
     correcta: 1,
-    explicacion: 'El transporte es una necesidad básica para llegar a clases. Se prioriza sobre deseos o entretenimiento.',
+    explicacion: 'El transporte es una necesidad básica para llegar al trabajo o la escuela. Se prioriza sobre deseos o entretenimiento.',
     leccion: 'Lección 7',
   },
   {

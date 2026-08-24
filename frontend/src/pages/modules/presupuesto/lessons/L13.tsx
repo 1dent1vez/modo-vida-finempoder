@@ -78,7 +78,7 @@ function calcSemaforo(data: BudgetData): SemaforoItem[] {
       color: variables <= 15 ? 'success' : variables <= 25 ? 'warning' : 'error',
       consejo:
         variables <= 15
-          ? 'Tu nivel de ocio es adecuado para un contexto estudiantil.'
+          ? 'Tu nivel de ocio es adecuado para tu contexto.'
           : 'Considera si todo el gasto variable es entretenimiento o si hay necesidades mezcladas.',
     },
     {

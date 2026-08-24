@@ -7,7 +7,7 @@ import FinniMessage from '../../../../components/FinniMessage';
 type Classification = 'planned' | 'unplanned' | null;
 
 const WEEK_EVENTS = [
-  { day: 'Lunes', desc: 'Cobro beca/mesada', amount: 2000, isIncome: true },
+  { day: 'Lunes', desc: 'Cobro de quincena/mesada/beca', amount: 2000, isIncome: true },
   { day: 'Martes', desc: 'Café + transporte', amount: -75 },
   { day: 'Miércoles', desc: 'Comida rápida + Netflix', amount: -219 },
   { day: 'Jueves', desc: 'Salida con amigos', amount: -350 },
@@ -62,7 +62,7 @@ export default function L01() {
             <FinniMessage
               variant="coach"
               title="¡Hola! Soy Finni 👋"
-              message="Oye… ¿ya es martes y tu tarjeta dice $47? Tranqui, a casi todos nos ha pasado. Hoy vamos a resolver el misterio más común entre universitarios: ¿a dónde se va el dinero?"
+              message="Oye… ¿ya es martes y tu tarjeta dice $47? Tranqui, a casi todos nos ha pasado. Hoy vamos a resolver el misterio más común entre casi todos nosotros: ¿a dónde se va el dinero?"
             />
             <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
               <p className="font-bold text-base mb-2">
@@ -187,7 +187,7 @@ export default function L01() {
             <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 border-2 border-[var(--color-brand-warning)] text-center py-6">
               <p className="text-4xl mb-2">68%</p>
               <p className="font-bold">
-                de los universitarios no sabe exactamente cuánto gasta al mes.
+                de las personas no sabe exactamente cuánto gasta al mes.
               </p>
               <p className="text-xs text-[var(--color-text-secondary)]">Fuente: CONDUSEF</p>
             </FECard>

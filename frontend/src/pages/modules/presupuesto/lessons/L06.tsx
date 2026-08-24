@@ -77,8 +77,8 @@ export default function L06() {
         {step === 1 && (
           <div className="space-y-3">
             <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 text-center py-3">
-              <p className="font-bold text-base">El mes de Roberto 🎓</p>
-              <p className="text-sm text-[var(--color-text-secondary)]">Estudiante de 3er semestre</p>
+              <p className="font-bold text-base">El mes de Roberto 📊</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">Un caso real de un usuario</p>
             </FECard>
 
             {pasoRoberto === 0 && (

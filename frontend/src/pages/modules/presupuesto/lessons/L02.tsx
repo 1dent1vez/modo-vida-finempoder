@@ -10,10 +10,11 @@ type IncomeType = 'fijo' | 'variable';
 const ITEMS: { id: string; label: string; correct: IncomeType }[] = [
   { id: 'pronabes', label: 'Beca PRONABES', correct: 'fijo' },
   { id: 'mesada', label: 'Mesada semanal de papás', correct: 'fijo' },
-  { id: 'apuntes', label: 'Venta de apuntes', correct: 'variable' },
+  { id: 'apuntes', label: 'Venta de apuntes o cosas usadas', correct: 'variable' },
   { id: 'cafe', label: 'Trabajo en café escolar', correct: 'fijo' },
   { id: 'cumple', label: 'Regalo de cumpleaños', correct: 'variable' },
   { id: 'logo', label: 'Pago por diseño de logo', correct: 'variable' },
+  { id: 'propinas', label: 'Propinas de mesero o repartidor', correct: 'variable' },
   { id: 'fonacot', label: 'FONACOT de papás', correct: 'variable' },
   { id: 'tutorias', label: 'Ingreso por tutorías', correct: 'variable' },
 ];
@@ -25,8 +26,9 @@ const FEEDBACK: Record<string, string> = {
   cafe: 'Un trabajo con horario y sueldo definido es fijo.',
   cumple: 'Los regalos no llegan todos los meses, son variables.',
   logo: 'El pago por proyecto cambia. Es ingreso variable.',
+  propinas: 'Las propinas cambian según el día y el lugar donde trabajes. ¡Son variables!',
   fonacot: 'El crédito FONACOT puede variar con cuotas distintas.',
-  tutorias: 'Las tutorías dependen de cuántos alumnos consigas.',
+  tutorias: 'Las tutorías dependen de cuántos alumnos o clientes consigas.',
 };
 
 export default function L02() {
@@ -207,7 +209,7 @@ export default function L02() {
                 <FECard variant="flat" className="bg-[var(--color-brand-success)]/10 border-2 border-[var(--color-brand-success)] text-center">
                   <p className="font-bold text-base">Ingresos Clasificados ✓</p>
                   <p className="font-bold">
-                    {correctCount}/8 correctos ({score}%)
+                    {correctCount}/9 correctos ({score}%)
                   </p>
                 </FECard>
                 <FinniMessage
