@@ -15,6 +15,7 @@ Rama: `f1-ola1-celebracion-autoguardado` (base: `qa-identivezz`).
 - Repositorio nuevo `lessonResume.repository.ts`: `save` / `get` / `clear` del snapshot en la tabla `userLessonData` con key `resume:v1:<lessonId>` (userId `local` sin sesión, como el resto de la persistencia).
 - Hook `useLessonResume` (`features/lessons/hooks`): `hasSaved` (evaluado una vez al montar), `savedStep`, `save(state)` (debounce 500ms), `accept()` (devuelve el snapshot y lo borra), `ignore()` y `clear()`. NO toca `lessonProgress`.
 - `LessonShell`: al completar, además de `setCompleted`, SIEMPRE llama `clearLessonResume(moduleId, id)` (el autoguardado se limpia al completar).
+- LM-01: carrera debounce-vs-clear cerrada en el repositorio (`lessonResumeRepository` registra timers pendientes por key y `clear()` cancela el timer antes de borrar la fila); LM-02: ref guard de confetti se asigna antes del early-return por `prefers-reduced-motion`.
 - Las 45 lecciones integraron el patrón: import del hook, `useLessonResume(moduleId, 'L0X')`, efecto de guardado al cambiar `step` (solo `step > 0`), y banner "Continuar donde te quedaste" (FECard con tokens del tema) con botón "Continuar donde te quedaste" (`accept()` + `setStep`) y "Empezar de nuevo" (`ignore()`). Nunca se restaura automáticamente; el estado se guarda en un `useState` local para no re-mostrar el banner.
 
 ## Archivos nuevos / modificados

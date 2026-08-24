@@ -191,8 +191,9 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
   ]);
 
   useEffect(() => {
-    if (!completed || reducedMotion || confettiFired.current) return;
+    if (!completed || confettiFired.current) return;
     confettiFired.current = true;
+    if (reducedMotion) return;
     confetti({ particleCount: 120, spread: 70, origin: { y: 0.7 } });
   }, [completed, reducedMotion]);
 

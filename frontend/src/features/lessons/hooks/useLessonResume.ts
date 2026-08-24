@@ -8,8 +8,6 @@ import {
   type LessonResumeState,
 } from '../../../db/lessonResume.repository';
 
-const DEBOUNCE_MS = 500;
-
 export type LessonResume = {
   hasSaved: boolean;
   savedStep?: number;
@@ -25,7 +23,6 @@ export function useLessonResume(moduleId: string, lessonId: string): LessonResum
   const snapshotRef = useRef<LessonResumeState | null>(null);
   const moduleIdRef = useRef(moduleId);
   const lessonIdRef = useRef(lessonId);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dirtyRef = useRef(false);
 
   moduleIdRef.current = moduleId;
@@ -44,28 +41,18 @@ export function useLessonResume(moduleId: string, lessonId: string): LessonResum
     };
   }, [moduleId, lessonId]);
 
-  const clearTimer = () => {
-    if (timerRef.current !== null) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  };
-
   const save = useCallback((state: LessonResumeState) => {
     dirtyRef.current = true;
     snapshotRef.current = state;
     setSavedStep(state.step);
-    clearTimer();
-    timerRef.current = setTimeout(() => {
-      timerRef.current = null;
-      void lessonResumeRepository.save(moduleIdRef.current, lessonIdRef.current, state);
-    }, DEBOUNCE_MS);
+    // El debounce vive en el repositorio (timer registrado por key), de modo
+    // que clearLessonResume del shell pueda cancelar cualquier save pendiente.
+    lessonResumeRepository.scheduleSave(moduleIdRef.current, lessonIdRef.current, state);
   }, []);
 
   const accept = useCallback((): { step: number } | null => {
     const snapshot = snapshotRef.current;
     if (!snapshot) return null;
-    clearTimer();
     snapshotRef.current = null;
     setHasSaved(false);
     setSavedStep(undefined);
@@ -74,7 +61,6 @@ export function useLessonResume(moduleId: string, lessonId: string): LessonResum
   }, []);
 
   const ignore = useCallback(() => {
-    clearTimer();
     snapshotRef.current = null;
     setHasSaved(false);
     setSavedStep(undefined);
@@ -82,7 +68,6 @@ export function useLessonResume(moduleId: string, lessonId: string): LessonResum
   }, []);
 
   const clear = useCallback(() => {
-    clearTimer();
     snapshotRef.current = null;
     setHasSaved(false);
     setSavedStep(undefined);
@@ -91,10 +76,9 @@ export function useLessonResume(moduleId: string, lessonId: string): LessonResum
 
   useEffect(() => {
     return () => {
-      if (timerRef.current !== null) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
+      // Al desmontar se descarta el save pendiente (mismo comportamiento que
+      // con el timer local previo).
+      lessonResumeRepository.cancelPendingSave(moduleIdRef.current, lessonIdRef.current);
     };
   }, []);
 
