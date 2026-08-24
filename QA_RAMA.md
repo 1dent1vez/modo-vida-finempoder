@@ -1,4 +1,17 @@
-# QA_RAMA.md — Rama de pruebas permanente `qa-identivezz`
+# 
+## URL FIJA: https://qa.finempoder.com.mx
+
+El alias `qa.finempoder.com.mx` apunta al deploy de QA. Para redesplegar y que la URL fija se actualice:
+
+```bash
+cd frontend
+vercel deploy --scope ghaels-projects  # copia la URL del preview resultante
+vercel alias set <URL-PREVIEW> qa.finempoder.com.mx --scope ghaels-projects
+```
+
+La URL de preview efímera puede cambiar; `qa.finempoder.com.mx` NUNCA cambia.
+
+QA_RAMA.md — Rama de pruebas permanente `qa-identivezz`
 
 Rama SIEMPRE desplegada en Vercel para revisar cambios desde el celular, con modo admin
 que desbloquea las 45 lecciones sin completar el flujo.
