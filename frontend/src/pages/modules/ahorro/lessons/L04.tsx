@@ -18,7 +18,7 @@ const CARDS: { id: string; label: string; correct: 'aliado' | 'saboteador'; tip:
   { id: 'c2', label: 'Meta clara y visible (foto en pantalla de bloqueo)', correct: 'aliado', tip: 'Una imagen concreta activa la motivación de continuar.' },
   { id: 'c3', label: 'Notificaciones de progreso de ahorro', correct: 'aliado', tip: 'Ver que llevas $500 de $2,000 activa la motivación.' },
   { id: 'c4', label: 'Amigos con cultura de ahorro', correct: 'aliado', tip: 'El entorno social influye más de lo que creemos.' },
-  { id: 'c5', label: 'Cuenta de ahorro separada de la del gasto diario', correct: 'aliado', tip: 'Lo que no ves facilmente, no lo gastas.' },
+  { id: 'c5', label: 'Cuenta de ahorro separada de la del gasto diario', correct: 'aliado', tip: 'Lo que no ves fácilmente, no lo gastas.' },
   { id: 'c6', label: 'Notificaciones de ofertas y compras en línea', correct: 'saboteador', tip: 'Activan el gasto impulsivo. Desactivarlas ayuda mucho.' },
   { id: 'c7', label: 'Amigos que siempre proponen planes costosos', correct: 'saboteador', tip: 'La presion social puede boicotear el mejor plan.' },
   { id: 'c8', label: 'No tener una meta concreta ("ahorro para algo algún día")', correct: 'saboteador', tip: 'El ahorro sin nombre no dura. Necesita propósito.' },

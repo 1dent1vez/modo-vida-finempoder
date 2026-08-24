@@ -91,7 +91,7 @@ export default function L08() {
             <FinniMessage variant="coach" title="El fondo de emergencias es tu red" message="Imagina que mañana se descompone tu laptop justo antes de exámenes. ¿Tienes algo guardado para eso? El fondo de emergencias es esa red que atrapa antes del desastre." />
             <FECard variant="flat" className="border" style={{ borderColor: successColor }}>
               <p className="text-sm font-bold mb-2">¿Qué es un fondo de emergencias?</p>
-              <p className="text-sm">Dinero guardado especificamente para imprevistos. No es para el viaje, no es para la tele nueva. Es para cuando la vida sorprende.</p>
+              <p className="text-sm">Dinero guardado específicamente para imprevistos. No es para el viaje, no es para la tele nueva. Es para cuando la vida sorprende.</p>
               <div className="mt-3 space-y-1">
                 <p className="text-xs" style={{ color: successColor }}>✅ 3 meses de gastos básicos — si tienes apoyo familiar</p>
                 <p className="text-xs" style={{ color: successColor }}>✅ 6 meses — si eres más independiente</p>

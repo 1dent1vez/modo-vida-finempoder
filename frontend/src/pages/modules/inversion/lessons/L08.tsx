@@ -174,7 +174,7 @@ export default function L08() {
                     </FECard>
                   </div>
                   <FECard variant="flat" className="border" style={{ borderColor: 'var(--color-brand-warning)', backgroundColor: 'var(--color-brand-warning-bg)' }}>
-                    <p className="text-xs font-bold" style={{ color: '#B45309' }}>⚡ Este perfil se guardará y se usará en las lecciones 9, 13, 14 y 15.</p>
+                    <p className="text-xs font-bold" style={{ color: 'var(--color-brand-secondary-dark)' }}>⚡ Este perfil se guardará y se usará en las lecciones 9, 13, 14 y 15.</p>
                   </FECard>
                   <button
                     className="w-full min-h-11 text-white rounded-xl font-semibold text-sm disabled:opacity-50"

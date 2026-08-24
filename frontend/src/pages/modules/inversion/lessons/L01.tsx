@@ -100,7 +100,7 @@ export default function L01() {
                 </div>
                 <div className="p-4 rounded-xl border-2" style={{ borderColor: warnColor, backgroundColor: warnBg }}>
                   <p className="text-xs text-[var(--color-text-secondary)]">LÍNEA B — Dinero invertido al 6% anual</p>
-                  <p className="text-xl font-extrabold" style={{ color: '#B45309' }}>${invested.toFixed(0)}</p>
+                  <p className="text-xl font-extrabold" style={{ color: 'var(--color-brand-secondary-dark)' }}>${invested.toFixed(0)}</p>
                   <p className="text-xs" style={{ color: successColor }}>Ganaste ${(invested - 5000).toFixed(0)} extra</p>
                 </div>
                 <div className="p-4 rounded-xl" style={{ backgroundColor: errorBg }}>
@@ -134,7 +134,7 @@ export default function L01() {
                 >
                   {!flipped[i] ? (
                     <>
-                      <p className="text-xs font-bold" style={{ color: '#B45309' }}>MITO</p>
+                      <p className="text-xs font-bold" style={{ color: 'var(--color-brand-secondary-dark)' }}>MITO</p>
                       <p className="text-base font-bold">"{m.mito}"</p>
                       <p className="text-xs text-[var(--color-text-secondary)]">Toca para ver la realidad</p>
                     </>
@@ -162,7 +162,7 @@ export default function L01() {
             <div className="space-y-4">
               {VOCAB.map((v) => (
                 <FECard key={v.term} variant="flat" className="border" style={{ borderColor: warnColor }}>
-                  <p className="text-base font-extrabold" style={{ color: '#B45309' }}>{v.term}</p>
+                  <p className="text-base font-extrabold" style={{ color: 'var(--color-brand-secondary-dark)' }}>{v.term}</p>
                   <p className="text-sm">{v.def}</p>
                 </FECard>
               ))}
