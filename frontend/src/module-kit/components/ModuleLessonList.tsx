@@ -1,6 +1,7 @@
 import { Lock, CheckCircle, HelpCircle, Play, Flag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '../../shared/components/ui/badge';
+import { isAdminMode } from '../../lib/adminMode';
 import type { LessonStatus, ModuleLesson } from '../moduleFlow';
 
 type ModuleLessonListProps = {
@@ -77,7 +78,10 @@ export function ModuleLessonList({
                 </p>
               </div>
 
-              <StatusBadge status={status} />
+              <div className="flex shrink-0 items-center gap-2">
+                {isAdminMode() && !completed && <Badge variant="warning">PROBAR</Badge>}
+                <StatusBadge status={status} />
+              </div>
             </button>
           </li>
         );

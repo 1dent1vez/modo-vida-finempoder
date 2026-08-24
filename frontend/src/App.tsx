@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Spinner } from '@/shared/components/Spinner';
 import { PrivateRoute } from './routes/PrivateRoute';
@@ -6,6 +6,8 @@ import { useAuth } from './store/auth';
 import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
 import OfflineBanner from './components/OfflineBanner';
 import GlobalSnackbar from './components/GlobalSnackbar';
+import AdminBanner from './components/AdminBanner';
+import { isAdminMode } from './lib/adminMode';
 import { LessonWrapper } from '@/features/lessons/components/LessonWrapper';
 
 // ── Auth (static — needed at first load) ──────────────
@@ -19,6 +21,7 @@ const Screen3 = lazy(() => import('./pages/onboarding/Screen3'));
 
 const Terms    = lazy(() => import('./pages/legal/Terms'));
 const Privacy  = lazy(() => import('./pages/legal/Privacy'));
+const AdminPage = lazy(() => import('./pages/admin/AdminPage'));
 
 const Home         = lazy(() => import('./pages/home/Home'));
 const PreTest      = lazy(() => import('./pages/research/PreTest'));
@@ -50,12 +53,20 @@ function RootGate() {
 export default function App() {
   const hasHydrated = useAuth((s) => s.hydrated);
   const online = useOnlineStatus();
+  const [admin, setAdmin] = useState(isAdminMode());
+
+  useEffect(() => {
+    const handleAdminChange = () => setAdmin(isAdminMode());
+    window.addEventListener('fe:admin-mode', handleAdminChange);
+    return () => window.removeEventListener('fe:admin-mode', handleAdminChange);
+  }, []);
 
   if (!hasHydrated) return <PageLoader />;
 
   return (
     <>
       {!online && <OfflineBanner dense />}
+      {admin && <AdminBanner />}
       <GlobalSnackbar />
 
       <Suspense fallback={<PageLoader />}>
@@ -69,6 +80,7 @@ export default function App() {
           <Route path="/login" element={<Navigate to="/auth" replace />} />
           <Route path="/auth" element={<LoginPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="/research/pretest" element={<PreTest />} />
           <Route path="/research/posttest" element={<PostTest />} />
 

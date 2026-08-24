@@ -1,3 +1,5 @@
+import { isAdminMode } from '../lib/adminMode';
+
 export type ModuleLessonKind = 'content' | 'quiz' | 'simulator' | 'challenge';
 
 export type ModuleLesson = {
@@ -96,6 +98,7 @@ export function getRequiredLessonId(
   lessonId: string,
   completedMap: Record<string, boolean>
 ): string | null {
+  if (isAdminMode()) return null;
   const prevId = getPreviousLessonId(config, lessonId);
   if (!prevId) return null;
   return completedMap[prevId] ? null : prevId;
