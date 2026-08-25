@@ -30,7 +30,7 @@ const SITUACIONES: { id: string; desc: string; correct: GastoType; explicacion: 
   },
   {
     id: 's4',
-    desc: 'Comprar app de productividad en oferta que nunca usarás ($99)',
+    desc: 'Comprar app de productividad en oferta que nunca usarás (~$189)',
     correct: 'impulsivo',
     explicacion: 'Clásico gasto impulsivo activado por una oferta. La oferta no justifica la compra.',
   },

@@ -20,7 +20,7 @@ const ESCENARIOS: {
     contexto: 'Tienes $320 y faltan 12 días para tu próximo ingreso.',
     opciones: [
       { id: 'a1', label: 'Cancelar cena con amigos del viernes', consecuencia: 'Ahorraste $300. Te quedaste sin salida del viernes.', score: 70 },
-      { id: 'a2', label: 'Pausar streaming este mes', consecuencia: 'Ahorraste $99. Aún necesitas $201 más.', score: 50 },
+      { id: 'a2', label: 'Pausar streaming este mes', consecuencia: 'Ahorraste $189. Aún necesitas $111 más.', score: 50 },
       { id: 'a3', label: 'No comprar ropa nueva que tenías planeada', consecuencia: 'Ahorraste $300. Solución sin sacrificar necesidades.', score: 100 },
     ],
   },
@@ -31,7 +31,7 @@ const ESCENARIOS: {
     opciones: [
       { id: 'b1', label: 'Pedir prestado a un amigo', consecuencia: 'Resuelves el problema hoy. Recuerda pagar después.', score: 70 },
       { id: 'b2', label: 'Usar parte del presupuesto de comida', consecuencia: 'Pagas las impresiones pero comerás más sencillo esta semana.', score: 80 },
-      { id: 'b3', label: 'Cancelar suscripción mensual del momento', consecuencia: 'Tienes $99 disponibles de inmediato. Cubre el gasto.', score: 100 },
+      { id: 'b3', label: 'Cancelar suscripción mensual del momento', consecuencia: 'Tienes $189 disponibles de inmediato. Cubre el gasto.', score: 100 },
     ],
   },
   {

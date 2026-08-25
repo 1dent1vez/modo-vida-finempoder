@@ -11,7 +11,7 @@ type Classification = 'planned' | 'unplanned' | null;
 const WEEK_EVENTS = [
   { day: 'Lunes', desc: 'Cobro de quincena/mesada/beca', amount: 2000, isIncome: true },
   { day: 'Martes', desc: 'Café + transporte', amount: -75 },
-  { day: 'Miércoles', desc: 'Comida rápida + Netflix', amount: -219 },
+  { day: 'Miércoles', desc: 'Comida rápida + streaming', amount: -219 },
   { day: 'Jueves', desc: 'Salida con amigos', amount: -350 },
   { day: 'Viernes', desc: 'Impresiones + snack', amount: -95 },
   { day: 'Sábado', desc: 'Gastos varios', amount: -200 },
@@ -21,7 +21,7 @@ const WEEK_EVENTS = [
 const GASTOS = [
   { id: 'cafe', label: 'Café $45 + transporte $30' },
   { id: 'comida', label: 'Comida rápida $120' },
-  { id: 'netflix', label: 'Netflix $99' },
+  { id: 'streaming', label: 'Suscripción de streaming (~$189/mes)' },
   { id: 'amigos', label: 'Salida con amigos $350' },
   { id: 'impresiones', label: 'Impresiones $60' },
   { id: 'snack', label: 'Snack $35' },
