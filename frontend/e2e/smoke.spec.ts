@@ -17,7 +17,7 @@ test.describe('Guest flow', () => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/app/);
     await expect(page.getByRole('heading', { name: /Hola/ })).toBeVisible();
-    await expect(page.getByText('Continúa aprendiendo')).toBeVisible();
+    await expect(page.getByLabel('Continúa aprendiendo')).toBeVisible();
   });
 
   test('muestra el GuestBanner sin sesión', async ({ page }) => {
