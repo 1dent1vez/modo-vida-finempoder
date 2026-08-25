@@ -68,14 +68,11 @@ el conflicto de merge con OLA3 en `Home.tsx`.
 
 ## DESVIACIONES HONESTAS
 
-- **Azul primario**: el mockup usa `#2563EB`; el tema define
-  `--color-brand-primary: #1B4FD8` y se usó el token (azul aproximado, más
-  oscuro). Afecta avatar, nodo actual, botón Inversión, tab activa y stats.
+> **Nota gate F1-Home-V2 (Lupa)**: el análisis de píxeles del mockup (9.4M px) corrige esta sección: el mockup NO contiene `#2563EB` (0 px) ni `#F5F7FA` (30 px). Su azul ES el token `#1B4FD8` y su fondo ES `#F8FAFC` — las "desviaciones" de color abajo NO existen; la réplica es exacta en paleta.
+
 - **Azul claro (info)**: pastillas/iconos de Inversión y Lecciones usan los
   tokens `--color-brand-info-bg: #EEF2FF` / `--color-brand-info: #4B73F0`
   (mockup aproximado `#DBEAFE` / `#2563EB`).
-- **Fondo general**: mockup `#F5F7FA`; se usó el token existente
-  `--color-bg-app: #F8FAFC` (diferencia mínima, no se tocó el tema global).
 - **Racha "Xd"**: se renderiza `${streak.current}d` (ej. "0d"), según la spec;
   el mockup muestra el número de días.
 - **Truncamiento de títulos**: se usa ellipsis CSS; el corte exacto de

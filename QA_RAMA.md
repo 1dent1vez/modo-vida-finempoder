@@ -18,7 +18,7 @@ que desbloquea las 45 lecciones sin completar el flujo.
 
 ## URL del deploy (preview estable)
 
-**https://modo-vida-finempoder-n5b6m2529-ghaels-projects.vercel.app**
+**https://modo-vida-finempoder-48a6xam7p-ghaels-projects.vercel.app**
 
 - Estado: Ready (Preview), desplegada 2026-08-23.
 - Root `/` responde 200 y `/admin` responde 200 (verificado).
