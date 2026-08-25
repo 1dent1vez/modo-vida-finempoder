@@ -1,16 +1,26 @@
 import { LogOut, ExternalLink } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../shared/components/PageHeader';
 import FECard from '../../shared/components/FECard';
 import { Button } from '../../shared/components/ui/button';
 import { useAuth } from '../../store/auth';
 import { supabase } from '../../lib/supabase';
+import {
+  DAILY_GOAL_META,
+  DAILY_GOAL_ORDER,
+  DAILY_GOAL_XP,
+  DEFAULT_DAILY_LEVEL,
+  useDailyGoal,
+} from '../../store/dailyGoal';
 
 const APP_VERSION = '1.0.0';
 
 export default function Settings() {
   const navigate = useNavigate();
   const user = useAuth((s) => s.user);
+  const goalLevel = useDailyGoal((s) => s.level);
+  const setGoalLevel = useDailyGoal((s) => s.setLevel);
 
   const handleLogout = async () => {
     await supabase.auth.signOut({ scope: 'local' });
@@ -22,6 +32,38 @@ export default function Settings() {
       <PageHeader title="Ajustes" />
 
       <div className="p-4 space-y-4">
+        {/* Meta diaria */}
+        <FECard variant="flat">
+          <h2 className="text-base font-bold mb-1">Meta diaria</h2>
+          <p className="text-xs text-[var(--color-text-secondary)] mb-3">
+            ¿Cuántas lecciones quieres completar al día?
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {DAILY_GOAL_ORDER.map((opt) => {
+              const selected = (goalLevel ?? DEFAULT_DAILY_LEVEL) === opt;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setGoalLevel(opt)}
+                  aria-pressed={selected}
+                  className={cn(
+                    'rounded-xl border-2 p-3 text-center transition-colors',
+                    selected
+                      ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-info-bg)]'
+                      : 'border-[var(--color-neutral-200)]'
+                  )}
+                >
+                  <span className="block text-sm font-bold">{DAILY_GOAL_META[opt].label}</span>
+                  <span className="block text-xs text-[var(--color-text-secondary)]">
+                    {DAILY_GOAL_META[opt].lessons} · {DAILY_GOAL_XP[opt]} XP
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </FECard>
+
         {/* Cuenta */}
         <FECard variant="flat">
           <h2 className="text-base font-bold mb-3">Cuenta</h2>

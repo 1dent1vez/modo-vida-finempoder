@@ -1,17 +1,23 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { BookOpen, Flame, Trophy, Lightbulb, Play, PiggyBank, TrendingUp, School } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useProgress } from '../../store/progress';
 import { useAuth } from '../../store/auth';
 import { useGamification } from '../../hooks/gamification/useGamification';
+import { useDailyXp } from '../../hooks/gamification/useDailyXp';
 import FECard from '../../shared/components/FECard';
 import { StatCard } from '../../shared/components/StatCard';
 import { XPChip } from '../../shared/components/gamification/XPChip';
 import { StreakBadge } from '../../shared/components/gamification/StreakBadge';
+import { DailyGoalRing } from '../../shared/components/gamification/DailyGoalRing';
+import FinniMessage from '../../shared/components/FinniMessage';
+import { DAILY_GOAL_META, resolveDailyXpTarget, useDailyGoal } from '../../store/dailyGoal';
+import { localDayKey } from '../../lib/localDate';
 import { Button } from '../../shared/components/ui/button';
 import { Progress } from '../../shared/components/ui/progress';
 import { ModuleMiniPath } from '../../module-kit/components/LessonPath';
+import { DailyGoalDialog } from './DailyGoalDialog';
 import {
   getLessonPath,
   getProgressPercent,
@@ -162,6 +168,18 @@ export default function Home() {
   const streak = useProgress((s) => s.streak);
   const { user } = useAuth();
   const { data: gamification } = useGamification();
+  const { xpToday, loaded } = useDailyXp();
+  const goalLevel = useDailyGoal((s) => s.level);
+  const celebratedDay = useDailyGoal((s) => s.celebratedDay);
+  const markCelebrated = useDailyGoal((s) => s.markCelebrated);
+  const xpTarget = resolveDailyXpTarget(goalLevel);
+  const goalReached = loaded && xpTarget > 0 && xpToday >= xpTarget;
+
+  useEffect(() => {
+    if (!goalReached) return;
+    const today = localDayKey(new Date());
+    if (celebratedDay !== today) markCelebrated(today);
+  }, [celebratedDay, goalReached, markCelebrated]);
 
   const continueCards = useMemo(() => computeContinueCards(), []);
   const totalCompleted = useMemo(() => computeTotalCompleted(), []);
@@ -198,6 +216,30 @@ export default function Home() {
           <StreakBadge streak={streak.current} />
         </div>
       </div>
+
+      {/* Meta diaria */}
+      <FECard variant="flat" className="mb-6">
+        <div className="flex items-center gap-4">
+          <DailyGoalRing xpToday={xpToday} xpTarget={xpTarget} />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold">
+              Meta {goalLevel ? DAILY_GOAL_META[goalLevel].label : DAILY_GOAL_META.regular.label} ·{' '}
+              {xpTarget} XP
+            </p>
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              {xpToday}/{xpTarget} XP hoy
+            </p>
+            {goalReached && (
+              <FinniMessage
+                variant="success"
+                title="¡Bien hecho!"
+                message="¡Meta del día cumplida!"
+                className="mt-2"
+              />
+            )}
+          </div>
+        </div>
+      </FECard>
 
       {/* ContinueCard */}
       {primaryContinue && (
@@ -258,6 +300,8 @@ export default function Home() {
           </div>
         </div>
       </FECard>
+
+      <DailyGoalDialog />
     </div>
   );
 }
