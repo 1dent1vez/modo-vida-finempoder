@@ -23,8 +23,9 @@ export type BadgeCelebrationState = {
  * - Observa stats reales (useProgress modules + streak + totalCompleted).
  * - Compara tier logrado vs tier visto ('fe_badges_state') y encola
  *   celebraciones UNA a la vez.
- * - Si el unlock coincide con el evento 'fe:lesson-completed' (emitido por
- *   LessonShell), espera ~2.5s para no pisar el confetti/XP de la lección.
+ * - Los unlocks pendientes esperan el evento 'fe:lesson-completed' (emitido
+ *   por LessonShell): un re-render de stats solo no abre el modal.
+ * - Al llegar el evento espera ~2.5s para no pisar el confetti/XP de la lección.
  * - 'Seguir' marca el tier como visto; no reaparece en sesiones siguientes.
  */
 export function useBadgeCelebration(): BadgeCelebrationState {
@@ -40,20 +41,21 @@ export function useBadgeCelebration(): BadgeCelebrationState {
         streakBest: streak.best ?? 0,
         streakCurrent: streak.current ?? 0,
       }),
-    [modules, streak]
+    [modules, streak],
   );
 
   const [queue, setQueue] = useState<BadgeUnlock[]>([]);
   const [current, setCurrent] = useState<BadgeUnlock | null>(null);
   const [waiting, setWaiting] = useState(false);
   const reserved = useRef<Set<string>>(new Set());
-  const lastLessonAt = useRef<number | null>(null);
-
   // Timestamp del último 'fe:lesson-completed' (emitido por LessonShell).
+  // null = el evento real aún no llegó; la cola queda pendiente.
+  const [lastLessonAt, setLastLessonAt] = useState<number | null>(null);
+
   useEffect(() => {
     const onLessonCompleted = (event: Event) => {
       const detail = (event as CustomEvent<{ completedAt?: number }>).detail;
-      lastLessonAt.current = detail?.completedAt ?? Date.now();
+      setLastLessonAt(detail?.completedAt ?? Date.now());
     };
     window.addEventListener('fe:lesson-completed', onLessonCompleted);
     return () => window.removeEventListener('fe:lesson-completed', onLessonCompleted);
@@ -69,15 +71,13 @@ export function useBadgeCelebration(): BadgeCelebrationState {
     setQueue((prev) => [...prev, ...fresh]);
   }, [stats]);
 
-  // Muestra el siguiente de la cola. Si el unlock coincide con la celebración
-  // de una lección, espera el delay restante (2.5s desde el evento).
+  // Muestra el siguiente de la cola. Sin evento real de lección la cola queda
+  // pendiente; al llegar el evento espera el delay restante (2.5s desde él).
   useEffect(() => {
     if (current !== null || queue.length === 0) return;
+    if (lastLessonAt === null) return;
     const next = queue[0];
-    let delay = 0;
-    if (lastLessonAt.current !== null) {
-      delay = Math.max(0, lastLessonAt.current + LESSON_COMPLETION_DELAY_MS - Date.now());
-    }
+    const delay = Math.max(0, lastLessonAt + LESSON_COMPLETION_DELAY_MS - Date.now());
     if (delay > 0) {
       setWaiting(true);
       const timer = window.setTimeout(() => {
@@ -89,7 +89,7 @@ export function useBadgeCelebration(): BadgeCelebrationState {
     }
     setCurrent(next);
     setQueue((prev) => prev.slice(1));
-  }, [current, queue]);
+  }, [current, queue, lastLessonAt]);
 
   const acknowledge = useCallback(() => {
     if (!current) return;
