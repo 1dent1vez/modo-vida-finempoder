@@ -67,7 +67,7 @@ REALES de los stores existentes (cero números falsos):
 
 1. **Header**: avatar circular azul (`--color-brand-primary`) con la inicial del
    nombre (`user.name` → primera letra; sin nombre → 'F'), saludo "Hola, Ana" o
-   "Hola 👋" (NUNCA 'Estudiante'), fecha local es-MX larga debajo, campana
+   "Hola" (NUNCA 'Estudiante'), fecha local es-MX larga debajo, campana
    (lucide `Bell`) con punto rojo decorativo/estático, y `XPChip` con XP total
    real de gamificación.
 2. **Hero 60/40** (apila en móvil, `sm:grid-cols-5`):
@@ -79,12 +79,12 @@ REALES de los stores existentes (cero números falsos):
      inventa pedagogía ni duración), barra de progreso real del módulo, botón
      naranja full-width 'Continuar' que navega a la lección real, e ilustración
      SVG inline (moneda + gráfica, `aria-hidden`). Si los 3 módulos están
-     completos → empty state elegante ('¡Completaste los 3 módulos! 🎉').
+     completos → empty state elegante ('¡Completaste los 3 módulos!').
    - **'Meta de hoy'** (card blanca): `DailyGoalRing` con `xpToday` (derivado de
      `lessonProgress` con `completedAt` de hoy × 100, patrón Ola 2) y
      `xpTarget` real del store `dailyGoal`; texto 'X/200 XP' (valores reales por
      nivel: 100/200/300); divisor; fila de racha: llama + días actuales
-     (`StreakBadge` si >= 2, texto '🔥 N días' si no) + `ShieldBadge` con
+     (`StreakBadge` si >= 2, texto con N días si no) + `ShieldBadge` con
      escudos reales del store progress. Conserva la celebración de meta
      cumplida (`FinniMessage` + `markDailyGoalReached`, una vez por día).
 3. **'Tu camino'**: encabezado + 'Ver todo >' (navega a `/app/presupuesto`);
@@ -132,7 +132,7 @@ integración con `useGamification` (XP/streak) y `useDailyXp`.
 ## Cómo probarlo manualmente (qa.finempoder.com.mx)
 
 1. Abrir la raíz sin sesión → entra a la Home nueva como invitado: saludo
-   'Hola 👋' (nunca 'Estudiante'), fecha del día, campana.
+   'Hola' (nunca 'Estudiante'), fecha del día, campana.
 2. Recargar la página varias veces en guest → la racha/escudos/progreso local
    NO se borran (O-2).
 3. 'Continuar' en la card crema navega a la lección real del módulo en curso;
@@ -165,3 +165,109 @@ integración con `useGamification` (XP/streak) y `useDailyXp`.
 - **% de módulo y lección en curso**: derivados de `loadModuleProgressSnapshot`
   + `getProgressPercent`/`getLessonNodeState` (la misma fuente que
   `ModuleOverview`), no de valores inventados.
+
+---
+
+# PARTE 3 — Cero emojis en la UI
+
+Adenda prioritaria sobre la misma rama (`f1-ola3-fixes-home-redesign`): la
+interfaz de `frontend/src` queda **100% libre de emojis**. Excepciones:
+ninguna (ni decorativos ni suaves). La personalidad de Finni y el tono cercano
+se conservan en las palabras, no en glifos.
+
+## Inventario (regex oficial de Chip)
+
+`[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{2B00}-\x{2BFF}\x{FE0F}]`
+
+- **Antes**: ~283 hits en ~49 archivos (la verificación local con `rg` marcó
+  288 líneas; la diferencia es el conteo por línea de `rg -c` vs. el de Chip).
+- **Después**: **0 hits** en `frontend/src` (verificado con el mismo regex).
+- `frontend/e2e/` y `frontend/test/`: 0 emojis (nada que actualizar).
+
+## Reglas aplicadas
+
+1. **Emoji = icono funcional** → icono `lucide-react` (dependencia existente,
+   no se agregó ninguna): `Shield`, `Flame`, `Lightbulb`, `Trophy`, `Target`,
+   `Star`, `Lock`, `Wrench`, `Check`, `PiggyBank`, `Sparkles`, `BarChart3`,
+   `TrendingUp`, `TrendingDown`, `Coins`, `Banknote`, `Landmark`, `Scale`,
+   `Zap`, `AlertTriangle`, `CircleCheck`, `CircleX`, `Search`, `Flag`, `Siren`,
+   `Info`, `PartyPopper`, `Wallet`, `Bug`, `Leaf`, `Repeat`, `CalendarDays`,
+   `PenLine`, `Heart`, `Hourglass`, `Droplet`, `Notebook`, `Smartphone`,
+   `GraduationCap`, `Link`, `Rocket`, `BookOpen`, `Circle`, `SquareCheck`,
+   `Square`, `CheckCircle`, etc. Cada mapeo se hizo con sentido (no literal):
+   p.ej. `🏦` → `Landmark`, `🛡️` → `Shield`, `🚨` → `Siren`, `🌱` → `Leaf`.
+2. **Mensajes y textos** (feedback de clasificación, títulos, labels, tips):
+   se quitó el emoji del string y se conservó el texto pedagógico intacto
+   (`'✅ ¡Correcto! …'` → `'¡Correcto! …'`, `'El mes de Roberto 📊'` →
+   `'El mes de Roberto'`).
+3. **Finni**: `lessonCompletionMessages.ts` y `FinniMessage` ya no tenían
+   emojis; los títulos de Finni con emoji en lecciones se limpiaron
+   (`'Finni explica 💡'` → `'Finni explica'`). El tono mexicano sigue en las
+   palabras.
+4. **Home**: `'Hola 👋'` → `'Hola'`, `'¡Completaste los 3 módulos! 🎉'` →
+   `'¡Completaste los 3 módulos!'`; `dailyTips.ts` ya estaba limpio. El test
+   `Home.test.tsx` se actualizó a `'Hola'`.
+5. **Banners/Admin**: `AdminBanner` usa `Wrench` + texto; `OfflineBanner` y
+   `AdminPage` usan `Check` + texto; `Settings` y `ShieldBadge` limpios
+   (este último con `Shield` de lucide).
+6. **Riesgo visual con estrellas**: las barras `'⭐'.repeat(n)`/`'☆'.repeat(m)`
+   se sustituyeron por `n/5` (texto limpio, L05) o por estrellas `Star` de
+   lucide (L13).
+7. **Indicadores de listas/checklist**: `☑/☐` → `SquareCheck/Square`;
+   `⚠️/○` de selección → `CircleCheck/Circle`; semáforo `✅/⚠️/❌` →
+   `CircleCheck/AlertTriangle/CircleX`.
+8. **Iconos grandes decorativos** (sole content de `<p>`/`<span>`): se
+   sustituyeron por lucide (`🏆` → `Trophy`, `🎉` → `PartyPopper`, `💵` →
+   `Banknote`, `📊` → `BarChart3`, `🔍` → `Search`, `🏁` → `Flag`,
+   `👜 → 💸` → `Wallet → TrendingDown`, etc.).
+
+## Mapeo de insignias (data/badges.ts) — viejo → nuevo
+
+El campo `icon` pasó de `string` (emoji) a `LucideIcon` (componente de lucide)
+y `BadgeCard` renderiza `<badge.icon />` (mismo tamaño visual, `h-9 w-9`):
+
+| id | Antes (emoji) | Ahora (lucide) |
+| --- | --- | --- |
+| `first_step` | 🎯 | `Target` |
+| `budget_explorer` | 📊 | `BarChart3` |
+| `budget_master` | 💰 | `Coins` |
+| `savings_champion` | 🏦 | `Landmark` |
+| `investor` | 📈 | `TrendingUp` |
+| `streak_3` | 🔥 | `Flame` |
+| `streak_7` | ⚡ | `Zap` |
+| `ten_lessons` | 📚 | `BookOpen` |
+| `researcher` | 🔬 | `Microscope` |
+| `finempoder_pro` | 🏆 | `Trophy` |
+
+Ids, títulos, descripciones, hints y condiciones quedaron intactos: solo
+cambió el disfraz visual.
+
+## Archivos tocados (resumen)
+
+- Core UI: `Home.tsx`, `Home.test.tsx`, `data/badges.ts`, `BadgeCard.tsx`,
+  `AdminBanner.tsx`, `AdminPage.tsx`, `OfflineBanner.tsx`, `Settings.tsx`,
+  `ShieldBadge.tsx`, `ahorro/Index.tsx`.
+- Lessons: 43 archivos en `ahorro/`, `inversion/` y `presupuesto/` con
+  feedback, arrays de datos (`emoji` → `icon` con lucide o campo eliminado),
+  títulos de Finni e iconos decorativos.
+
+## Verificación (corrida real en esta máquina)
+
+- `rg` con el regex de Chip sobre `frontend/src` → **0 hits**.
+- `npm test` → **135/135 passed**.
+- `npm run build` → **rc=0**.
+- `npm run test:e2e` → **5/5 passed**.
+- `npm run lint` y `tsc -p tsconfig.app.json --noEmit` → verdes.
+
+## Decisiones destacadas
+
+- **Texto limpio vs. icono**: donde el render no tenía slot de icono se quitó
+  el emoji del string (sin perder pedagogía); donde el emoji era el ícono del
+  elemento se usó lucide.
+- **Arrays de datos**: `emoji: 'X'` se renombró a `icon: <Lucide>` cuando se
+  renderizaba como icono; si solo acompañaba texto, se eliminó el campo y su
+  token en el render.
+- **Líneas CRLF preservadas**: los archivos de lessons con terminación CRLF se
+  editaron preservando su terminación para no ensuciar el diff.
+- **Sin cambios pedagógicos**: ningún texto, condición, badge o dato cambió de
+  significado; solo el disfraz visual.
