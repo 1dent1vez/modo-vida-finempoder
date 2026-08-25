@@ -67,6 +67,12 @@ function renderShell(props: Partial<LessonShellProps> = {}) {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  // El flujo de completar lección emite console.info al final de una cadena
+  // async que puede resolverse DESPUÉS del afterEach; en suites paralelas eso
+  // llega al teardown del worker como "onUserConsoleLog pending" (race de
+  // vitest, no falla aserciones). El spy queda instalado toda la vida del
+  // archivo para silenciar también ese log post-test.
+  vi.spyOn(console, 'info').mockImplementation(() => {});
   useAuth.getState().clearAuth();
   useLessons.getState().reset();
   useProgress.getState().reset();
@@ -74,7 +80,9 @@ beforeEach(async () => {
   await db.userLessonData.clear();
 });
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+});
 
 describe('LessonShell — celebración al completar', () => {
   it('dispara confetti y anima el XP hasta el score al completar', async () => {
