@@ -6,6 +6,7 @@ import FECard from '../../shared/components/FECard';
 import { PageHeader } from '../../shared/components/PageHeader';
 import { XPChip } from '../../shared/components/gamification/XPChip';
 import { StreakBadge } from '../../shared/components/gamification/StreakBadge';
+import { ShieldBadge } from '../../shared/components/gamification/ShieldBadge';
 import { Button } from '../../shared/components/ui/button';
 import { Progress } from '../../shared/components/ui/progress';
 import { lessonProgressRepository } from '../../db/lessonProgress.repository';
@@ -66,7 +67,7 @@ export function ModuleOverview({ config, moduleTitle }: ModuleOverviewProps) {
   const { data: gamification } = useGamification();
   const setModuleProgress = useProgress((s) => s.setModuleProgress);
   const hydrateLessons = useLessons((s) => s.hydrateFromCompletionMap);
-  const streak = useProgress((s) => s.streak.current);
+  const streak = useProgress((s) => s.streak);
 
   const [moduleState, setModuleState] = useState<ModuleProgress>(() =>
     loadModuleProgressSnapshot(config)
@@ -141,7 +142,8 @@ export function ModuleOverview({ config, moduleTitle }: ModuleOverviewProps) {
         rightSlot={
           <div className="flex items-center gap-1">
             {gamification && <XPChip xp={gamification.xp} />}
-            <StreakBadge streak={streak} />
+            <StreakBadge streak={streak.current} />
+            <ShieldBadge shields={streak.shields} />
           </div>
         }
       />

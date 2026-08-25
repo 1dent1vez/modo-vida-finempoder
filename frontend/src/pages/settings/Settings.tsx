@@ -62,6 +62,10 @@ export default function Settings() {
               );
             })}
           </div>
+          <p className="mt-3 text-xs text-[var(--color-text-secondary)]">
+            🛡 Cada 3 días seguidos con meta cumplida ganas un escudo (máx. 2). Un
+            escudo protege tu racha si faltas un día.
+          </p>
         </FECard>
 
         {/* Cuenta */}

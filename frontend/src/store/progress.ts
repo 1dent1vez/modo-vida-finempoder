@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { daysAgoLocalKey, localDayKey } from '../lib/localDate';
 
 /** Claves de módulos que maneja FinEmpoder */
 export type ModKey = 'presupuesto' | 'ahorro' | 'inversion';
@@ -9,11 +10,19 @@ export type ModuleProgress = {
   progress: number;
 };
 
-/** Estado de racha global de estudio */
+/** Estado de racha global de estudio (F1-OLA2: escudos + días de meta). */
 export type Streak = {
-  current: number;          // racha actual (días seguidos)
-  best: number;             // mejor racha histórica
-  lastActiveISO?: string;   // última fecha con actividad (YYYY-MM-DD)
+  current: number;              // racha actual (días seguidos)
+  best: number;                 // mejor racha histórica
+  /** Última fecha con actividad. Desde F1-OLA2 es day key LOCAL (YYYY-MM-DD).
+   *  Se conserva el nombre por compatibilidad con el backend (last_active_iso). */
+  lastActiveISO?: string;
+  /** Escudos disponibles (máx. 2). Un escudo salva la racha si faltas UN día. */
+  shields: number;
+  /** Días consecutivos alcanzando la meta diaria; cada 3 → +1 escudo. */
+  metaDaysStreak: number;
+  /** Day key LOCAL del último día en que se alcanzó la meta diaria. */
+  lastGoalDay?: string;
 };
 
 /** Estado del store de progreso */
@@ -39,17 +48,82 @@ export type ProgressState = {
 
   /** Hidrata racha global desde backend (gamificación) */
   hydrateStreak: (remote: Partial<Streak>) => void;
+
+  /**
+   * Marca la meta diaria como cumplida HOY (day key local). Idempotente por día:
+   * suma a metaDaysStreak si ayer fue de meta, otorga escudo cada 3 días
+   * consecutivos (máx. 2). Lo llama Home al detectar xp del día >= meta.
+   */
+  markDailyGoalReached: () => void;
 };
 
-/* ---------------------- utilidades de fecha ---------------------- */
+/* ---------------------- lógica pura de racha (testeable) ---------------------- */
 
-const toISO = (d: Date) => d.toISOString().slice(0, 10); // YYYY-MM-DD
-const todayISO = () => toISO(new Date());
-const yesterdayISO = () => {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return toISO(d);
-};
+export type StreakUpdate = Pick<Streak, 'current' | 'best' | 'shields' | 'metaDaysStreak'>;
+
+/**
+ * Regla de racha con escudos (F1-OLA2):
+ * - Mismo día: se mantiene.
+ * - Ayer: +1 (día consecutivo).
+ * - Anteayer con escudo: consume 1 escudo y la racha NO se rompe (+1, como si ayer hubiera activado).
+ * - Anteayer sin escudo: se rompe (current = 1).
+ * - Gap de 2+ días o primera vez: se rompe (current = 1); los escudos NO cubren gaps de 2+ días.
+ * metaDaysStreak: se reinicia a 0 cuando el día entre la última actividad y hoy no fue de meta
+ * (actividad no consecutiva, o ayer hubo actividad pero sin meta cumplida).
+ */
+export function computeNextStreak(
+  prev: Streak,
+  today: string,
+  yesterday: string,
+  anteayer: string
+): StreakUpdate {
+  let nextCurrent: number;
+  let nextShields = prev.shields;
+
+  if (prev.lastActiveISO === today) {
+    nextCurrent = prev.current || 1;
+  } else if (prev.lastActiveISO === yesterday) {
+    nextCurrent = (prev.current || 0) + 1;
+  } else if (prev.lastActiveISO === anteayer && prev.shields > 0) {
+    nextCurrent = (prev.current || 0) + 1;
+    nextShields = prev.shields - 1;
+  } else {
+    nextCurrent = 1;
+  }
+
+  const nextMetaDays =
+    prev.lastActiveISO === today
+      ? prev.metaDaysStreak
+      : prev.lastActiveISO === yesterday && prev.lastGoalDay === yesterday
+        ? prev.metaDaysStreak
+        : 0;
+
+  return {
+    current: nextCurrent,
+    best: Math.max(nextCurrent, prev.best),
+    shields: nextShields,
+    metaDaysStreak: nextMetaDays,
+  };
+}
+
+/**
+ * Meta cumplida HOY: +1 a metaDaysStreak si ayer también fue de meta (si no,
+ * reinicia a 1); cada 3 días consecutivos con meta → +1 escudo (máx. 2).
+ * Idempotente por día (si lastGoalDay ya es hoy, no cambia nada).
+ */
+export function computeGoalStreak(
+  prev: Streak,
+  today: string,
+  yesterday: string
+): Pick<Streak, 'shields' | 'metaDaysStreak'> {
+  if (prev.lastGoalDay === today) {
+    return { shields: prev.shields, metaDaysStreak: prev.metaDaysStreak };
+  }
+  const metaDaysStreak = prev.lastGoalDay === yesterday ? prev.metaDaysStreak + 1 : 1;
+  const shields =
+    metaDaysStreak % 3 === 0 && prev.shields < 2 ? prev.shields + 1 : prev.shields;
+  return { shields, metaDaysStreak };
+}
 
 /* ---------------------- estado inicial ---------------------- */
 
@@ -63,6 +137,8 @@ const initialStreak: Streak = {
   current: 0,
   best: 0,
   lastActiveISO: undefined,
+  shields: 0,
+  metaDaysStreak: 0,
 };
 
 /* ---------------------- store ---------------------- */
@@ -91,30 +167,18 @@ export const useProgress = create<ProgressState>()(
           Math.min(100, Math.round(mod.progress + deltaProgress))
         );
 
-        // --- Racha global
-        const today = todayISO();
-        const yesterday = yesterdayISO();
-        const prev = state.streak;
-
-        let nextCurrent = prev.current;
-        let nextBest = prev.best;
-
-        if (prev.lastActiveISO === today) {
-          // Ya hubo actividad hoy: mantenemos la racha
-          nextCurrent = prev.current || 1; // por si venía 0
-        } else if (prev.lastActiveISO === yesterday) {
-          // Día consecutivo
-          nextCurrent = (prev.current || 0) + 1;
-        } else {
-          // Se rompió la racha o primera vez
-          nextCurrent = 1;
-        }
-
-        if (nextCurrent > (nextBest || 0)) nextBest = nextCurrent;
+        // --- Racha global (day key LOCAL)
+        const today = localDayKey(new Date());
+        const streakUpdate = computeNextStreak(
+          state.streak,
+          today,
+          daysAgoLocalKey(1),
+          daysAgoLocalKey(2)
+        );
 
         set(() => ({
           modules: { ...state.modules, [key]: { progress: nextProgress } },
-          streak: { current: nextCurrent, best: nextBest, lastActiveISO: today },
+          streak: { ...state.streak, ...streakUpdate, lastActiveISO: today },
           todayDone: true,
         }));
       },
@@ -127,12 +191,40 @@ export const useProgress = create<ProgressState>()(
             current: remote.current ?? state.streak.current,
             best: remote.best ?? state.streak.best,
             lastActiveISO: remote.lastActiveISO ?? state.streak.lastActiveISO,
+            shields: remote.shields ?? state.streak.shields ?? 0,
+            metaDaysStreak: remote.metaDaysStreak ?? state.streak.metaDaysStreak ?? 0,
+            lastGoalDay: remote.lastGoalDay ?? state.streak.lastGoalDay,
           };
-          const today = todayISO();
+          const today = localDayKey(new Date());
           const todayDone = merged.lastActiveISO === today ? true : state.todayDone;
           return { streak: merged, todayDone };
         }),
+
+      markDailyGoalReached: () => {
+        const state = get();
+        const today = localDayKey(new Date());
+        const yesterday = daysAgoLocalKey(1);
+        const goal = computeGoalStreak(state.streak, today, yesterday);
+        set({
+          streak: { ...state.streak, ...goal, lastGoalDay: today },
+        });
+      },
     }),
-    { name: 'fe_progress' }
+    {
+      name: 'fe_progress',
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<ProgressState>;
+        return {
+          ...current,
+          ...p,
+          streak: {
+            ...current.streak,
+            ...(p.streak ?? {}),
+            shields: p.streak?.shields ?? 0,
+            metaDaysStreak: p.streak?.metaDaysStreak ?? 0,
+          },
+        };
+      },
+    }
   )
 );

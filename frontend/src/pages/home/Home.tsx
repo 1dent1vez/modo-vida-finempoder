@@ -11,6 +11,7 @@ import { StatCard } from '../../shared/components/StatCard';
 import { XPChip } from '../../shared/components/gamification/XPChip';
 import { StreakBadge } from '../../shared/components/gamification/StreakBadge';
 import { DailyGoalRing } from '../../shared/components/gamification/DailyGoalRing';
+import { ShieldBadge } from '../../shared/components/gamification/ShieldBadge';
 import FinniMessage from '../../shared/components/FinniMessage';
 import { DAILY_GOAL_META, resolveDailyXpTarget, useDailyGoal } from '../../store/dailyGoal';
 import { localDayKey } from '../../lib/localDate';
@@ -177,6 +178,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!goalReached) return;
+    useProgress.getState().markDailyGoalReached();
     const today = localDayKey(new Date());
     if (celebratedDay !== today) markCelebrated(today);
   }, [celebratedDay, goalReached, markCelebrated]);
@@ -214,6 +216,7 @@ export default function Home() {
         <div className="flex items-center gap-2">
           {gamification && <XPChip xp={gamification.xp} />}
           <StreakBadge streak={streak.current} />
+          <ShieldBadge shields={streak.shields} />
         </div>
       </div>
 
