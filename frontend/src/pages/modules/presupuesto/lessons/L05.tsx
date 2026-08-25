@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
+import { Banknote } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -104,7 +105,7 @@ export default function L05() {
         {step === 0 && (
           <div className="space-y-3">
             <FECard variant="flat" className="text-center py-6">
-              <p className="text-4xl">💵</p>
+              <Banknote className="h-10 w-10 mx-auto text-[var(--color-brand-success)]" aria-hidden="true" />
               <p className="font-bold text-base mt-2">
                 Tu ingreso dividido en 3 partes
               </p>
@@ -186,14 +187,14 @@ export default function L05() {
             {overBudget && (
               <FECard variant="flat" className="bg-[var(--color-brand-error)]/10 border border-[var(--color-brand-error)]">
                 <p className="font-bold text-sm text-[var(--color-brand-error)]">
-                  ⚠️ ¡Ojo! Estás planeando gastar más de lo que tienes. Total: {necesidades + deseos + ahorro}%
+                  ¡Ojo! Estás planeando gastar más de lo que tienes. Total: {necesidades + deseos + ahorro}%
                 </p>
               </FECard>
             )}
 
             <FECard variant="flat" className="border border-[var(--color-brand-success)]">
               <div className="flex justify-between">
-                <p className="font-bold text-sm">🟢 Necesidades</p>
+                <p className="font-bold text-sm">Necesidades</p>
                 <p className="font-bold text-sm">{necesidades}% = ${montoNecesidades.toLocaleString()}</p>
               </div>
               <input
@@ -209,7 +210,7 @@ export default function L05() {
 
             <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
               <div className="flex justify-between">
-                <p className="font-bold text-sm">🟡 Deseos</p>
+                <p className="font-bold text-sm">Deseos</p>
                 <p className="font-bold text-sm">{deseos}% = ${montoDeseos.toLocaleString()}</p>
               </div>
               <input
@@ -225,7 +226,7 @@ export default function L05() {
 
             <FECard variant="flat" className="border border-[var(--color-brand-info)]">
               <div className="flex justify-between">
-                <p className="font-bold text-sm">🔵 Ahorro</p>
+                <p className="font-bold text-sm">Ahorro</p>
                 <p className="font-bold text-sm">{ahorro}% = ${montoAhorro.toLocaleString()}</p>
               </div>
               <input
@@ -244,7 +245,7 @@ export default function L05() {
               className={total === 100 ? 'bg-[var(--color-brand-success)]/10' : 'bg-[var(--color-brand-warning)]/10'}
             >
               <p className="font-bold text-sm">
-                Total: {necesidades + deseos + ahorro}% {total === 100 ? '✅' : '⚠️'}
+                Total: {necesidades + deseos + ahorro}%
               </p>
             </FECard>
 

@@ -223,7 +223,7 @@ export default function L03() {
               </div>
               {q1 && (
                 <p className="text-xs mt-2 font-semibold" style={{ color: q1 === 'b' ? successColor : errorColor }}>
-                  {q1 === 'b' ? '✅ ¡Correcto! Hasta 400,000 UDIs ≈ 3 millones.' : '❌ Son ~3 millones de pesos (400,000 UDIs).'}
+                  {q1 === 'b' ? '¡Correcto! Hasta 400,000 UDIs ≈ 3 millones.' : 'Son ~3 millones de pesos (400,000 UDIs).'}
                 </p>
               )}
             </FECard>
@@ -253,7 +253,7 @@ export default function L03() {
                 </div>
                 {q2 && (
                 <p className="text-xs mt-2 font-semibold" style={{ color: q2 === 'b' ? successColor : errorColor }}>
-                    {q2 === 'b' ? '✅ ¡Correcto! Es tu derecho, no un regalo.' : '❌ El banco te paga porque usa tu dinero. Es tu derecho.'}
+                    {q2 === 'b' ? '¡Correcto! Es tu derecho, no un regalo.' : 'El banco te paga porque usa tu dinero. Es tu derecho.'}
                   </p>
                 )}
               </FECard>

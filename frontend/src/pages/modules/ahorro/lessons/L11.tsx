@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { Check, Trophy } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -86,7 +87,7 @@ export default function L11() {
                 <p className="text-sm">3. Recibe confirmación de Finni</p>
               </div>
               <span className="inline-flex items-center mt-3 px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: warnBg, color: warnColor, border: `1px solid ${warnColor}` }}>
-                Badge: Constancia de 3 🔥
+                Badge: Constancia de 3
               </span>
             </FECard>
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
@@ -100,7 +101,7 @@ export default function L11() {
               style={{ backgroundColor: successColor }}
               onClick={() => { setAccepted(true); setStep(1); }}
             >
-              ✅ Acepto el reto →
+              Acepto el reto →
             </button>
           </div>
         )}
@@ -132,7 +133,7 @@ export default function L11() {
                   <div className="flex justify-between items-center mb-2">
                     <p className="text-sm font-bold">Día {idx + 1}</p>
                     {dayCompleted[idx] && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: successBg, color: successColor, border: `1px solid ${successColor}` }}>✅ Completado</span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: successBg, color: successColor, border: `1px solid ${successColor}` }}>Completado</span>
                     )}
                   </div>
                   {dayCompleted[idx] ? (
@@ -162,7 +163,7 @@ export default function L11() {
                           onClick={() => void completeDay(idx)}
                           disabled={!dayAmounts[idx] || parseFloat(dayAmounts[idx]!) <= 0}
                         >
-                          ✓
+                          <Check className="h-5 w-5" aria-hidden="true" />
                         </button>
                       </div>
                     </div>
@@ -184,8 +185,8 @@ export default function L11() {
         {step === 3 && badgeUnlocked && (
           <div className="space-y-6">
             <FECard variant="flat" className="text-center py-8 border-[3px]" style={{ backgroundColor: warnBg, borderColor: warnColor }}>
-              <p className="text-6xl mb-2">🏆</p>
-              <p className="text-2xl font-bold mt-1">Constancia de 3 🔥</p>
+              <Trophy className="h-12 w-12 mx-auto mb-2" aria-hidden="true" />
+              <p className="text-2xl font-bold mt-1">Constancia de 3</p>
               <p className="text-sm text-[var(--color-text-secondary)] mt-1">Badge desbloqueado · 3 días consecutivos</p>
               <p className="font-bold mt-2">Total ahorrado: ${totalAcumulado.toLocaleString()}</p>
             </FECard>

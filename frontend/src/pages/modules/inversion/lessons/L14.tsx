@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AlertTriangle, CircleCheck, CircleX, Flag, Search } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -16,13 +17,13 @@ interface Indicador {
 }
 
 const colorVars = {
-  verde:   { bg: 'var(--color-brand-success-bg)', border: 'var(--color-brand-success)',  text: 'var(--color-brand-success)', emoji: '🟢' },
-  amarillo:{ bg: 'var(--color-brand-warning-bg)', border: 'var(--color-brand-warning)',  text: 'var(--color-brand-warning)', emoji: '🟡' },
-  rojo:    { bg: 'var(--color-brand-error-bg)',   border: 'var(--color-brand-error)',    text: 'var(--color-brand-error)', emoji: '🔴' },
+  verde:   { bg: 'var(--color-brand-success-bg)', border: 'var(--color-brand-success)',  text: 'var(--color-brand-success)' },
+  amarillo:{ bg: 'var(--color-brand-warning-bg)', border: 'var(--color-brand-warning)',  text: 'var(--color-brand-warning)' },
+  rojo:    { bg: 'var(--color-brand-error-bg)',   border: 'var(--color-brand-error)',    text: 'var(--color-brand-error)' },
 };
 
 function semIcon(estado: Semaforo) {
-  return estado === 'verde' ? '✅' : estado === 'amarillo' ? '⚠️' : '❌';
+  return estado === 'verde' ? <CircleCheck className="h-5 w-5 text-[var(--color-brand-success)]" aria-hidden="true" /> : estado === 'amarillo' ? <AlertTriangle className="h-5 w-5 text-[var(--color-brand-warning)]" aria-hidden="true" /> : <CircleX className="h-5 w-5 text-[var(--color-brand-error)]" aria-hidden="true" />;
 }
 
 function evalIndicadores(data: {
@@ -138,7 +139,7 @@ export default function L14() {
                 '4. ¿El plazo es realista para tu objetivo?',
                 '5. ¿Conoces las comisiones e impuestos?',
               ].map((p) => (
-                <p key={p} className="text-sm py-1">🔍 {p}</p>
+                <p key={p} className="text-sm py-1">{p}</p>
               ))}
             </FECard>
             <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setStep(1)}>
@@ -152,7 +153,7 @@ export default function L14() {
           <div className="space-y-6">
             {cargando ? (
               <FECard variant="flat" className="text-center py-8">
-                <p className="text-4xl">🔍</p>
+                <Search className="h-10 w-10 mx-auto" aria-hidden="true" />
                 <p className="font-bold mt-2">Analizando tu plan...</p>
                 <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mt-4">
                   <div className="h-2 rounded-full animate-pulse" style={{ width: '60%', backgroundColor: infoColor }} />
@@ -165,7 +166,7 @@ export default function L14() {
                     className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold"
                     style={{ backgroundColor: cv.bg, color: cv.text, border: `1px solid ${cv.border}` }}
                   >
-                    {verdes === 5 ? '✅' : '⚠️'} {verdes}/5 indicadores positivos
+                    {verdes}/5 indicadores positivos
                   </span>
                 </div>
                 <div className="space-y-3">
@@ -190,7 +191,7 @@ export default function L14() {
                           <div className="mt-3">
                             <p className="text-sm">{ind.comentario}</p>
                             {ind.accion && (
-                              <p className="text-xs text-[var(--color-text-secondary)] mt-1">👉 {ind.accion}</p>
+                              <p className="text-xs text-[var(--color-text-secondary)] mt-1">{ind.accion}</p>
                             )}
                           </div>
                         )}
@@ -199,7 +200,7 @@ export default function L14() {
                   })}
                 </div>
                 <div className="p-4 rounded-2xl border-2" style={{ backgroundColor: cv.bg, borderColor: cv.border }}>
-                  <p className="font-extrabold">{cv.emoji} {fm.titulo}</p>
+                  <p className="font-extrabold">{fm.titulo}</p>
                   <p className="text-sm mt-1">{fm.mensaje}</p>
                 </div>
                 <FinniMessage
@@ -209,11 +210,11 @@ export default function L14() {
                 />
                 {!vistos ? (
                   <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setVistos(true)}>
-                    ✅ Completar lección — avanzar al reto final
+                    Completar lección — avanzar al reto final
                   </button>
                 ) : (
                   <FECard variant="flat" className="text-center border-2" style={{ backgroundColor: 'var(--color-brand-success-bg)', borderColor: 'var(--color-brand-success)' }}>
-                    <p className="text-4xl">🏁</p>
+                    <Flag className="h-10 w-10 mx-auto" aria-hidden="true" />
                     <p className="font-extrabold">¡Un paso más y completarás FinEmpoder!</p>
                     <p className="text-sm">La Lección 15 te espera — el reto final de todo el programa.</p>
                   </FECard>

@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
+import { AlertTriangle, Shield, Siren } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -16,11 +17,11 @@ const warnColor  = 'var(--color-brand-warning)';
 const warnBg     = 'var(--color-brand-warning-bg)';
 
 const SENALES = [
-  { emoji: '🚨', titulo: 'Rendimientos garantizados muy altos', desc: 'Si te ofrecen 20% mensual o más, es una estafa. No existe inversión legal con ese rendimiento garantizado en México.' },
-  { emoji: '🚨', titulo: 'Urgencia artificial', desc: '"Solo por hoy", "oferta exclusiva", "cierra hoy o pierdes el cupo". La presión de tiempo es una técnica de manipulación.' },
-  { emoji: '🚨', titulo: 'No puedo explicarte cómo funciona', desc: 'Si no entiendes cómo genera el rendimiento, no inviertas. Un instrumento legítimo siempre se puede explicar.' },
-  { emoji: '🚨', titulo: 'No está regulada por CNBV', desc: 'En México, todas las instituciones que captan inversiones deben estar autorizadas por la CNBV. Verifica siempre.' },
-  { emoji: '🚨', titulo: 'Reclutamiento de más inversores', desc: 'Si te piden traer amigos para obtener más rendimiento: es un esquema Ponzi. Tus amigos también perderán.' },
+  { icon: Siren, titulo: 'Rendimientos garantizados muy altos', desc: 'Si te ofrecen 20% mensual o más, es una estafa. No existe inversión legal con ese rendimiento garantizado en México.' },
+  { icon: Siren, titulo: 'Urgencia artificial', desc: '"Solo por hoy", "oferta exclusiva", "cierra hoy o pierdes el cupo". La presión de tiempo es una técnica de manipulación.' },
+  { icon: Siren, titulo: 'No puedo explicarte cómo funciona', desc: 'Si no entiendes cómo genera el rendimiento, no inviertas. Un instrumento legítimo siempre se puede explicar.' },
+  { icon: Siren, titulo: 'No está regulada por CNBV', desc: 'En México, todas las instituciones que captan inversiones deben estar autorizadas por la CNBV. Verifica siempre.' },
+  { icon: Siren, titulo: 'Reclutamiento de más inversores', desc: 'Si te piden traer amigos para obtener más rendimiento: es un esquema Ponzi. Tus amigos también perderán.' },
 ];
 
 const CASOS = [
@@ -84,7 +85,7 @@ export default function L10() {
           <div className="space-y-6">
             <div className="p-4 rounded-2xl border-2" style={{ backgroundColor: errorBg, borderColor: errorColor }}>
               <div className="flex items-center gap-2 mb-2">
-                <span>⚠️</span>
+                <AlertTriangle className="h-5 w-5 text-[var(--color-brand-error)]" aria-hidden="true" />
                 <p className="font-extrabold" style={{ color: 'var(--color-brand-error)' }}>Alerta</p>
               </div>
               <p className="text-sm">
@@ -105,7 +106,7 @@ export default function L10() {
                   onClick={() => setSenal(senal === i ? null : i)}
                 >
                   <div className="flex gap-3 items-start">
-                    <span className="shrink-0">{s.emoji}</span>
+                    <s.icon className="h-5 w-5 shrink-0 text-[var(--color-brand-error)]" aria-hidden="true" />
                     <div>
                       <p className="text-sm font-bold">{s.titulo}</p>
                       {senal === i && (
@@ -194,12 +195,12 @@ export default function L10() {
                           className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold"
                           style={correcto ? { backgroundColor: successBg, color: 'var(--color-brand-success)' } : { backgroundColor: errorBg, color: 'var(--color-brand-error)' }}
                         >
-                          {correcto ? '✅ Decisión correcta' : '❌ Esta era una trampa'}
+                          {correcto ? 'Decisión correcta' : 'Esta era una trampa'}
                         </span>
                         <div className="p-3 rounded-xl bg-gray-100">
                           <p className="text-xs font-bold">Señales de alerta:</p>
                           {caso.senales.map((s) => (
-                            <p key={s} className="text-xs" style={{ color: errorColor }}>🚨 {s}</p>
+                            <p key={s} className="text-xs" style={{ color: errorColor }}>{s}</p>
                           ))}
                         </div>
                         <div className="p-3 rounded-xl" style={{ backgroundColor: errorBg }}>
@@ -224,7 +225,7 @@ export default function L10() {
             {casosCompletos && (
               <div className="space-y-4">
                 <FECard variant="flat" className="text-center border-2" style={{ backgroundColor: successBg, borderColor: successColor }}>
-                  <p className="text-2xl">🛡️</p>
+                  <Shield className="h-8 w-8 mx-auto" aria-hidden="true" />
                   <p className="font-extrabold">¡Los 3 casos completados!</p>
                   <p className="text-sm">Ya sabes detectar fraudes financieros. Ese conocimiento vale más que cualquier inversión.</p>
                 </FECard>
@@ -235,8 +236,8 @@ export default function L10() {
                 />
                 <div className="p-4 rounded-2xl" style={{ backgroundColor: infoBg }}>
                   <p className="text-sm font-bold mb-1">Recursos para reportar fraudes:</p>
-                  <p className="text-sm">📞 CONDUSEF: 800-999-8080</p>
-                  <p className="text-sm">🌐 CNBV.gob.mx → Verificar institución</p>
+                  <p className="text-sm">CONDUSEF: 800-999-8080</p>
+                  <p className="text-sm">CNBV.gob.mx → Verificar institución</p>
                 </div>
               </div>
             )}

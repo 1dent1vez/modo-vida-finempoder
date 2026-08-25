@@ -77,19 +77,19 @@ export default function L02() {
             <FinniMessage variant="coach" title="Hoy vamos a comparar" message="¿Guardas dinero en tu cuarto? ¿Participas en tandas con amigos? No hay nada malo con eso… pero hay algo mejor." />
             <div className="space-y-3">
               <FECard variant="flat" className="border-2" style={{ borderColor: warnColor }}>
-                <p className="font-bold mb-2">🐷 Ahorro Informal</p>
+                <p className="font-bold mb-2">Ahorro Informal</p>
                 <div className="space-y-1">
                   <p className="text-sm">Formas: alcancía, debajo del colchón, tandas</p>
-                  <p className="text-sm" style={{ color: successColor }}>✅ Acceso inmediato, sin trámites</p>
-                  <p className="text-sm" style={{ color: errorColor }}>❌ Robo, gasto impulsivo, cero protección legal</p>
+                  <p className="text-sm" style={{ color: successColor }}>Acceso inmediato, sin trámites</p>
+                  <p className="text-sm" style={{ color: errorColor }}>Robo, gasto impulsivo, cero protección legal</p>
                 </div>
               </FECard>
               <FECard variant="flat" className="border-2" style={{ borderColor: successColor }}>
-                <p className="font-bold mb-2">🏦 Ahorro Formal</p>
+                <p className="font-bold mb-2">Ahorro Formal</p>
                 <div className="space-y-1">
                   <p className="text-sm">Formas: cuenta de ahorro, CETES, nómina</p>
-                  <p className="text-sm" style={{ color: successColor }}>✅ Rendimiento, protección IPAB (~3M), historial</p>
-                  <p className="text-sm" style={{ color: errorColor }}>❌ Comisiones si no es la cuenta correcta</p>
+                  <p className="text-sm" style={{ color: successColor }}>Rendimiento, protección IPAB (~3M), historial</p>
+                  <p className="text-sm" style={{ color: errorColor }}>Comisiones si no es la cuenta correcta</p>
                 </div>
               </FECard>
             </div>
@@ -133,7 +133,7 @@ export default function L02() {
                           color: ans === 'informal' ? 'white' : warnColor,
                         }}
                       >
-                        🐷 Informal
+                        Informal
                       </button>
                       <button
                         onClick={() => choose(sc.id, 'formal')}
@@ -145,12 +145,12 @@ export default function L02() {
                           color: ans === 'formal' ? 'white' : successColor,
                         }}
                       >
-                        🏦 Formal
+                        Formal
                       </button>
                     </div>
                     {showFeedback[sc.id] && (
                       <p className="text-xs mt-2" style={{ color: isCorrect ? successColor : errorColor }}>
-                        {isCorrect ? '✅ ' : '❌ '}{sc.feedback}
+                        {sc.feedback}
                       </p>
                     )}
                   </FECard>

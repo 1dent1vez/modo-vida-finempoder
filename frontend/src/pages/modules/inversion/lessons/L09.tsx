@@ -9,10 +9,10 @@ import { LessonResumeBanner } from '../../../../features/lessons/components/Less
 type Instrumento = 'cetes' | 'fondoBalanceado' | 'acciones';
 type Portafolio = Record<Instrumento, number>;
 
-const INSTRUMENTOS: { key: Instrumento; nombre: string; rendimiento: number; riesgo: string; emoji: string }[] = [
-  { key: 'cetes', nombre: 'CETES (deuda)', rendimiento: 0.10, riesgo: 'Bajo', emoji: '🔵' },
-  { key: 'fondoBalanceado', nombre: 'Fondo balanceado', rendimiento: 0.08, riesgo: 'Medio', emoji: '🟡' },
-  { key: 'acciones', nombre: 'Acciones BMV', rendimiento: 0.12, riesgo: 'Alto', emoji: '🔴' },
+const INSTRUMENTOS: { key: Instrumento; nombre: string; rendimiento: number; riesgo: string }[] = [
+  { key: 'cetes', nombre: 'CETES (deuda)', rendimiento: 0.10, riesgo: 'Bajo' },
+  { key: 'fondoBalanceado', nombre: 'Fondo balanceado', rendimiento: 0.08, riesgo: 'Medio' },
+  { key: 'acciones', nombre: 'Acciones BMV', rendimiento: 0.12, riesgo: 'Alto' },
 ];
 
 function calcRendimientoPortafolio(p: Portafolio): number {
@@ -127,11 +127,11 @@ export default function L09() {
               </p>
               <div className="space-y-2">
                 <div>
-                  <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold text-white mb-1" style={{ backgroundColor: errorColor }}>❌ No diversificado</span>
+                  <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold text-white mb-1" style={{ backgroundColor: errorColor }}>No diversificado</span>
                   <p className="text-sm">100% en acciones de una sola empresa. Si quiebra, pierdes todo.</p>
                 </div>
                 <div>
-                  <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold text-white mb-1" style={{ backgroundColor: successColor }}>✅ Diversificado</span>
+                  <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold text-white mb-1" style={{ backgroundColor: successColor }}>Diversificado</span>
                   <p className="text-sm">50% CETES + 30% fondo balanceado + 20% acciones de diferentes sectores.</p>
                 </div>
               </div>
@@ -188,7 +188,7 @@ export default function L09() {
                 return (
                   <div key={inst.key} className="p-4 rounded-2xl bg-white border border-[var(--color-neutral-200)]">
                     <div className="flex justify-between items-center mb-2">
-                      <p className="font-bold">{inst.emoji} {inst.nombre}</p>
+                      <p className="font-bold">{inst.nombre}</p>
                       <div className="flex items-center gap-2">
                         <span className="px-2 py-0.5 rounded-full text-xs font-bold border" style={{ borderColor: successColor, color: successColor }}>{inst.rendimiento * 100}%/año</span>
                         <p className="font-black" style={{ color: warnColor }}>{pct}%</p>
@@ -227,7 +227,7 @@ export default function L09() {
                     className="inline-block mt-1 px-3 py-1 rounded-full text-sm font-bold text-white"
                     style={{ backgroundColor: esDiversificado ? successColor : errorColor }}
                   >
-                    {esDiversificado ? '✅ Diversificado' : '⚠️ Muy concentrado'}
+                    {esDiversificado ? 'Diversificado' : 'Muy concentrado'}
                   </span>
                 </div>
               </div>
@@ -248,7 +248,7 @@ export default function L09() {
               onClick={() => setPortafolioConfirmado(true)}
             >
               {portafolioConfirmado
-                ? '✅ Portafolio guardado'
+                ? 'Portafolio guardado'
                 : esDiversificado
                   ? 'Confirmar portafolio diversificado'
                   : 'Diversifica primero (máx. 70% en un instrumento)'}

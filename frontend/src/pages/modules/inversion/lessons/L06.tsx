@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
+import { Info, PartyPopper } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -14,9 +15,9 @@ const successColor = 'var(--color-brand-success)';
 const successBg    = 'var(--color-brand-success-bg)';
 
 const FICHAS = [
-  { nombre: 'CETES', frente: { plazo: '28, 91, 182 o 364 días', tasa: '~10% anual (referencial)', minimo: '$100 pesos', donde: 'cetesdirecto.com (sin intermediarios)', riesgo: '⭐⭐☆☆☆ — Muy bajo' }, reverso: 'Desventajas: si retiras antes del plazo puedes perder algo del rendimiento. La tasa es fija — no se beneficia de alzas del mercado.' },
-  { nombre: 'BONDES', frente: { plazo: '3-5 años', tasa: 'Variable (ligada a TIIE)', minimo: '$100 pesos', donde: 'cetesdirecto.com', riesgo: '⭐⭐☆☆☆ — Bajo' }, reverso: 'Tasa variable significa que puede subir o bajar con el mercado. Plazo largo — no ideal si necesitas liquidez pronto.' },
-  { nombre: 'PRLV', frente: { plazo: 'Plazo fijo (días a meses)', tasa: 'Garantizada', minimo: 'Varía por banco', donde: 'Bancos comerciales', riesgo: '⭐⭐☆☆☆ — Bajo (IPAB)' }, reverso: 'Ofrecidos por bancos, no directamente del gobierno. Protegidos por IPAB hasta 400,000 UDIS. Rendimientos algo menores que CETES.' },
+  { nombre: 'CETES', frente: { plazo: '28, 91, 182 o 364 días', tasa: '~10% anual (referencial)', minimo: '$100 pesos', donde: 'cetesdirecto.com (sin intermediarios)', riesgo: 'Muy bajo' }, reverso: 'Desventajas: si retiras antes del plazo puedes perder algo del rendimiento. La tasa es fija — no se beneficia de alzas del mercado.' },
+  { nombre: 'BONDES', frente: { plazo: '3-5 años', tasa: 'Variable (ligada a TIIE)', minimo: '$100 pesos', donde: 'cetesdirecto.com', riesgo: 'Bajo' }, reverso: 'Tasa variable significa que puede subir o bajar con el mercado. Plazo largo — no ideal si necesitas liquidez pronto.' },
+  { nombre: 'PRLV', frente: { plazo: 'Plazo fijo (días a meses)', tasa: 'Garantizada', minimo: 'Varía por banco', donde: 'Bancos comerciales', riesgo: 'Bajo (IPAB)' }, reverso: 'Ofrecidos por bancos, no directamente del gobierno. Protegidos por IPAB hasta 400,000 UDIS. Rendimientos algo menores que CETES.' },
 ];
 
 const MONTOS_SIMULACION = [100, 500, 1000];
@@ -246,7 +247,7 @@ export default function L06() {
               </div>
             </FECard>
             <div className="p-3 rounded-xl bg-gray-100 flex gap-2 items-start">
-              <span className="text-sm">ℹ️</span>
+              <Info className="h-4 w-4 shrink-0" aria-hidden="true" />
               <div>
                 <p className="text-xs font-bold">Alerta fiscal</p>
                 <p className="text-xs text-[var(--color-text-secondary)]">
@@ -261,11 +262,11 @@ export default function L06() {
             />
             {!simulado ? (
               <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setSimulado(true)}>
-                ✅ Confirmar compra virtual
+                Confirmar compra virtual
               </button>
             ) : (
               <FECard variant="flat" className="text-center border-2" style={{ backgroundColor: successBg, borderColor: successColor }}>
-                <p className="text-4xl">🎉</p>
+                <PartyPopper className="h-10 w-10 mx-auto" aria-hidden="true" />
                 <p className="font-extrabold">¡Compra virtual completada!</p>
                 <p className="text-sm">
                   Compraste ${montoReal} en CETES a {plazoSim} días. En el mercado real recibirías ${(montoReal + rendimiento).toFixed(2)}.

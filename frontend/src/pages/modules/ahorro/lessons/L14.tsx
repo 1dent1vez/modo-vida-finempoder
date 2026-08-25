@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 
+import { Trophy } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -136,7 +137,7 @@ export default function L14() {
                 </div>
                 {totalPlanado > 0 && (
                   <p className="text-xs mt-1" style={{ color: totalAcumulado >= totalPlanado * 0.5 ? successColor : warnColor }}>
-                    {totalAcumulado >= totalPlanado * 0.5 ? '✅ En camino' : '⚠️ Por debajo del plan'}
+                    {totalAcumulado >= totalPlanado * 0.5 ? 'En camino' : 'Por debajo del plan'}
                   </p>
                 )}
               </FECard>
@@ -201,7 +202,7 @@ export default function L14() {
                     </div>
                     {ans !== undefined && (
                       <p className="text-xs mt-2" style={{ color: isCorrect ? successColor : errorColor }}>
-                        {isCorrect ? '✅ ' : '❌ '}{p.feedback}
+                        {p.feedback}
                       </p>
                     )}
                   </FECard>
@@ -227,10 +228,10 @@ export default function L14() {
                 borderColor: badgeUnlocked ? warnColor : infoColor,
               }}
             >
-              {badgeUnlocked && <p className="text-5xl mb-2">🏆</p>}
+              {badgeUnlocked && <Trophy className="h-12 w-12 mx-auto mb-2" aria-hidden="true" />}
               <p className="text-2xl font-bold mt-1">{score}/10</p>
               <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                {badgeUnlocked ? 'Badge "Evaluado 📊" desbloqueado' : `${(pctScore * 100).toFixed(0)}% — necesitas 70% para el badge`}
+                {badgeUnlocked ? 'Badge "Evaluado" desbloqueado' : `${(pctScore * 100).toFixed(0)}% — necesitas 70% para el badge`}
               </p>
             </FECard>
             <FinniMessage

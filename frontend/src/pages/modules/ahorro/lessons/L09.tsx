@@ -32,9 +32,9 @@ const infoColor = 'var(--color-brand-info)';
 const infoBg = 'var(--color-brand-info-bg)';
 
 const OPT_LABELS: Record<string, string> = {
-  ahorro: '💰 Ahorro',
-  seguro: '🛡️ Seguro',
-  ambos: '✅ Ambos',
+  ahorro: 'Ahorro',
+  seguro: 'Seguro',
+  ambos: 'Ambos',
 };
 
 export default function L09() {
@@ -164,7 +164,7 @@ export default function L09() {
                     </div>
                     {showMapFeedback[s.id] && (
                       <p className="text-xs mt-2" style={{ color: isCorrect ? successColor : errorColor }}>
-                        {isCorrect ? '✅ ' : '❌ '}{s.exp}
+                        {s.exp}
                       </p>
                     )}
                   </FECard>

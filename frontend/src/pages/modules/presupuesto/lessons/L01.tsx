@@ -84,7 +84,7 @@ export default function L01() {
           <div className="space-y-3">
             <FinniMessage
               variant="coach"
-              title="¡Hola! Soy Finni 👋"
+              title="¡Hola! Soy Finni"
               message="Oye… ¿ya es martes y tu tarjeta dice $47? Tranqui, a casi todos nos ha pasado. Hoy vamos a resolver el misterio más común entre casi todos nosotros: ¿a dónde se va el dinero?"
             />
             <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
@@ -121,7 +121,7 @@ export default function L01() {
 
         {step === 1 && (
           <div className="space-y-3">
-            <p className="font-bold text-base">Una semana en tu bolsillo 📅</p>
+            <p className="font-bold text-base">Una semana en tu bolsillo</p>
             <div className="space-y-2">
               {timeline.map((event) => (
                 <FECard key={event.day} variant="flat" className="p-3">
@@ -177,7 +177,7 @@ export default function L01() {
                           : 'border-[var(--color-neutral-200)] text-[var(--color-text-secondary)]'
                       )}
                     >
-                      Lo planeé ✓
+                      Lo planeé
                     </button>
                     <button
                       onClick={() => classify(g.id, 'unplanned')}

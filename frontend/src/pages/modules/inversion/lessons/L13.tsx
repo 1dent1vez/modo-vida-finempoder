@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Check } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -153,7 +154,7 @@ export default function L13() {
                 '3. Tu plazo: ¿cuándo quieres ver el resultado?',
                 '4. Tu instrumento: ¿cuál es el más adecuado para tu perfil?',
               ].map((p) => (
-                <p key={p} className="text-sm py-1">✓ {p}</p>
+                <p key={p} className="text-sm py-1">{p}</p>
               ))}
               <p className="text-sm mt-2 italic text-[var(--color-text-secondary)]">
                 "Un plan aproximado hoy es mejor que el plan perfecto nunca."
@@ -182,7 +183,7 @@ export default function L13() {
             <div className="p-4 rounded-2xl border-2" style={{ borderColor: seccion1Lista ? successColor : warnColor }}>
               <div className="flex justify-between items-center mb-3">
                 <p className="font-black">1. Objetivo</p>
-                {seccion1Lista && <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>✓</span>}
+                {seccion1Lista && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}><Check className="h-3 w-3" aria-hidden="true" /></span>}
               </div>
               <textarea
                 rows={2}
@@ -287,7 +288,7 @@ export default function L13() {
                     </div>
                   </div>
                   <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: supera ? successColor : warnColor }}>
-                    {supera ? `✅ Supera la inflación (${(inflacion * 100).toFixed(1)}%)` : `⚠️ No supera la inflación (${(inflacion * 100).toFixed(1)}%)`}
+                    {supera ? `Supera la inflación (${(inflacion * 100).toFixed(1)}%)` : `No supera la inflación (${(inflacion * 100).toFixed(1)}%)`}
                   </span>
                 </div>
                 <button
@@ -296,7 +297,7 @@ export default function L13() {
                   onClick={() => void handleGuardar()}
                   disabled={guardado}
                 >
-                  {guardado ? '✅ Plan guardado — lección completada' : 'Guardar mi plan de inversión'}
+                  {guardado ? 'Plan guardado — lección completada' : 'Guardar mi plan de inversión'}
                 </button>
                 {guardado && (
                   <FinniMessage

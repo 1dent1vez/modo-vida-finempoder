@@ -228,7 +228,7 @@ export default function Home() {
   const moduleCards = useMemo(() => computeModuleCards(), []);
 
   const firstName = user?.name?.trim().split(/\s+/)[0];
-  const greeting = firstName ? `Hola, ${firstName}` : 'Hola 👋';
+  const greeting = firstName ? `Hola, ${firstName}` : 'Hola';
   const avatarInitial = firstName ? firstName[0].toUpperCase() : 'F';
 
   const today = new Date().toLocaleDateString('es-MX', {
@@ -320,7 +320,7 @@ export default function Home() {
                 <Check className="h-6 w-6" />
               </div>
               <div>
-                <p className="font-extrabold">¡Completaste los 3 módulos! 🎉</p>
+                <p className="font-extrabold">¡Completaste los 3 módulos!</p>
                 <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
                   Revisa tus logros y sigue construyendo tu hábito.
                 </p>

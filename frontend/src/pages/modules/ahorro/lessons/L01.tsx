@@ -23,7 +23,6 @@ const RUTAS = [
     bgExpanded: errorBg,
     steps: ['Dinero llega', 'Gastos necesidades', 'Gastos deseos', 'Intento de ahorro', '$0 ahorrado'],
     proyeccion: { m3: 0, m6: 0, m12: 0 },
-    emoji: '❌',
     chipColor: errorColor,
   },
   {
@@ -33,7 +32,6 @@ const RUTAS = [
     bgExpanded: successBg,
     steps: ['Dinero llega', 'Aparta ahorro YA', 'Gasta el resto', 'Ahorro constante'],
     proyeccion: { m3: 1300, m6: 2600, m12: 5200 },
-    emoji: '✅',
     chipColor: successColor,
   },
 ];
@@ -132,7 +130,7 @@ export default function L01() {
                   tabIndex={0}
                 >
                   <div className="flex justify-between items-center">
-                    <p className="font-bold" style={{ color: r.borderColor }}>{r.emoji} {r.label}</p>
+                    <p className="font-bold" style={{ color: r.borderColor }}>{r.label}</p>
                     <span className="text-xs">{rutaExpanded === r.id ? '▲' : '▼'}</span>
                   </div>
                   {rutaExpanded === r.id && (
@@ -220,7 +218,7 @@ export default function L01() {
         {/* Pantalla 3 — Quiz */}
         {step === 3 && (
           <div className="space-y-6">
-            <p className="text-2xl font-bold">Quiz rápido 🧠</p>
+            <p className="text-2xl font-bold">Quiz rápido</p>
 
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
               <p className="font-bold mb-3">1. ¿Qué es el ahorro?</p>
@@ -246,7 +244,7 @@ export default function L01() {
               </div>
               {q1 && (
                 <p className="text-xs mt-2 font-semibold" style={{ color: q1 === 'b' ? successColor : errorColor }}>
-                  {q1 === 'b' ? '✅ ¡Correcto! Ahorrar es separar intencionalmente.' : '❌ El ahorro es planificado, no lo que sobra.'}
+                  {q1 === 'b' ? '¡Correcto! Ahorrar es separar intencionalmente.' : 'El ahorro es planificado, no lo que sobra.'}
                 </p>
               )}
             </FECard>
@@ -276,7 +274,7 @@ export default function L01() {
                 </div>
                 {q2 && (
                 <p className="text-xs mt-2 font-semibold" style={{ color: q2 === 'b' ? successColor : errorColor }}>
-                  {q2 === 'b' ? '✅ ¡Correcto! La automatización elimina la fuerza de voluntad.' : '❌ La automatización es la clave, no el monto.'}
+                  {q2 === 'b' ? '¡Correcto! La automatización elimina la fuerza de voluntad.' : 'La automatización es la clave, no el monto.'}
                   </p>
                 )}
               </FECard>

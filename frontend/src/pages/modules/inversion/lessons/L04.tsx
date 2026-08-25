@@ -148,7 +148,7 @@ export default function L04() {
               {[
                 { label: 'Ingreso mensual ($)', value: ingreso, setValue: setIngreso, min: 0, step: 100, helper: undefined },
                 { label: 'Gastos fijos y variables ($)', value: gastos, setValue: setGastos, min: 0, step: 100, helper: undefined },
-                { label: 'Ahorro para fondo de emergencias ($)', value: fondoEmergencias, setValue: setFondoEmergencias, min: 0, step: 50, helper: emergenciaM2 ? `Meta: $${emergenciaM2.toLocaleString()}${fondoCubierto ? ' ✅' : ' (aún no cubierta)'}` : undefined },
+                { label: 'Ahorro para fondo de emergencias ($)', value: fondoEmergencias, setValue: setFondoEmergencias, min: 0, step: 50, helper: emergenciaM2 ? `Meta: $${emergenciaM2.toLocaleString()}${fondoCubierto ? '' : ' (aún no cubierta)'}` : undefined },
                 { label: 'Ahorro para meta específica ($)', value: ahorroMeta, setValue: setAhorroMeta, min: 0, step: 50, helper: undefined },
               ].map(({ label, value, setValue, min, step: s, helper }) => (
                 <div key={label} className="space-y-1">
@@ -173,7 +173,7 @@ export default function L04() {
               onClick={() => void handleGuardar()}
               disabled={guardado}
             >
-              {guardado ? `✅ Guardado — capital: $${capitalInversion.toLocaleString()}` : 'Guardar mi capital disponible'}
+              {guardado ? `Guardado — capital: $${capitalInversion.toLocaleString()}` : 'Guardar mi capital disponible'}
             </button>
           </div>
         )}

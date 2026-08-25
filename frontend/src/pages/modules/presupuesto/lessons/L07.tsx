@@ -21,7 +21,7 @@ const ESCENARIOS: {
     opciones: [
       { id: 'a1', label: 'Cancelar cena con amigos del viernes', consecuencia: 'Ahorraste $300. Te quedaste sin salida del viernes.', score: 70 },
       { id: 'a2', label: 'Pausar streaming este mes', consecuencia: 'Ahorraste $99. Aún necesitas $201 más.', score: 50 },
-      { id: 'a3', label: 'No comprar ropa nueva que tenías planeada', consecuencia: 'Ahorraste $300. Solución sin sacrificar necesidades. ✅', score: 100 },
+      { id: 'a3', label: 'No comprar ropa nueva que tenías planeada', consecuencia: 'Ahorraste $300. Solución sin sacrificar necesidades.', score: 100 },
     ],
   },
   {
@@ -31,7 +31,7 @@ const ESCENARIOS: {
     opciones: [
       { id: 'b1', label: 'Pedir prestado a un amigo', consecuencia: 'Resuelves el problema hoy. Recuerda pagar después.', score: 70 },
       { id: 'b2', label: 'Usar parte del presupuesto de comida', consecuencia: 'Pagas las impresiones pero comerás más sencillo esta semana.', score: 80 },
-      { id: 'b3', label: 'Cancelar suscripción mensual del momento', consecuencia: 'Tienes $99 disponibles de inmediato. Cubre el gasto. ✅', score: 100 },
+      { id: 'b3', label: 'Cancelar suscripción mensual del momento', consecuencia: 'Tienes $99 disponibles de inmediato. Cubre el gasto.', score: 100 },
     ],
   },
   {
@@ -41,7 +41,7 @@ const ESCENARIOS: {
     opciones: [
       { id: 'c1', label: 'Ir: pides $30 prestados y vas', consecuencia: 'Disfrutas el concierto pero quedas en $0 y con deuda.', score: 40 },
       { id: 'c2', label: 'No ir: guardas tu dinero para necesidades', consecuencia: 'Tomas una decisión financieramente sana. Te pierdes el concierto.', score: 90 },
-      { id: 'c3', label: 'Buscar si hay boletos más baratos o reventa', consecuencia: 'Explorar opciones es siempre válido antes de decidir. ✅', score: 100 },
+      { id: 'c3', label: 'Buscar si hay boletos más baratos o reventa', consecuencia: 'Explorar opciones es siempre válido antes de decidir.', score: 100 },
     ],
   },
 ];
@@ -112,7 +112,7 @@ export default function L07() {
         {step === 0 && (
           <div className="space-y-3">
             <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 border-2 border-[var(--color-brand-warning)] text-center py-4">
-              <p className="font-bold">💬 Mensaje bancario</p>
+              <p className="font-bold">Mensaje bancario</p>
               <p className="font-bold text-base mt-2">Saldo disponible: $320</p>
               <p className="text-sm text-[var(--color-text-secondary)]">Faltan 12 días para tu próximo ingreso.</p>
             </FECard>
@@ -125,21 +125,21 @@ export default function L07() {
               <p className="font-bold mb-2">Matriz de priorización:</p>
               <div className="flex gap-2">
                 <FECard variant="flat" className="flex-1 bg-[var(--color-brand-error)]/10 text-center">
-                  <p className="text-xs font-bold">⚡ Urgente + Necesario</p>
+                  <p className="text-xs font-bold">Urgente + Necesario</p>
                   <p className="text-xs block">→ Actúa ya</p>
                 </FECard>
                 <FECard variant="flat" className="flex-1 bg-[var(--color-brand-warning)]/10 text-center">
-                  <p className="text-xs font-bold">📅 Necesario + No urgente</p>
+                  <p className="text-xs font-bold">Necesario + No urgente</p>
                   <p className="text-xs block">→ Planifica</p>
                 </FECard>
               </div>
               <div className="flex gap-2 mt-2">
                 <FECard variant="flat" className="flex-1 bg-[var(--color-brand-info)]/10 text-center">
-                  <p className="text-xs font-bold">⚡ Urgente + Prescindible</p>
+                  <p className="text-xs font-bold">Urgente + Prescindible</p>
                   <p className="text-xs block">→ Delega o pospón</p>
                 </FECard>
                 <FECard variant="flat" className="flex-1 bg-[var(--color-brand-success)]/10 text-center">
-                  <p className="text-xs font-bold">✂️ Prescindible + No urgente</p>
+                  <p className="text-xs font-bold">Prescindible + No urgente</p>
                   <p className="text-xs block">→ Elimina</p>
                 </FECard>
               </div>
@@ -229,7 +229,7 @@ export default function L07() {
                   '2. Buscar recortes en deseos antes que en necesidades',
                   '3. Explorar alternativas antes de endeudarse',
                 ].map((p) => (
-                  <p key={p} className="text-sm">✓ {p}</p>
+                  <p key={p} className="text-sm">{p}</p>
                 ))}
               </div>
             </FECard>

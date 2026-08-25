@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
+import { TrendingDown, Wallet } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -8,16 +9,16 @@ import { useLessonResume } from '../../../../features/lessons/hooks/useLessonRes
 import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 const GASTOS_HORMIGA = [
-  { id: 'cafe', label: 'Café matutino', amount: 45, emoji: '☕' },
-  { id: 'musica', label: 'App de música', amount: 29, emoji: '🎵' },
-  { id: 'propina', label: 'Propina en taquería', amount: 20, emoji: '🌮' },
-  { id: 'papas', label: 'Papas en máquina', amount: 22, emoji: '🍟' },
-  { id: 'parking', label: 'Estacionamiento extra', amount: 30, emoji: '🅿️' },
-  { id: 'agua', label: 'Agua embotellada', amount: 18, emoji: '💧' },
-  { id: 'juego', label: 'Videojuego en oferta', amount: 99, emoji: '🎮' },
-  { id: 'snack', label: 'Snack convenience store', amount: 35, emoji: '🍫' },
-  { id: 'saldo', label: 'Recarga de saldo', amount: 50, emoji: '📱' },
-  { id: 'impresiones', label: 'Impresiones extra', amount: 25, emoji: '🖨️' },
+  { id: 'cafe', label: 'Café matutino', amount: 45 },
+  { id: 'musica', label: 'App de música', amount: 29 },
+  { id: 'propina', label: 'Propina en taquería', amount: 20 },
+  { id: 'papas', label: 'Papas en máquina', amount: 22 },
+  { id: 'parking', label: 'Estacionamiento extra', amount: 30 },
+  { id: 'agua', label: 'Agua embotellada', amount: 18 },
+  { id: 'juego', label: 'Videojuego en oferta', amount: 99 },
+  { id: 'snack', label: 'Snack convenience store', amount: 35 },
+  { id: 'saldo', label: 'Recarga de saldo', amount: 50 },
+  { id: 'impresiones', label: 'Impresiones extra', amount: 25 },
 ];
 
 type PersonalGasto = { nombre: string; monto: string };
@@ -98,7 +99,7 @@ export default function L03() {
         {step === 0 && (
           <div className="space-y-3">
             <FECard variant="flat" className="text-center py-6 bg-[var(--color-brand-warning)]/10">
-              <p className="text-4xl">👜 → 💸</p>
+              <span className="inline-flex items-center justify-center gap-2"><Wallet className="h-8 w-8 text-[var(--color-brand-warning)]" aria-hidden="true" /><span className="text-4xl font-bold">→</span><TrendingDown className="h-8 w-8 text-[var(--color-brand-error)]" aria-hidden="true" /></span>
               <p className="font-bold mt-2">
                 Cartera llena el lunes → vacía el viernes
               </p>
@@ -155,7 +156,7 @@ export default function L03() {
                       : 'border-[var(--color-neutral-200)] text-[var(--color-text-secondary)]'
                   )}
                 >
-                  {g.emoji} {g.label} ${g.amount}
+                  {g.label} ${g.amount}
                 </button>
               ))}
             </div>
@@ -250,7 +251,7 @@ export default function L03() {
           <div className="space-y-3">
             <FinniMessage
               variant="success"
-              title="¡Ladrón identificado! 🐜"
+              title="¡Ladrón identificado!"
               message={`Identificaste $${grandTotal} en gastos hormiga por semana. Eso es $${monthly} al mes que podrías redirigir.`}
             />
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
@@ -258,9 +259,9 @@ export default function L03() {
                 ¿Cuáles eliminarías sin extrañarlos?
               </p>
               <div className="flex flex-wrap gap-2">
-                {[...GASTOS_HORMIGA.filter((g) => found.has(g.id)), ...personalGastos.filter((g) => g.nombre).map((g) => ({ id: g.nombre, label: g.nombre, emoji: '💸', amount: parseFloat(g.monto) || 0 }))].map((g) => (
+                {[...GASTOS_HORMIGA.filter((g) => found.has(g.id)), ...personalGastos.filter((g) => g.nombre).map((g) => ({ id: g.nombre, label: g.nombre, amount: parseFloat(g.monto) || 0 }))].map((g) => (
                   <span key={g.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs border border-[var(--color-neutral-200)] font-semibold">
-                    {g.emoji} {g.label}
+                    {g.label}
                   </span>
                 ))}
               </div>

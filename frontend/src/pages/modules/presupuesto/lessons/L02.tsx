@@ -103,18 +103,18 @@ export default function L02() {
           <div className="space-y-3">
             <FinniMessage
               variant="coach"
-              title="Finni explica 💡"
+              title="Finni explica"
               message="Antes de hacer un presupuesto, necesitas saber con qué cuentas. ¿Toda tu lana llega el mismo día y en la misma cantidad? ¿O depende del mes?"
             />
             <div className="flex flex-col gap-2 sm:flex-row">
               <FECard variant="flat" className="flex-1 border-2 border-[var(--color-brand-success)]">
-                <p className="font-bold text-base mb-2">📅 Ingresos Fijos</p>
+                <p className="font-bold text-base mb-2">Ingresos Fijos</p>
                 <p className="text-sm text-[var(--color-text-secondary)]">
                   Llegan con regularidad y en cantidad conocida: beca mensual, mesada, trabajo con sueldo fijo.
                 </p>
               </FECard>
               <FECard variant="flat" className="flex-1 border-2 border-[var(--color-brand-warning)]">
-                <p className="font-bold text-base mb-2">📊 Ingresos Variables</p>
+                <p className="font-bold text-base mb-2">Ingresos Variables</p>
                 <p className="text-sm text-[var(--color-text-secondary)]">
                   Llegan a veces sí, a veces no, o en cantidades distintas: freelance, ventas, propinas, proyectos.
                 </p>
@@ -174,13 +174,13 @@ export default function L02() {
                   className="flex-1 min-h-11 bg-[var(--color-brand-success)] text-white rounded-xl font-bold text-sm"
                   onClick={() => classify('fijo')}
                 >
-                  📅 Fijo
+                  Fijo
                 </button>
                 <button
                   className="flex-1 min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-bold text-sm"
                   onClick={() => classify('variable')}
                 >
-                  📊 Variable
+                  Variable
                 </button>
               </div>
             )}
@@ -195,7 +195,7 @@ export default function L02() {
                     : 'bg-[var(--color-brand-warning)]/10 border-[var(--color-brand-warning)]'
                 )}
               >
-                <p className="font-bold text-sm">{lastFeedback.correct ? '✅ Correcto' : '⚠️ Casi'}</p>
+                <p className="font-bold text-sm">{lastFeedback.correct ? 'Correcto' : 'Casi'}</p>
                 <p className="text-sm">{FEEDBACK[lastFeedback.id]}</p>
               </FECard>
             )}
@@ -212,7 +212,7 @@ export default function L02() {
                       className={type === 'fijo' ? 'bg-[var(--color-brand-success)]/10' : 'bg-[var(--color-brand-warning)]/10'}
                     >
                       <p className="font-bold text-sm mb-2">
-                        {type === 'fijo' ? '📅 Fijos' : '📊 Variables'}:
+                        {type === 'fijo' ? 'Fijos' : 'Variables'}:
                       </p>
                       <div className="flex flex-wrap gap-1">
                         {items.map((i) => (
@@ -230,7 +230,7 @@ export default function L02() {
             {allDone && (
               <div className="space-y-2">
                 <FECard variant="flat" className="bg-[var(--color-brand-success)]/10 border-2 border-[var(--color-brand-success)] text-center">
-                  <p className="font-bold text-base">Ingresos Clasificados ✓</p>
+                  <p className="font-bold text-base">Ingresos Clasificados</p>
                   <p className="font-bold">
                     {correctCount}/9 correctos ({score}%)
                   </p>

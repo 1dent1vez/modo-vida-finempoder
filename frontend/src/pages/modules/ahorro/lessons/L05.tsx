@@ -15,14 +15,14 @@ const infoColor = 'var(--color-brand-info)';
 const infoBg = 'var(--color-brand-info-bg)';
 
 const CATEGORIAS = [
-  { label: 'Laptop', min: 8000, max: 15000, emoji: '💻' },
-  { label: 'Viaje de graduación', min: 5000, max: 12000, emoji: '✈️' },
-  { label: 'Fondo de emergencias', min: 3000, max: 6000, emoji: '🛡️' },
-  { label: 'Pagar deudas', min: 3000, max: 10000, emoji: '💳' },
-  { label: 'Curso o certificación', min: 2000, max: 5000, emoji: '📚' },
-  { label: 'Celular', min: 4000, max: 10000, emoji: '📱' },
-  { label: 'Herramienta de trabajo', min: 2000, max: 8000, emoji: '🛠️' },
-  { label: 'La mía (personalizada)', min: 0, max: 0, emoji: '🎯' },
+  { label: 'Laptop', min: 8000, max: 15000 },
+  { label: 'Viaje de graduación', min: 5000, max: 12000 },
+  { label: 'Fondo de emergencias', min: 3000, max: 6000 },
+  { label: 'Pagar deudas', min: 3000, max: 10000 },
+  { label: 'Curso o certificación', min: 2000, max: 5000 },
+  { label: 'Celular', min: 4000, max: 10000 },
+  { label: 'Herramienta de trabajo', min: 2000, max: 8000 },
+  { label: 'La mía (personalizada)', min: 0, max: 0 },
 ];
 
 export default function L05() {
@@ -152,7 +152,7 @@ export default function L05() {
                     tabIndex={0}
                   >
                     <div className="flex justify-between items-center">
-                      <p className="text-sm font-semibold">{cat.emoji} {cat.label}</p>
+                      <p className="text-sm font-semibold">{cat.label}</p>
                       {cat.min > 0 && (
                         <span className="text-xs font-bold px-2 py-0.5 rounded-full border" style={{ borderColor: successColor, color: successColor }}>
                           ${cat.min.toLocaleString()}-${cat.max.toLocaleString()}
@@ -225,7 +225,7 @@ export default function L05() {
         {step === 3 && (
           <div className="space-y-6">
             <FECard variant="flat" className="text-center py-4 border-2" style={{ backgroundColor: successBg, borderColor: successColor }}>
-              <p className="text-2xl font-bold">🎯 Meta guardada</p>
+              <p className="text-2xl font-bold">Meta guardada</p>
               <p className="font-bold mt-2">{meta}</p>
               <div className="flex justify-center gap-2 mt-2 flex-wrap">
                 <span className="px-3 py-1 rounded-full text-sm font-bold text-white" style={{ backgroundColor: successColor }}>${montoNum.toLocaleString()}</span>

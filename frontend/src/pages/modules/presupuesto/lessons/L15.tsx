@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Trophy } from 'lucide-react';
+import { BarChart3, Bug, CalendarDays, Heart, Landmark, PartyPopper, PenLine, Scale, Target, Trophy, Zap } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -8,15 +8,15 @@ import { useLessonResume } from '../../../../features/lessons/hooks/useLessonRes
 import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 const CONCEPTOS_CLAVE = [
-  { emoji: '🐜', titulo: 'Gasto hormiga', desc: 'Pequeñas compras automáticas que suman mucho al mes.' },
-  { emoji: '📊', titulo: 'Ingresos fijos vs variables', desc: 'Planea diferente para cada tipo de ingreso.' },
-  { emoji: '⚖️', titulo: 'Regla 50-30-20', desc: 'Necesidades / Deseos / Ahorro.' },
-  { emoji: '📝', titulo: 'Registro de gastos', desc: 'Lo que no mides, no puedes mejorar.' },
-  { emoji: '📅', titulo: 'Balance mensual', desc: 'Ingresos menos gastos: el termómetro de tu mes.' },
-  { emoji: '⚡', titulo: 'Priorización en crisis', desc: 'Urgente+Necesario primero.' },
-  { emoji: '💭', titulo: 'Gasto emocional', desc: '¿Lo comprarías si te sintieras bien?' },
-  { emoji: '🎯', titulo: 'Meta SMART', desc: 'Específica, Medible, Alcanzable, Relevante, Temporal.' },
-  { emoji: '🏛️', titulo: 'Herramientas', desc: 'App CONDUSEF, Sheets, FinEmpoder.' },
+  { icon: Bug, titulo: 'Gasto hormiga', desc: 'Pequeñas compras automáticas que suman mucho al mes.' },
+  { icon: BarChart3, titulo: 'Ingresos fijos vs variables', desc: 'Planea diferente para cada tipo de ingreso.' },
+  { icon: Scale, titulo: 'Regla 50-30-20', desc: 'Necesidades / Deseos / Ahorro.' },
+  { icon: PenLine, titulo: 'Registro de gastos', desc: 'Lo que no mides, no puedes mejorar.' },
+  { icon: CalendarDays, titulo: 'Balance mensual', desc: 'Ingresos menos gastos: el termómetro de tu mes.' },
+  { icon: Zap, titulo: 'Priorización en crisis', desc: 'Urgente+Necesario primero.' },
+  { icon: Heart, titulo: 'Gasto emocional', desc: '¿Lo comprarías si te sintieras bien?' },
+  { icon: Target, titulo: 'Meta SMART', desc: 'Específica, Medible, Alcanzable, Relevante, Temporal.' },
+  { icon: Landmark, titulo: 'Herramientas', desc: 'App CONDUSEF, Sheets, FinEmpoder.' },
 ];
 
 type BudgetData = { totalIngresos?: number; totalGastos?: number; balance?: number } | null;
@@ -93,7 +93,7 @@ export default function L15() {
         {step === 0 && (
           <div className="space-y-3">
             <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 border-2 border-[var(--color-brand-warning)] text-center py-6">
-              <p className="text-4xl">🎉</p>
+              <PartyPopper className="h-10 w-10 mx-auto" aria-hidden="true" />
               <p className="font-bold text-base mt-2">¡El reto final!</p>
               <p className="text-sm text-[var(--color-text-secondary)] mt-1">
                 Todo lo que aprendiste en este módulo culmina aquí.
@@ -102,7 +102,7 @@ export default function L15() {
             <FinniMessage
               variant="coach"
               title="No es un ejercicio"
-              message="Es tu presupuesto real de este mes. Al completar el reto, desbloqueas el badge 'Presupuesto Pro 💰' y accedes al Módulo 2: Ahorro."
+              message="Es tu presupuesto real de este mes. Al completar el reto, desbloqueas el badge 'Presupuesto Pro' y accedes al Módulo 2: Ahorro."
             />
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
               <p className="font-bold mb-2">El reto tiene 3 partes:</p>
@@ -111,7 +111,7 @@ export default function L15() {
                 'Parte 2: Establece 3 compromisos concretos',
                 'Parte 3: Activa notificaciones de seguimiento',
               ].map((p) => (
-                <p key={p} className="text-sm py-1">✓ {p}</p>
+                <p key={p} className="text-sm py-1">{p}</p>
               ))}
             </FECard>
             <button
@@ -130,7 +130,7 @@ export default function L15() {
               <div className="space-y-2">
                 <FECard variant="flat" className="bg-[var(--color-brand-success)]/10 border-2 border-[var(--color-brand-success)]">
                   <p className="font-bold mb-2">
-                    ✅ Presupuesto confirmado desde Lección 12
+                    Presupuesto confirmado desde Lección 12
                   </p>
                   <div className="space-y-1">
                     <p className="text-sm">Ingresos: <b>${(budgetData?.totalIngresos ?? 0).toLocaleString()}</b></p>
@@ -240,7 +240,7 @@ export default function L15() {
             {notifDay && notifHour && (
               <FECard variant="flat" className="bg-[var(--color-brand-info)]/10 border border-[var(--color-brand-info)]">
                 <p className="text-sm">
-                  📲 Recordatorio: cada <b>{notifDay}</b> a las <b>{notifHour}</b> — "¿Cómo vas con tu presupuesto esta semana?"
+                  Recordatorio: cada <b>{notifDay}</b> a las <b>{notifHour}</b> — "¿Cómo vas con tu presupuesto esta semana?"
                 </p>
               </FECard>
             )}
@@ -257,7 +257,7 @@ export default function L15() {
           <div className="space-y-3">
             <p className="font-bold text-base">Resumen del reto</p>
             <FECard variant="flat" className="border border-[var(--color-brand-success)] bg-[var(--color-brand-success)]/10">
-              <p className="font-bold text-sm mb-2">✅ Partes completadas:</p>
+              <p className="font-bold text-sm mb-2">Partes completadas:</p>
               <p className="text-sm">1. Presupuesto real confirmado</p>
               <p className="text-sm">2. 3 compromisos específicos establecidos</p>
               <p className="text-sm">3. Recordatorio semanal configurado{notifDay ? `: ${notifDay} ${notifHour}` : ''}</p>
@@ -265,14 +265,14 @@ export default function L15() {
             <FinniMessage
               variant="coach"
               title="¿Todo listo?"
-              message="Al confirmar, tu badge 'Presupuesto Pro 💰' se desbloqueará y podrás acceder al Módulo 2: Ahorro."
+              message="Al confirmar, tu badge 'Presupuesto Pro' se desbloqueará y podrás acceder al Módulo 2: Ahorro."
             />
             <button
               className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => void handleUnlock()}
               disabled={!canComplete}
             >
-              🏆 ¡Desbloquear Presupuesto Pro!
+              ¡Desbloquear Presupuesto Pro!
             </button>
           </div>
         )}
@@ -281,7 +281,7 @@ export default function L15() {
           <div className="space-y-3">
             <FECard variant="flat" className="text-center py-8 bg-[var(--color-brand-warning)]/10 border-[3px] border-[var(--color-brand-warning)]">
               <Trophy className="mx-auto text-[var(--color-brand-warning)]" size={72} />
-              <p className="text-2xl font-bold mt-2">Presupuesto Pro 💰</p>
+              <p className="text-2xl font-bold mt-2">Presupuesto Pro</p>
               <p className="text-sm text-[var(--color-text-secondary)] mt-1">
                 Badge desbloqueado · Módulo 1 completado
               </p>
@@ -296,7 +296,7 @@ export default function L15() {
               <div className="space-y-2">
                 {CONCEPTOS_CLAVE.map((c) => (
                   <div key={c.titulo} className="flex items-start gap-3">
-                    <p className="text-sm">{c.emoji}</p>
+                    <c.icon className="h-5 w-5 text-[var(--color-brand-warning)]" aria-hidden="true" />
                     <div>
                       <p className="font-bold text-sm">{c.titulo}</p>
                       <p className="text-xs text-[var(--color-text-secondary)]">{c.desc}</p>
@@ -309,7 +309,7 @@ export default function L15() {
               href="/app/ahorro"
               className="block w-full min-h-11 bg-[var(--color-brand-success)] text-white rounded-xl font-semibold text-sm text-center leading-11"
             >
-              🌱 Comenzar Módulo 2: Ahorro
+              Comenzar Módulo 2: Ahorro
             </a>
           </div>
         )}

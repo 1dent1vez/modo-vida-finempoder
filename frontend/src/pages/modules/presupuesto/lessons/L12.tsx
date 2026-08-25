@@ -188,7 +188,7 @@ export default function L12() {
             <FECard variant="flat" className="border border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10">
               <p className="font-bold mb-2">4 secciones del presupuesto:</p>
               {['1. Ingresos del mes', '2. Gastos fijos', '3. Gastos variables', '4. Meta de ahorro'].map((s) => (
-                <p key={s} className="text-sm">✓ {s}</p>
+                <p key={s} className="text-sm">{s}</p>
               ))}
             </FECard>
             <FinniMessage
@@ -207,15 +207,15 @@ export default function L12() {
 
         {step === 1 && (
           <div className="space-y-3">
-            {renderSection('💰 Sección 1: Ingresos del mes', ingresos, setIngresos, 'border-[var(--color-brand-success)]')}
-            {renderSection('📌 Sección 2: Gastos fijos', gastosFijos, setGastosFijos, 'border-[var(--color-brand-warning)]')}
+            {renderSection('Sección 1: Ingresos del mes', ingresos, setIngresos, 'border-[var(--color-brand-success)]')}
+            {renderSection('Sección 2: Gastos fijos', gastosFijos, setGastosFijos, 'border-[var(--color-brand-warning)]')}
 
             <FECard variant="flat" className={cn('border', variablesHigh ? 'border-[var(--color-brand-error)]' : 'border-[var(--color-brand-info)]')}>
               <div className="flex justify-between items-center mb-2">
-                <p className="font-bold">🔄 Sección 3: Gastos variables</p>
+                <p className="font-bold">Sección 3: Gastos variables</p>
                 {variablesHigh && (
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-[var(--color-brand-error)]/10 text-[var(--color-brand-error)] font-semibold">
-                    {pctVariables}% ⚠️
+                    {pctVariables}%
                   </span>
                 )}
               </div>
@@ -247,7 +247,7 @@ export default function L12() {
             </FECard>
 
             <FECard variant="flat" className="border border-[var(--color-brand-success)]">
-              <p className="font-bold mb-2">🌱 Sección 4: Ahorro mensual</p>
+              <p className="font-bold mb-2">Sección 4: Ahorro mensual</p>
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-[var(--color-text-secondary)]">¿Cuánto destinarás al ahorro este mes? ($)</label>
                 <input

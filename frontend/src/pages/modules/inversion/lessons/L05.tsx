@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BookOpen, Circle, Target } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -6,10 +7,10 @@ import { useLessonResume } from '../../../../features/lessons/hooks/useLessonRes
 import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 const INSTRUMENTOS = [
-  { emoji: '🔵', nombre: 'Instrumentos de Deuda (Renta Fija)', desc: 'Prestas dinero al gobierno o empresa y te pagan interés. Monto y plazo conocidos.', ejemplos: 'CETES, Bondes, depósitos a plazo', minimo: '$100', riesgo: 2, rendimiento: '8-11% anual', tipo: 'deuda', liquidez: 'Alta', paraQuien: 'Ideal para principiantes y perfil conservador.' },
-  { emoji: '🔴', nombre: 'Renta Variable (Acciones)', desc: 'Compras parte de una empresa. Mayor riesgo y mayor potencial de rendimiento.', ejemplos: 'Acciones en la BMV (Cemex, Bimbo, América Móvil)', minimo: '~$200', riesgo: 4, rendimiento: 'Variable (puede ser negativo)', tipo: 'variable', liquidez: 'Media', paraQuien: 'Para perfiles moderados a agresivos con horizonte largo.' },
-  { emoji: '🟡', nombre: 'Fondos de Inversión', desc: 'Grupo de personas que juntan su dinero e invierten colectivamente. Un gestor decide dónde.', ejemplos: 'Fondos de deuda, balanceados o de acciones regulados por CNBV', minimo: '$100-$5,000', riesgo: 3, rendimiento: 'Varía según el fondo', tipo: 'deuda', liquidez: 'Media-Alta', paraQuien: 'Accesibles con montos pequeños. Riesgo variable según el fondo.' },
-  { emoji: '🟢', nombre: 'Bienes Raíces Digitales (FIBRAs)', desc: 'Inversión en bienes inmuebles a través de la bolsa. Desde montos pequeños.', ejemplos: 'FIBRA Uno, FIBRA Danhos en la BMV', minimo: '~$500', riesgo: 3, rendimiento: '7-10% anual', tipo: 'variable', liquidez: 'Media', paraQuien: 'Para quienes quieren bienes raíces sin comprar un inmueble.' },
+  { color: '#3B82F6', nombre: 'Instrumentos de Deuda (Renta Fija)', desc: 'Prestas dinero al gobierno o empresa y te pagan interés. Monto y plazo conocidos.', ejemplos: 'CETES, Bondes, depósitos a plazo', minimo: '$100', riesgo: 2, rendimiento: '8-11% anual', tipo: 'deuda', liquidez: 'Alta', paraQuien: 'Ideal para principiantes y perfil conservador.' },
+  { color: '#EF4444', nombre: 'Renta Variable (Acciones)', desc: 'Compras parte de una empresa. Mayor riesgo y mayor potencial de rendimiento.', ejemplos: 'Acciones en la BMV (Cemex, Bimbo, América Móvil)', minimo: '~$200', riesgo: 4, rendimiento: 'Variable (puede ser negativo)', tipo: 'variable', liquidez: 'Media', paraQuien: 'Para perfiles moderados a agresivos con horizonte largo.' },
+  { color: '#EAB308', nombre: 'Fondos de Inversión', desc: 'Grupo de personas que juntan su dinero e invierten colectivamente. Un gestor decide dónde.', ejemplos: 'Fondos de deuda, balanceados o de acciones regulados por CNBV', minimo: '$100-$5,000', riesgo: 3, rendimiento: 'Varía según el fondo', tipo: 'deuda', liquidez: 'Media-Alta', paraQuien: 'Accesibles con montos pequeños. Riesgo variable según el fondo.' },
+  { color: '#22C55E', nombre: 'Bienes Raíces Digitales (FIBRAs)', desc: 'Inversión en bienes inmuebles a través de la bolsa. Desde montos pequeños.', ejemplos: 'FIBRA Uno, FIBRA Danhos en la BMV', minimo: '~$500', riesgo: 3, rendimiento: '7-10% anual', tipo: 'variable', liquidez: 'Media', paraQuien: 'Para quienes quieren bienes raíces sin comprar un inmueble.' },
 ];
 
 const QUIZ_ITEMS = [
@@ -99,12 +100,12 @@ export default function L05() {
                     style={{ backgroundColor: expandido === i ? warnBg : 'var(--color-neutral-50)' }}
                     onClick={() => setExpandido(expandido === i ? null : i)}
                   >
-                    <p className="text-2xl">{inst.emoji}</p>
+                    <Circle className="h-7 w-7 shrink-0" style={{ color: inst.color }} fill="currentColor" aria-hidden="true" />
                     <div className="flex-1">
                       <p className="text-sm font-extrabold">{inst.nombre}</p>
                       <div className="flex gap-2 mt-1 flex-wrap">
                         <span className="px-2 py-0.5 rounded-full text-xs font-bold border border-[var(--color-neutral-300)] text-[var(--color-text-secondary)]">Desde {inst.minimo}</span>
-                        <span className="px-2 py-0.5 rounded-full text-xs font-bold border border-[var(--color-neutral-300)] text-[var(--color-text-secondary)]">Riesgo {'⭐'.repeat(inst.riesgo)}{'☆'.repeat(5 - inst.riesgo)}</span>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-bold border border-[var(--color-neutral-300)] text-[var(--color-text-secondary)]">Riesgo {inst.riesgo}/5</span>
                       </div>
                     </div>
                   </div>
@@ -114,7 +115,7 @@ export default function L05() {
                       <p className="text-sm"><b>Ejemplos:</b> {inst.ejemplos}</p>
                       <p className="text-sm"><b>Rendimiento típico:</b> {inst.rendimiento}</p>
                       <p className="text-sm"><b>Liquidez:</b> {inst.liquidez}</p>
-                      <p className="text-xs text-[var(--color-text-secondary)] mt-2">💡 {inst.paraQuien}</p>
+                      <p className="text-xs text-[var(--color-text-secondary)] mt-2">{inst.paraQuien}</p>
                     </div>
                   )}
                 </div>
@@ -144,7 +145,7 @@ export default function L05() {
                     color: comparar.includes(i) ? 'white' : 'inherit',
                   }}
                 >
-                  {inst.emoji} {inst.nombre.split(' ')[0]}
+                  {inst.nombre.split(' ')[0]}
                 </button>
               ))}
             </div>
@@ -154,10 +155,10 @@ export default function L05() {
                   const inst = INSTRUMENTOS[idx]!;
                   return (
                     <FECard key={idx} variant="flat" className="flex-1 border" style={{ borderColor: warnColor }}>
-                      <p className="font-bold">{inst.emoji} {inst.nombre.split('(')[0]}</p>
+                      <p className="font-bold">{inst.nombre.split('(')[0]}</p>
                       <div className="mt-2 space-y-1">
                         <p className="text-xs"><b>Mínimo:</b> {inst.minimo}</p>
-                        <p className="text-xs"><b>Riesgo:</b> {'⭐'.repeat(inst.riesgo)}</p>
+                        <p className="text-xs"><b>Riesgo:</b> {inst.riesgo}/5</p>
                         <p className="text-xs"><b>Rendimiento:</b> {inst.rendimiento}</p>
                         <p className="text-xs"><b>Liquidez:</b> {inst.liquidez}</p>
                       </div>
@@ -188,7 +189,7 @@ export default function L05() {
               <div className="space-y-2">
                 {filtrados.map((inst) => (
                   <div key={inst.nombre} className="p-3 rounded-xl" style={{ backgroundColor: warnBg }}>
-                    <p className="text-sm font-bold">{inst.emoji} {inst.nombre}</p>
+                    <p className="text-sm font-bold">{inst.nombre}</p>
                     <p className="text-xs text-[var(--color-text-secondary)]">{inst.ejemplos}</p>
                   </div>
                 ))}
@@ -230,7 +231,7 @@ export default function L05() {
                     </div>
                     {respondido && (
                       <p className="text-xs mt-1.5" style={{ color: correcto ? successColor : errorColor }}>
-                        {correcto ? '✓ Correcto' : `✗ Es ${item.tipo === 'deuda' ? 'Deuda' : 'Renta Variable'}`}
+                        {correcto ? 'Correcto' : `Es ${item.tipo === 'deuda' ? 'Deuda' : 'Renta Variable'}`}
                       </p>
                     )}
                   </FECard>
@@ -240,7 +241,11 @@ export default function L05() {
             {quizCompleto && (
               <div className="space-y-4">
                 <FECard variant="flat" className="border-2 text-center" style={{ borderColor: aciertos >= 4 ? successColor : infoColor, backgroundColor: aciertos >= 4 ? successBg : infoBg }}>
-                  <p className="text-3xl">{aciertos >= 4 ? '🎯' : '📚'}</p>
+                  {aciertos >= 4 ? (
+                    <Target className="h-9 w-9 mx-auto" aria-hidden="true" />
+                  ) : (
+                    <BookOpen className="h-9 w-9 mx-auto" aria-hidden="true" />
+                  )}
                   <p className="font-extrabold">{aciertos}/5 correctas</p>
                 </FECard>
                 <FinniMessage variant="coach" title="¡Ya conoces el menú!" message="En las próximas lecciones vamos a profundizar en los instrumentos más relevantes para ti: CETES, fondos y bolsa." />

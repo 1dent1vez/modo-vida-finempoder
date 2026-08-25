@@ -1,3 +1,5 @@
+import { Shield } from 'lucide-react';
+
 export interface ShieldBadgeProps {
   shields: number;
 }
@@ -12,7 +14,7 @@ export function ShieldBadge({ shields }: ShieldBadgeProps) {
       title="Escudos de racha: protegen tu racha si faltas un día"
       aria-label={`${shields} ${shields === 1 ? 'escudo' : 'escudos'} de racha`}
     >
-      <span aria-hidden="true">🛡</span>
+      <Shield className="h-3.5 w-3.5" aria-hidden="true" />
       {shields}
     </div>
   );

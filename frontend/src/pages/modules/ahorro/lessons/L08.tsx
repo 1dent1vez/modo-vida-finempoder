@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Circle, CircleCheck } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -116,8 +117,8 @@ export default function L08() {
               <p className="text-sm font-bold mb-2">¿Qué es un fondo de emergencias?</p>
               <p className="text-sm">Dinero guardado específicamente para imprevistos. No es para el viaje, no es para la tele nueva. Es para cuando la vida sorprende.</p>
               <div className="mt-3 space-y-1">
-                <p className="text-xs" style={{ color: successColor }}>✅ 3 meses de gastos básicos — si tienes apoyo familiar</p>
-                <p className="text-xs" style={{ color: successColor }}>✅ 6 meses — si eres más independiente</p>
+                <p className="text-xs" style={{ color: successColor }}>3 meses de gastos básicos — si tienes apoyo familiar</p>
+                <p className="text-xs" style={{ color: successColor }}>6 meses — si eres más independiente</p>
               </div>
             </FECard>
             <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
@@ -149,7 +150,7 @@ export default function L08() {
                   tabIndex={0}
                 >
                   <div className="flex justify-between items-center">
-                    <p className="text-sm font-semibold">{selectedSituaciones.has(s.id) ? '⚠️' : '○'} {s.label}</p>
+                    <p className="text-sm font-semibold flex items-center gap-1.5">{selectedSituaciones.has(s.id) ? <CircleCheck className="h-4 w-4 text-[var(--color-brand-success)]" aria-hidden="true" /> : <Circle className="h-4 w-4 text-[var(--color-text-muted)]" aria-hidden="true" />} {s.label}</p>
                     <span className="px-2 py-0.5 rounded-full text-xs font-bold border" style={{ borderColor: warnColor, color: warnColor }}>{s.costo}</span>
                   </div>
                 </FECard>
@@ -200,7 +201,7 @@ export default function L08() {
             )}
             {metaData?.nombre && (
               <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-                <p className="text-xs text-[var(--color-text-secondary)]">💡 Finni recomienda: primero el fondo mínimo (${metaMinima.toLocaleString()}), luego tu meta de "{metaData.nombre}"</p>
+                <p className="text-xs text-[var(--color-text-secondary)]">Finni recomienda: primero el fondo mínimo (${metaMinima.toLocaleString()}), luego tu meta de "{metaData.nombre}"</p>
               </FECard>
             )}
             {canCalculate && (
@@ -215,7 +216,7 @@ export default function L08() {
         {step === 3 && (
           <div className="space-y-6">
             <FECard variant="flat" className="border-2 text-center py-4" style={{ borderColor: successColor, backgroundColor: successBg }}>
-              <p className="text-3xl">🛡️ Fondo de emergencias</p>
+              <p className="text-3xl">Fondo de emergencias</p>
               <div className="flex gap-2 justify-center mt-2 flex-wrap">
                 <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>Meta mínima: ${metaMinima.toLocaleString()}</span>
                 <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: warnColor }}>Meta ideal: ${metaIdeal.toLocaleString()}</span>

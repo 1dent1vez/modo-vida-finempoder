@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BarChart3 } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -80,7 +81,7 @@ export default function L12() {
         {step === 0 && (
           <div className="space-y-6">
             <FECard variant="flat" className="border-2 text-center" style={{ borderColor: errorColor, backgroundColor: errorBg }}>
-              <p className="text-xl font-black">⚠️ Situación real</p>
+              <p className="text-xl font-black">Situación real</p>
               <p className="text-sm mt-2">
                 Tu inversión ganó el 5% este año. ¡Genial! Pero la inflación fue del 5.5%.
               </p>
@@ -177,7 +178,7 @@ export default function L12() {
                 {rendimientoReal >= 0 ? '+' : ''}{rendimientoReal.toFixed(2)}%
               </p>
               <span className="inline-block mt-2 px-3 py-1 rounded-full text-sm font-bold text-white" style={{ backgroundColor: scenarioChipBg }}>
-                {escenario === 'positivo' ? '✅ Ganas en términos reales' : escenario === 'negativo' ? '❌ Pérdida real de poder adquisitivo' : '⚠️ Empate — ni ganas ni pierdes'}
+                {escenario === 'positivo' ? 'Ganas en términos reales' : escenario === 'negativo' ? 'Pérdida real de poder adquisitivo' : 'Empate — ni ganas ni pierdes'}
               </span>
               <div className="flex gap-6 mt-3">
                 <div>
@@ -217,12 +218,12 @@ export default function L12() {
             />
             {!calculado && (
               <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setCalculado(true)}>
-                ✅ Confirmar cálculo personal
+                Confirmar cálculo personal
               </button>
             )}
             {calculado && (
               <FECard variant="flat" className="border-2 text-center py-4" style={{ borderColor: successColor, backgroundColor: successBg }}>
-                <p className="text-4xl">📊</p>
+                <BarChart3 className="h-10 w-10 mx-auto" aria-hidden="true" />
                 <p className="font-black">¡Calculadora completada!</p>
                 <p className="text-sm">
                   Tu rendimiento real es del {rendimientoReal.toFixed(2)}%.{' '}

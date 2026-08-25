@@ -206,7 +206,7 @@ export default function L09() {
                     Deberías apartar: <b>${aporteMensual.toLocaleString()}/mes</b>
                   </p>
                   <p className="text-xs text-[var(--color-text-secondary)]">
-                    {isAlcanzable ? '✅ Es alcanzable para un ingreso típico' : '⚠️ Es exigente. Considera aumentar el plazo.'}
+                    {isAlcanzable ? 'Es alcanzable para un ingreso típico' : 'Es exigente. Considera aumentar el plazo.'}
                   </p>
                 </FECard>
               </FECard>
@@ -242,7 +242,7 @@ export default function L09() {
 
         {step === 2 && (
           <div className="space-y-3">
-            <p className="font-bold text-base">Tu meta SMART 🎯</p>
+            <p className="font-bold text-base">Tu meta SMART</p>
             <FECard variant="flat" className="border-[3px] border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10 p-4">
               <p className="text-xs text-[var(--color-text-secondary)] mb-2">TARJETA DE COMPROMISO</p>
               <p className="font-bold mb-4">{metaText}</p>

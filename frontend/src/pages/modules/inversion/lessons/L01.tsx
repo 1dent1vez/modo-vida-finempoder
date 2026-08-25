@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { PartyPopper } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -163,7 +164,7 @@ export default function L01() {
                     </>
                   ) : (
                     <>
-                      <p className="text-xs font-bold" style={{ color: 'var(--color-brand-success)' }}>✅ REALIDAD</p>
+                      <p className="text-xs font-bold" style={{ color: 'var(--color-brand-success)' }}>REALIDAD</p>
                       <p className="text-base font-bold">{m.realidad}</p>
                     </>
                   )}
@@ -201,7 +202,7 @@ export default function L01() {
               </button>
             ) : (
               <FECard variant="flat" className="border-2 text-center py-4" style={{ borderColor: successColor, backgroundColor: successBg }}>
-                <p className="text-4xl">🎉</p>
+                <PartyPopper className="h-10 w-10 mx-auto" aria-hidden="true" />
                 <p className="text-base font-bold">¡Lección 1 completada! Ya tienes las bases para invertir con criterio.</p>
               </FECard>
             )}

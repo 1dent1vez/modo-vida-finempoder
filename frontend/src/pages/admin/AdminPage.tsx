@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Check } from 'lucide-react';
 import { isAdminMode, setAdminMode } from '@/lib/adminMode';
 import { db } from '@/db/finempoderDb';
 import { Button } from '@/shared/components/ui/button';
@@ -51,8 +52,9 @@ export default function AdminPage() {
 
         {admin ? (
           <div className="space-y-4">
-            <p className="rounded-xl bg-[var(--color-brand-success-bg)] px-4 py-3 text-center text-sm font-bold text-[var(--color-brand-success)]">
-              ✓ Modo admin activo
+            <p className="flex items-center justify-center gap-1.5 rounded-xl bg-[var(--color-brand-success-bg)] px-4 py-3 text-center text-sm font-bold text-[var(--color-brand-success)]">
+              <Check className="h-4 w-4" aria-hidden="true" />
+              Modo admin activo
             </p>
             <Button variant="secondary" className="w-full" onClick={handleDeactivate}>
               Desactivar

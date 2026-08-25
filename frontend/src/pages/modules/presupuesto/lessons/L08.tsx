@@ -285,7 +285,7 @@ export default function L08() {
                   tabIndex={0}
                 >
                   <p className={selectedStrategy === e ? 'font-bold text-sm' : 'text-sm'}>
-                    {selectedStrategy === e ? '✓ ' : ''}{e}
+                    {e}
                   </p>
                 </FECard>
               ))}

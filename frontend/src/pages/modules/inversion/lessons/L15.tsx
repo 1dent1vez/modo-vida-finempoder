@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BarChart3, Coins, Leaf, TrendingDown, TrendingUp, Trophy } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -8,13 +9,13 @@ import { useLessonResume } from '../../../../features/lessons/hooks/useLessonRes
 import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 const INSTRUMENTOS_SIM = [
-  { key: 'cetes28',        nombre: 'CETES 28 días',                   tasaAnual: 0.100, riesgo: 1, emoji: '🔵' },
-  { key: 'cetes91',        nombre: 'CETES 91 días',                   tasaAnual: 0.102, riesgo: 1, emoji: '🔵' },
-  { key: 'fondoDeuda',     nombre: 'Fondo de deuda gubernamental',     tasaAnual: 0.090, riesgo: 2, emoji: '🟡' },
-  { key: 'fondoBalanceado',nombre: 'Fondo balanceado',                 tasaAnual: 0.110, riesgo: 3, emoji: '🟡' },
-  { key: 'bimbo',          nombre: 'Acciones Bimbo (consumo)',         tasaAnual: 0.12,  riesgo: 4, emoji: '🔴' },
-  { key: 'amovil',         nombre: 'Acciones América Móvil (telecom)', tasaAnual: 0.11,  riesgo: 4, emoji: '🔴' },
-  { key: 'banorte',        nombre: 'Acciones Banorte (financiero)',    tasaAnual: 0.13,  riesgo: 4, emoji: '🔴' },
+  { key: 'cetes28',        nombre: 'CETES 28 días',                   tasaAnual: 0.100, riesgo: 1 },
+  { key: 'cetes91',        nombre: 'CETES 91 días',                   tasaAnual: 0.102, riesgo: 1 },
+  { key: 'fondoDeuda',     nombre: 'Fondo de deuda gubernamental',     tasaAnual: 0.090, riesgo: 2 },
+  { key: 'fondoBalanceado',nombre: 'Fondo balanceado',                 tasaAnual: 0.110, riesgo: 3 },
+  { key: 'bimbo',          nombre: 'Acciones Bimbo (consumo)',         tasaAnual: 0.12,  riesgo: 4 },
+  { key: 'amovil',         nombre: 'Acciones América Móvil (telecom)', tasaAnual: 0.11,  riesgo: 4 },
+  { key: 'banorte',        nombre: 'Acciones Banorte (financiero)',    tasaAnual: 0.13,  riesgo: 4 },
 ];
 
 const EVENTOS_TRIM = [
@@ -41,9 +42,9 @@ type Portafolio = Record<PortafolioKey, number>;
 
 const INFLACION_SIM = 0.04;
 const BADGES_PROGRAMA = [
-  { emoji: '💰', nombre: 'Presupuesto Pro',       modulo: 'Módulo 1' },
-  { emoji: '🌱', nombre: 'Ahorrador Constante',   modulo: 'Módulo 2' },
-  { emoji: '📈', nombre: 'Inversionista Prudente', modulo: 'Módulo 3' },
+  { icon: Coins, nombre: 'Presupuesto Pro',       modulo: 'Módulo 1' },
+  { icon: Leaf, nombre: 'Ahorrador Constante',   modulo: 'Módulo 2' },
+  { icon: TrendingUp, nombre: 'Inversionista Prudente', modulo: 'Módulo 3' },
 ];
 const RECURSOS = [
   { nombre: 'CONDUSEF.gob.mx', url: 'https://www.condusef.gob.mx', desc: 'Educación financiera y protección al usuario' },
@@ -208,7 +209,7 @@ export default function L15() {
         {step === 0 && (
           <div className="space-y-6">
             <FECard variant="flat" className="text-center py-8 border-[3px]" style={{ backgroundColor: warnBg, borderColor: warnColor }}>
-              <p className="text-4xl">🏆</p>
+              <Trophy className="h-10 w-10 mx-auto text-[var(--color-brand-warning)]" aria-hidden="true" />
               <p className="text-xl font-extrabold mt-2">¡El reto final de FinEmpoder!</p>
               <p className="text-sm text-[var(--color-text-secondary)] mt-1">15 lecciones de inversión culminan aquí</p>
             </FECard>
@@ -217,10 +218,10 @@ export default function L15() {
               <p className="font-bold mb-2">El reto:</p>
               <p className="text-sm mb-2">Tienes <strong>${capitalInicial.toLocaleString()} virtuales</strong> y <strong>12 meses simulados</strong> (4 trimestres). Tu misión:</p>
               <div className="space-y-1">
-                <p className="text-sm">✓ Construir un portafolio que supere la inflación ({(INFLACION_SIM * 100).toFixed(0)}%)</p>
-                <p className="text-sm">✓ Sea coherente con tu perfil: <strong>{perfilRiesgo}</strong></p>
-                <p className="text-sm">✓ Diversificar en al menos 2 instrumentos</p>
-                <p className="text-sm">✓ Tomar decisiones trimestrales ante eventos del mercado</p>
+                <p className="text-sm">Construir un portafolio que supere la inflación ({(INFLACION_SIM * 100).toFixed(0)}%)</p>
+                <p className="text-sm">Sea coherente con tu perfil: <strong>{perfilRiesgo}</strong></p>
+                <p className="text-sm">Diversificar en al menos 2 instrumentos</p>
+                <p className="text-sm">Tomar decisiones trimestrales ante eventos del mercado</p>
               </div>
             </FECard>
             {planData?.instrumento && (
@@ -242,7 +243,7 @@ export default function L15() {
             <p className="text-sm text-[var(--color-text-secondary)]">Distribuye 100% de tu capital entre los instrumentos disponibles:</p>
             {perfilAdvierte && (
               <div className="p-3 rounded-xl border" style={{ backgroundColor: warnBg, borderColor: warnColor }}>
-                <p className="text-xs font-bold text-amber-700">⚠️ Tu perfil es conservador pero tienes {porcentajeAcciones}% en acciones. Considera reducirlo.</p>
+                <p className="text-xs font-bold text-amber-700">Tu perfil es conservador pero tienes {porcentajeAcciones}% en acciones. Considera reducirlo.</p>
               </div>
             )}
             <div className="space-y-3">
@@ -251,7 +252,7 @@ export default function L15() {
                 return (
                   <div key={inst.key} className="p-3 rounded-xl border border-[var(--color-neutral-200)] bg-white">
                     <div className="flex justify-between items-center mb-1">
-                      <p className="text-sm font-bold">{inst.emoji} {inst.nombre}</p>
+                      <p className="text-sm font-bold">{inst.nombre}</p>
                       <div className="flex items-center gap-2">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold border" style={{ color: successColor, borderColor: successColor }}>
                           {(inst.tasaAnual * 100).toFixed(1)}%/año
@@ -273,8 +274,8 @@ export default function L15() {
             <div className="p-3 rounded-xl border-2 flex flex-wrap gap-2" style={{ backgroundColor: portafolioValido ? successBg : 'var(--color-brand-error-bg)', borderColor: portafolioValido ? successColor : errorColor }}>
               {[
                 { label: `Total: ${totalPct}%`, ok: Math.abs(totalPct - 100) <= 1 },
-                { label: `Instrumentos: ${instrumentosUsados} ≥ 2 ${diversificadoMinimo ? '✓' : '✗'}`, ok: diversificadoMinimo },
-                { label: concentradoDeMas ? '⚠ Muy concentrado' : '✓ Diversificado', ok: !concentradoDeMas },
+                { label: `Instrumentos: ${instrumentosUsados} ≥ 2`, ok: diversificadoMinimo },
+                { label: concentradoDeMas ? 'Muy concentrado' : 'Diversificado', ok: !concentradoDeMas },
               ].map(({ label, ok }) => (
                 <span key={label} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: ok ? successBg : 'var(--color-brand-error-bg)', color: ok ? 'var(--color-brand-success)' : 'var(--color-brand-error)', border: `1px solid ${ok ? successColor : errorColor}` }}>
                   {label}
@@ -329,7 +330,12 @@ export default function L15() {
                   <p className="text-sm font-bold">Decisión: {decisionTomada}</p>
                   <p className="text-xl font-black" style={{ color: 'var(--color-brand-success)' }}>Portafolio: ${valorPortafolio.toFixed(0)}</p>
                   <p className="text-xs" style={{ color: valorPortafolio > capitalInicial ? successColor : errorColor }}>
-                    {valorPortafolio > capitalInicial ? '📈' : '📉'} {((valorPortafolio - capitalInicial) / capitalInicial * 100).toFixed(1)}% vs capital inicial
+                    {valorPortafolio > capitalInicial ? (
+                      <TrendingUp className="h-4 w-4 inline" aria-hidden="true" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4 inline" aria-hidden="true" />
+                    )}{' '}
+                    {((valorPortafolio - capitalInicial) / capitalInicial * 100).toFixed(1)}% vs capital inicial
                   </p>
                 </div>
                 <FinniMessage
@@ -368,11 +374,15 @@ export default function L15() {
           <div className="space-y-6">
             <p className="text-lg font-bold">Resultados de los 12 meses</p>
             <div className="p-6 rounded-2xl text-center border-[3px]" style={{ backgroundColor: superoInflacion ? successBg : warnBg, borderColor: superoInflacion ? successColor : warnColor }}>
-              <p className="text-4xl">{superoInflacion ? '🏆' : '📊'}</p>
+              {superoInflacion ? (
+                <Trophy className="h-10 w-10 mx-auto" aria-hidden="true" />
+              ) : (
+                <BarChart3 className="h-10 w-10 mx-auto" aria-hidden="true" />
+              )}
               <p className="text-2xl font-black mt-2">${valorPortafolio.toFixed(0)}</p>
               <p className="text-base">Rendimiento: <strong>{rendimientoFinal.toFixed(2)}%</strong> en 12 meses</p>
               <span className="inline-flex items-center mt-2 px-3 py-1 rounded-full text-sm font-bold" style={{ backgroundColor: superoInflacion ? successBg : warnBg, color: superoInflacion ? 'var(--color-brand-success)' : 'var(--color-brand-warning)', border: `1px solid ${superoInflacion ? successColor : warnColor}` }}>
-                {superoInflacion ? `✅ Superaste la inflación (${(INFLACION_SIM * 100).toFixed(0)}%)` : `⚠️ No superaste la inflación (${(INFLACION_SIM * 100).toFixed(0)}%)`}
+                {superoInflacion ? `Superaste la inflación (${(INFLACION_SIM * 100).toFixed(0)}%)` : `No superaste la inflación (${(INFLACION_SIM * 100).toFixed(0)}%)`}
               </span>
             </div>
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
@@ -391,7 +401,7 @@ export default function L15() {
               onClick={() => void handleDesbloquear()}
               disabled={badgeDesbloqueado}
             >
-              🏆 Desbloquear badge "Inversionista Prudente 📈"
+              Desbloquear badge "Inversionista Prudente"
             </button>
           </div>
         )}
@@ -403,19 +413,19 @@ export default function L15() {
               <div className="flex justify-center gap-6 mb-4">
                 {BADGES_PROGRAMA.map((badge) => (
                   <div key={badge.nombre} className="text-center">
-                    <p className="text-3xl">{badge.emoji}</p>
+                    <badge.icon className="h-8 w-8 mx-auto" aria-hidden="true" />
                     <p className="text-xs font-bold block">{badge.nombre}</p>
                     <p className="text-xs text-[var(--color-text-secondary)]">{badge.modulo}</p>
                   </div>
                 ))}
               </div>
-              <p className="text-5xl mb-2">🏆</p>
-              <p className="text-xl font-extrabold">Inversionista Prudente 📈</p>
+              <Trophy className="h-12 w-12 mx-auto mb-2" aria-hidden="true" />
+              <p className="text-xl font-extrabold">Inversionista Prudente</p>
               <p className="text-sm text-[var(--color-text-secondary)]">Badge desbloqueado · Módulo 3 completado</p>
             </FECard>
 
             <FECard variant="flat" className="text-center py-6 border-2" style={{ backgroundColor: successBg, borderColor: successColor }}>
-              <p className="text-lg font-extrabold mb-2">¡{userName ? `${userName}, l` : 'L'}o lograste! 🎉</p>
+              <p className="text-lg font-extrabold mb-2">¡{userName ? `${userName}, l` : 'L'}o lograste!</p>
               <p className="mb-3">Completaste los 3 módulos de FinEmpoder.</p>
               <p className="text-sm text-[var(--color-text-secondary)] mb-2"><strong>Presupuestación</strong>, <strong>Ahorro</strong>, <strong>Inversión</strong> — las tres bases de una vida financiera sólida.</p>
               <p className="text-sm italic">"Pero el verdadero aprendizaje comienza ahora, cuando apliques esto en tu vida real. Cada decisión financiera que tomes a partir de hoy será diferente. Más consciente. Más tuya."</p>
@@ -426,9 +436,9 @@ export default function L15() {
               <div className="space-y-2">
                 {[
                   { label: 'Lecciones completadas', val: '45 lecciones (3 módulos)' },
-                  { label: 'Badges desbloqueados', val: '💰 🌱 📈 (3/3)' },
+                  { label: 'Badges desbloqueados', val: '3/3' },
                   { label: 'Rendimiento en simulador', val: `${rendimientoFinal >= 0 ? '+' : ''}${rendimientoFinal.toFixed(2)}%`, color: rendimientoFinal >= 0 ? 'var(--color-brand-success)' : 'var(--color-brand-error)' },
-                  { label: 'Inflación superada', val: superoInflacion ? 'Sí ✅' : 'No — sigue practicando', color: superoInflacion ? 'var(--color-brand-success)' : 'var(--color-brand-warning)' },
+                  { label: 'Inflación superada', val: superoInflacion ? 'Sí' : 'No — sigue practicando', color: superoInflacion ? 'var(--color-brand-success)' : 'var(--color-brand-warning)' },
                 ].map(({ label, val, color }) => (
                   <div key={label} className="flex justify-between">
                     <span className="text-sm text-[var(--color-text-secondary)]">{label}</span>
@@ -455,7 +465,7 @@ export default function L15() {
             <div className="p-4 rounded-2xl text-center" style={{ backgroundColor: infoBg }}>
               <p className="text-sm font-extrabold mb-1">"Gracias por confiar en FinEmpoder."</p>
               <p className="text-sm italic">"Ahora ve y haz que tu dinero trabaje para ti."</p>
-              <p className="text-xs text-[var(--color-text-secondary)] mt-2">— Finni 🤖</p>
+              <p className="text-xs text-[var(--color-text-secondary)] mt-2">— Finni</p>
             </div>
           </div>
         )}

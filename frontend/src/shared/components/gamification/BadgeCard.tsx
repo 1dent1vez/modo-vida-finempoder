@@ -17,8 +17,12 @@ export function BadgeCard({ badge, unlocked }: BadgeCardProps) {
         !unlocked && 'grayscale opacity-55'
       )}
     >
-      <span className="text-4xl leading-none" aria-hidden="true">
-        {unlocked ? badge.icon : <Lock className="h-8 w-8 text-[var(--color-text-muted)]" />}
+      <span className="flex h-12 w-12 items-center justify-center leading-none" aria-hidden="true">
+        {unlocked ? (
+          <badge.icon className="h-9 w-9 text-[var(--color-brand-primary)]" />
+        ) : (
+          <Lock className="h-8 w-8 text-[var(--color-text-muted)]" />
+        )}
       </span>
 
       <p className={cn('text-sm font-bold leading-tight', unlocked ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-muted)]')}>

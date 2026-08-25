@@ -230,7 +230,7 @@ export default function L14() {
                   {answered && (
                     <div className="space-y-1">
                       <p className="font-bold text-sm">
-                        {isCorrect ? '✅ Correcto' : '❌ Incorrecto'} — Tu respuesta: {q.opciones?.[answers[qi]]}
+                        {isCorrect ? 'Correcto' : 'Incorrecto'} — Tu respuesta: {q.opciones?.[answers[qi]]}
                       </p>
                       {!isCorrect && (
                         <p className="text-sm">

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Rocket, Scale, Shield } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -9,9 +10,9 @@ import { LessonResumeBanner } from '../../../../features/lessons/components/Less
 type PerfilTipo = 'conservador' | 'moderado' | 'agresivo';
 
 const PERFILES = {
-  conservador: { nombre: 'Conservador', emoji: '🛡️', desc: 'Prioriza no perder dinero sobre ganar mucho. Prefiere rendimientos bajos pero seguros.', instrumentos: ['CETES 28 días', 'Depósito bancario sin comisión', 'Fondo de deuda gubernamental'], fortaleza: 'Alta estabilidad, baja ansiedad, ideal para plazos cortos.', riesgo: 'Puede perder poder adquisitivo frente a la inflación si los rendimientos son bajos.', color: 'success' as const },
-  moderado: { nombre: 'Moderado', emoji: '⚖️', desc: 'Acepta algo de riesgo a cambio de mayores rendimientos. Mezcla deuda y acciones.', instrumentos: ['Fondo balanceado CNBV', 'CETES 91 días + fondo de acciones', 'FIBRAs'], fortaleza: 'Balance entre seguridad y crecimiento. Horizonte mediano.', riesgo: 'Puede ver caídas temporales. Requiere paciencia para esperar la recuperación.', color: 'warning' as const },
-  agresivo: { nombre: 'Agresivo (Dinámico)', emoji: '🚀', desc: 'Acepta pérdidas temporales por el potencial de ganar más a largo plazo. Alta tolerancia.', instrumentos: ['Acciones BMV via GBM+', 'Fondo de renta variable', 'ETFs internacionales vía plataforma autorizada'], fortaleza: 'Mayor potencial de rendimiento a largo plazo.', riesgo: 'Alta volatilidad. Puede ver pérdidas significativas a corto plazo.', color: 'error' as const },
+  conservador: { nombre: 'Conservador', icon: Shield, desc: 'Prioriza no perder dinero sobre ganar mucho. Prefiere rendimientos bajos pero seguros.', instrumentos: ['CETES 28 días', 'Depósito bancario sin comisión', 'Fondo de deuda gubernamental'], fortaleza: 'Alta estabilidad, baja ansiedad, ideal para plazos cortos.', riesgo: 'Puede perder poder adquisitivo frente a la inflación si los rendimientos son bajos.', color: 'success' as const },
+  moderado: { nombre: 'Moderado', icon: Scale, desc: 'Acepta algo de riesgo a cambio de mayores rendimientos. Mezcla deuda y acciones.', instrumentos: ['Fondo balanceado CNBV', 'CETES 91 días + fondo de acciones', 'FIBRAs'], fortaleza: 'Balance entre seguridad y crecimiento. Horizonte mediano.', riesgo: 'Puede ver caídas temporales. Requiere paciencia para esperar la recuperación.', color: 'warning' as const },
+  agresivo: { nombre: 'Agresivo (Dinámico)', icon: Rocket, desc: 'Acepta pérdidas temporales por el potencial de ganar más a largo plazo. Alta tolerancia.', instrumentos: ['Acciones BMV via GBM+', 'Fondo de renta variable', 'ETFs internacionales vía plataforma autorizada'], fortaleza: 'Mayor potencial de rendimiento a largo plazo.', riesgo: 'Alta volatilidad. Puede ver pérdidas significativas a corto plazo.', color: 'error' as const },
 };
 
 const PREGUNTAS = [
@@ -104,7 +105,7 @@ export default function L08() {
                 return (
                   <FECard key={key} variant="flat" className="border-2" style={{ borderColor: c.main, backgroundColor: c.bg }}>
                     <div className="flex gap-3 items-center mb-2">
-                      <p className="text-2xl">{p.emoji}</p>
+                      <p.icon className="h-8 w-8 shrink-0" aria-hidden="true" />
                       <p className="font-extrabold">{p.nombre}</p>
                     </div>
                     <p className="text-sm">{p.desc}</p>
@@ -174,7 +175,7 @@ export default function L08() {
               return (
                 <>
                   <FECard variant="flat" className="border-[3px] text-center py-6" style={{ borderColor: c.main, backgroundColor: c.bg }}>
-                    <p className="text-5xl">{perfilData.emoji}</p>
+                    <perfilData.icon className="h-12 w-12 mx-auto" aria-hidden="true" />
                     <p className="text-2xl font-extrabold mt-2">Perfil: {perfilData.nombre}</p>
                     <p className="text-sm mt-2">{perfilData.desc}</p>
                   </FECard>
@@ -197,7 +198,7 @@ export default function L08() {
                     </FECard>
                   </div>
                   <FECard variant="flat" className="border" style={{ borderColor: 'var(--color-brand-warning)', backgroundColor: 'var(--color-brand-warning-bg)' }}>
-                    <p className="text-xs font-bold" style={{ color: 'var(--color-brand-secondary-dark)' }}>⚡ Este perfil se guardará y se usará en las lecciones 9, 13, 14 y 15.</p>
+                    <p className="text-xs font-bold" style={{ color: 'var(--color-brand-secondary-dark)' }}>Este perfil se guardará y se usará en las lecciones 9, 13, 14 y 15.</p>
                   </FECard>
                   <button
                     className="w-full min-h-11 text-white rounded-xl font-semibold text-sm disabled:opacity-50"
@@ -205,7 +206,7 @@ export default function L08() {
                     onClick={() => void handleGuardar()}
                     disabled={guardado}
                   >
-                    {guardado ? `✅ Perfil guardado: ${perfilData.nombre}` : 'Guardar mi perfil de inversionista'}
+                    {guardado ? `Perfil guardado: ${perfilData.nombre}` : 'Guardar mi perfil de inversionista'}
                   </button>
                 </>
               );

@@ -226,7 +226,7 @@ export default function L02() {
                             ? 'bg-[var(--color-brand-success-bg)] text-green-700'
                             : 'bg-[var(--color-brand-error-bg)] text-red-700'
                         )}>
-                          {correcto ? '✓ Correcto' : '✗ Incorrecto'}
+                          {correcto ? 'Correcto' : 'Incorrecto'}
                         </span>
                         <p className="text-xs text-[var(--color-text-secondary)]">{caso.razon}</p>
                       </div>
@@ -300,7 +300,7 @@ export default function L02() {
               disabled={objetivoPersonal.trim().length < 5}
               onClick={() => void handleGuardar()}
             >
-              {guardado ? '✅ Guardado — lección completada' : 'Guardar mi objetivo de inversión'}
+              {guardado ? 'Guardado — lección completada' : 'Guardar mi objetivo de inversión'}
             </button>
           </div>
         )}

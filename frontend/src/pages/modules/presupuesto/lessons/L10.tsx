@@ -137,7 +137,7 @@ export default function L10() {
               message="A veces el ingreso baja, los gastos suben o pasan imprevistos. Lo que distingue a alguien financieramente preparado es saber qué hacer cuando eso pasa."
             />
             <FECard variant="flat" className="bg-[var(--color-brand-info)]/10 border border-[var(--color-brand-info)]">
-              <p className="font-bold text-sm mb-2">🎙️ Micro-podcast — 3 historias reales</p>
+              <p className="font-bold text-sm mb-2">Micro-podcast — 3 historias reales</p>
               <p className="text-sm">
                 Lee las historias de Sofía, Andrés y Luisa para ver cómo gestionaron una crisis financiera.
                 Al final habrá un test de comprensión.
@@ -250,7 +250,7 @@ export default function L10() {
                 </div>
                 {showFeedback[qi] && (
                   <p className="text-xs text-[var(--color-text-secondary)] mt-2 block">
-                    {quizAnswers[qi] === q.correcta ? '✅ Correcto!' : '❌ Incorrecto.'} Ref: {q.ref}
+                    {quizAnswers[qi] === q.correcta ? 'Correcto!' : 'Incorrecto.'} Ref: {q.ref}
                   </p>
                 )}
               </FECard>

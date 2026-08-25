@@ -84,7 +84,7 @@ export default function L07() {
           <div className="space-y-6">
             <FinniMessage variant="coach" title="¿Quieres invertir en muchas empresas a la vez?" message="Los fondos de inversión hacen eso por ti. Hoy entendemos cómo funcionan los fondos y la bolsa." />
             <FECard variant="flat" className="border" style={{ borderColor: warnColor, backgroundColor: warnBg }}>
-              <p className="font-extrabold mb-2">Fondos de Inversión — La olla común 🍲</p>
+              <p className="font-extrabold mb-2">Fondos de Inversión — La olla común</p>
               <div className="space-y-3">
                 <p className="text-sm">Imagina que tú y 999 personas más juntan $1,000 cada uno. Ahora tienen $1 millón para invertir. Un gestor profesional decide dónde y cómo. Las ganancias (y pérdidas) se distribuyen proporcionalmente.</p>
                 <p className="text-sm">Los fondos pueden invertir en <b>deuda</b> (más seguros), en <b>acciones</b> (más riesgo y potencial), o una mezcla de ambos (<b>balanceados</b>).</p>
@@ -114,7 +114,7 @@ export default function L07() {
             ) : (
               <div className="space-y-6">
                 <FECard variant="flat" className="border" style={{ borderColor: successColor, backgroundColor: successBg }}>
-                  <p className="font-extrabold mb-2">La Bolsa Mexicana de Valores (BMV) 📊</p>
+                  <p className="font-extrabold mb-2">La Bolsa Mexicana de Valores (BMV)</p>
                   <div className="space-y-3">
                     <p className="text-sm">La BMV es el mercado donde se compran y venden acciones de empresas mexicanas. Cuando compras una acción, eres propietario de una pequeña parte de esa empresa.</p>
                     <p className="text-sm">Si la empresa crece y genera utilidades, el valor de tu acción sube. Si tiene problemas, baja. A diferencia de los CETES, <b>no hay rendimiento garantizado</b>.</p>
@@ -176,7 +176,7 @@ export default function L07() {
                     </div>
                     {respondido && (
                       <p className="text-xs mt-1.5" style={{ color: correcto ? successColor : errorColor }}>
-                        {correcto ? '✓ Correcto' : `✗ La respuesta correcta era: "${q.opciones[q.correcta]}"`}
+                        {correcto ? 'Correcto' : `La respuesta correcta era: "${q.opciones[q.correcta]}"`}
                       </p>
                     )}
                   </FECard>
@@ -207,8 +207,8 @@ export default function L07() {
                           <p className="text-xs text-[var(--color-text-secondary)]">{p.tipo} · Desde {p.minimo}</p>
                         </div>
                         <div className="flex gap-2">
-                          <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>CNBV ✓</span>
-                          {plataformasInteres.includes(p.nombre) && <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: infoColor }}>★ Interés</span>}
+                          <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>CNBV</span>
+                          {plataformasInteres.includes(p.nombre) && <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: infoColor }}>Interés</span>}
                         </div>
                       </div>
                     </div>
@@ -221,7 +221,7 @@ export default function L07() {
                   onClick={() => void handleGuardar()}
                   disabled={guardado}
                 >
-                  {guardado ? '✅ Intereses guardados — lección completada' : 'Guardar mis plataformas de interés'}
+                  {guardado ? 'Intereses guardados — lección completada' : 'Guardar mis plataformas de interés'}
                 </button>
               </div>
             )}

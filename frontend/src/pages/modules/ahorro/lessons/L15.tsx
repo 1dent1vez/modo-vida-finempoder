@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CalendarDays, Landmark, Leaf, Repeat, Shield, Target, TrendingUp, Trophy } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -15,12 +16,12 @@ type PlanData = { totalPlanado?: number; horizon?: number } | null;
 type RetoData = { totalAcumulado?: number; dayAmounts?: number[] } | null;
 
 const CONCEPTOS_CLAVE = [
-  { emoji: '🔄', titulo: 'Ahorro primero',    desc: 'Apartar antes de gastar es el hábito más poderoso.' },
-  { emoji: '🏦', titulo: 'Ahorro formal',     desc: 'Protección IPAB + rendimientos + historial financiero.' },
-  { emoji: '🎯', titulo: 'Meta con nombre',   desc: 'El ahorro sin propósito no dura.' },
-  { emoji: '📅', titulo: 'Plan semanal',      desc: 'La constancia supera la cantidad.' },
-  { emoji: '💹', titulo: 'Interes compuesto', desc: 'El tiempo es tu mejor aliado para crecer.' },
-  { emoji: '🛡️', titulo: 'Fondo de emergencias', desc: 'Tu red de seguridad antes de invertir.' },
+  { icon: Repeat, titulo: 'Ahorro primero',    desc: 'Apartar antes de gastar es el hábito más poderoso.' },
+  { icon: Landmark, titulo: 'Ahorro formal',     desc: 'Protección IPAB + rendimientos + historial financiero.' },
+  { icon: Target, titulo: 'Meta con nombre',   desc: 'El ahorro sin propósito no dura.' },
+  { icon: CalendarDays, titulo: 'Plan semanal',      desc: 'La constancia supera la cantidad.' },
+  { icon: TrendingUp, titulo: 'Interes compuesto', desc: 'El tiempo es tu mejor aliado para crecer.' },
+  { icon: Shield, titulo: 'Fondo de emergencias', desc: 'Tu red de seguridad antes de invertir.' },
 ];
 
 export default function L15() {
@@ -104,7 +105,7 @@ export default function L15() {
         {step === 0 && (
           <div className="space-y-6">
             <FECard variant="flat" className="text-center py-6 border-2" style={{ backgroundColor: successBg, borderColor: successColor }}>
-              <p className="text-4xl">🌱</p>
+              <Leaf className="h-10 w-10 mx-auto text-[var(--color-brand-success)]" aria-hidden="true" />
               <p className="text-xl font-bold mt-2">¡El reto final!</p>
               <p className="text-sm text-[var(--color-text-secondary)] mt-1">Módulo 2 · Ahorro</p>
             </FECard>
@@ -112,12 +113,12 @@ export default function L15() {
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
               <p className="text-sm font-bold mb-2">En este módulo:</p>
               {[
-                '✅ Definiste tu meta de ahorro con propósito y plazo',
-                '✅ Construiste tu plan semana a semana',
-                '✅ Conociste las herramientas del ahorro formal en México',
-                '✅ Completaste el micro-reto de 3 días',
-                '✅ Aprendiste sobre interés compuesto, IPAB y seguros',
-                '✅ Registraste tu ahorro de forma constante',
+                'Definiste tu meta de ahorro con propósito y plazo',
+                'Construiste tu plan semana a semana',
+                'Conociste las herramientas del ahorro formal en México',
+                'Completaste el micro-reto de 3 días',
+                'Aprendiste sobre interés compuesto, IPAB y seguros',
+                'Registraste tu ahorro de forma constante',
               ].map((item) => <p key={item} className="text-sm py-0.5">{item}</p>)}
             </FECard>
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
@@ -138,7 +139,7 @@ export default function L15() {
             <p className="text-xl font-bold">Parte 1: Tu ahorro del módulo</p>
             {totalAcumulado > 0 && (
               <FECard variant="flat" className="border" style={{ backgroundColor: successBg, borderColor: successColor }}>
-                <p className="text-sm font-bold">✅ Datos del micro-reto precargados: ${totalAcumulado.toLocaleString()}</p>
+                <p className="text-sm font-bold">Datos del micro-reto precargados: ${totalAcumulado.toLocaleString()}</p>
                 <p className="text-xs text-[var(--color-text-secondary)]">Puedes ajustar si ahorraste más por otros medios</p>
               </FECard>
             )}
@@ -230,7 +231,7 @@ export default function L15() {
           <div className="space-y-6">
             <p className="text-xl font-bold">Resumen del reto</p>
             <FECard variant="flat" className="border" style={{ backgroundColor: successBg, borderColor: successColor }}>
-              <p className="text-sm font-bold mb-2">✅ Partes completadas:</p>
+              <p className="text-sm font-bold mb-2">Partes completadas:</p>
               <p className="text-sm">1. Monto total confirmado: ${montoNum.toLocaleString()}</p>
               <p className="text-sm">2. Autoevaluación completada ({semanasHabito})</p>
               <p className="text-sm">3. Próxima meta definida{proximaMeta ? `: "${proximaMeta}"` : ''}</p>
@@ -253,7 +254,7 @@ export default function L15() {
               onClick={() => void handleUnlock()}
               disabled={!canComplete}
             >
-              🌱 ¡Desbloquear Ahorrador Constante!
+              ¡Desbloquear Ahorrador Constante!
             </button>
           </div>
         )}
@@ -262,8 +263,8 @@ export default function L15() {
         {step === 5 && badgeUnlocked && (
           <div className="space-y-6">
             <FECard variant="flat" className="text-center py-8 border-[3px]" style={{ backgroundColor: successBg, borderColor: successColor }}>
-              <p className="text-6xl mb-2">🏆</p>
-              <p className="text-2xl font-bold mt-1">Ahorrador Constante 🌱</p>
+              <Trophy className="h-12 w-12 mx-auto mb-2" aria-hidden="true" />
+              <p className="text-2xl font-bold mt-1">Ahorrador Constante</p>
               <p className="text-sm text-[var(--color-text-secondary)] mt-1">Badge desbloqueado · Módulo 2 completado</p>
             </FECard>
             <FinniMessage variant="success" title="¡Lo lograste!" message="Ahora tienes un hábito que muchos adultos nunca desarrollan. Eso vale más que cualquier cantidad que hayas ahorrado." />
@@ -272,7 +273,7 @@ export default function L15() {
               <div className="space-y-2">
                 {CONCEPTOS_CLAVE.map((c) => (
                   <div key={c.titulo} className="flex gap-3 items-start">
-                    <span className="text-base">{c.emoji}</span>
+                    <c.icon className="h-5 w-5 text-[var(--color-brand-success)]" aria-hidden="true" />
                     <div>
                       <p className="text-sm font-bold">{c.titulo}</p>
                       <p className="text-xs text-[var(--color-text-secondary)]">{c.desc}</p>
@@ -286,7 +287,7 @@ export default function L15() {
               className="block w-full min-h-11 text-white rounded-xl font-semibold text-sm text-center leading-[44px]"
               style={{ backgroundColor: successColor }}
             >
-              📈 Comenzar Módulo 3: Inversión
+              Comenzar Módulo 3: Inversión
             </a>
           </div>
         )}

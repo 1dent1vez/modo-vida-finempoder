@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { CheckCircle } from 'lucide-react';
+import { BarChart3, Circle, GraduationCap, Landmark, Link } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -11,7 +12,7 @@ const HERRAMIENTAS = [
   {
     id: 'condusef',
     nombre: 'App Presupuesto Familiar CONDUSEF',
-    emoji: '🏛️',
+    icon: Landmark,
     tipo: 'Oficial',
     descripcion: 'Oficial del gobierno, gratuita, sin publicidad, sin datos bancarios.',
     pros: ['Gratuita', 'Sin publicidad', 'Oficial y confiable'],
@@ -19,7 +20,7 @@ const HERRAMIENTAS = [
   {
     id: 'fintonic',
     nombre: 'Fintonic',
-    emoji: '🔗',
+    icon: Link,
     tipo: 'Sincronización bancaria',
     descripcion: 'Se conecta a tu cuenta bancaria y categoriza automáticamente tus gastos.',
     pros: ['Automático', 'Análisis avanzado', 'Alertas de gastos'],
@@ -27,7 +28,7 @@ const HERRAMIENTAS = [
   {
     id: 'sheets',
     nombre: 'Google Sheets con plantilla',
-    emoji: '📊',
+    icon: BarChart3,
     tipo: 'Flexible',
     descripcion: 'Flexible, sin datos personales en una app, personalizable al 100%.',
     pros: ['Total control', 'Sin app', 'Personalizable'],
@@ -35,7 +36,7 @@ const HERRAMIENTAS = [
   {
     id: 'finempoder',
     nombre: 'FinEmpoder (esta PWA)',
-    emoji: '🎓',
+    icon: GraduationCap,
     tipo: 'Integrada',
     descripcion: 'Integra tu aprendizaje con tu registro real. Disponible offline.',
     pros: ['Integra aprendizaje', 'Offline', 'Gamificada'],
@@ -150,7 +151,7 @@ export default function L11() {
                   tabIndex={0}
                 >
                   <div className="flex items-start gap-3">
-                    <p className="text-4xl">{h.emoji}</p>
+                    <h.icon className="h-9 w-9 mx-auto text-[var(--color-brand-primary)]" aria-hidden="true" />
                     <div className="flex-1">
                       <div className="flex justify-between items-center">
                         <p className="font-bold">{h.nombre}</p>
@@ -209,7 +210,7 @@ export default function L11() {
                   >
                     <div className="flex items-center gap-3">
                       <p className="text-sm font-bold min-w-6">
-                        {done ? '✅' : isCurrent ? '👉' : `${i + 1}.`}
+                        {done ? <CheckCircle className="h-4 w-4 text-[var(--color-brand-success)]" aria-hidden="true" /> : isCurrent ? <Circle className="h-4 w-4 text-[var(--color-brand-warning)]" aria-hidden="true" /> : `${i + 1}.`}
                       </p>
                       <p className={cn('text-sm', isCurrent ? 'font-bold' : '')}>
                         {p.desc}
@@ -219,14 +220,14 @@ export default function L11() {
                       <div className="space-y-2 mt-3">
                         <FECard variant="flat" className="bg-[var(--color-brand-info)]/10">
                           <p className="text-xs">
-                            💡 Finni: "{p.finni}"
+                            Finni: "{p.finni}"
                           </p>
                         </FECard>
                         <button
                           className="w-full min-h-9 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
                           onClick={completarPaso}
                         >
-                          ✓ Marcar como hecho
+                          Marcar como hecho
                         </button>
                       </div>
                     )}

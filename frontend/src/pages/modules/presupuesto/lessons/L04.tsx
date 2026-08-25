@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { CheckCircle } from 'lucide-react';
+import { BarChart3, Notebook, Smartphone } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -9,9 +10,9 @@ import { useLessonResume } from '../../../../features/lessons/hooks/useLessonRes
 import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 
 const METHODS = [
-  { id: 'libreta', label: 'Libreta o agenda', emoji: '📓', pro: 'Rápido, sin batería, lo de toda la vida.' },
-  { id: 'excel', label: 'Hoja de cálculo (Excel/Sheets)', emoji: '📊', pro: 'Más organizado, ideal para análisis mensual.' },
-  { id: 'app', label: 'App especializada', emoji: '📱', pro: 'Práctica, con categorías automáticas y alertas.' },
+  { id: 'libreta', label: 'Libreta o agenda', icon: Notebook, pro: 'Rápido, sin batería, lo de toda la vida.' },
+  { id: 'excel', label: 'Hoja de cálculo (Excel/Sheets)', icon: BarChart3, pro: 'Más organizado, ideal para análisis mensual.' },
+  { id: 'app', label: 'App especializada', icon: Smartphone, pro: 'Práctica, con categorías automáticas y alertas.' },
 ];
 
 const CATEGORIAS = ['Alimentación', 'Transporte', 'Educación', 'Entretenimiento', 'Varios'];
@@ -125,7 +126,7 @@ export default function L04() {
                   tabIndex={0}
                 >
                   <div className="flex items-center gap-3">
-                    <p className="text-4xl">{m.emoji}</p>
+                    <m.icon className="h-9 w-9 text-[var(--color-brand-primary)]" aria-hidden="true" />
                     <div className="flex-1">
                       <p className="font-bold">{m.label}</p>
                       <p className="text-sm text-[var(--color-text-secondary)]">{m.pro}</p>
@@ -154,7 +155,7 @@ export default function L04() {
         {step === 1 && (
           <div className="space-y-3">
             <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 text-center py-4">
-              <p className="font-bold text-base">El día de Mariana 📅</p>
+              <p className="font-bold text-base">El día de Mariana</p>
               <p className="text-sm text-[var(--color-text-secondary)]">
                 Mariana trabaja y estudia. Registra sus 5 gastos del día.
               </p>
@@ -215,7 +216,7 @@ export default function L04() {
                 className={feedback.startsWith('¡') ? 'bg-[var(--color-brand-success)]/10' : 'bg-[var(--color-brand-warning)]/10'}
               >
                 <p className="font-bold text-sm">
-                  {feedback.startsWith('¡') ? '✅' : 'ℹ️'} {feedback}
+                  {feedback}
                 </p>
               </FECard>
             )}

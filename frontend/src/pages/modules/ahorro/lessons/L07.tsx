@@ -13,9 +13,9 @@ const successColor = 'var(--color-brand-success)';
 const successBg = 'var(--color-brand-success-bg)';
 
 const ESTRATEGIAS = [
-  { id: 'porcentaje' as const, title: 'Estrategia 1 — Porcentaje fijo', desc: 'Ahorra siempre el mismo porcentaje de lo que ganes.', ejemplo: 'Si ganas $3,000 apartas 20% ($600). Si ganas $1,500, apartas 20% ($300). Siempre proporcionado.', emoji: '%' },
-  { id: 'doble_fondo' as const, title: 'Estrategia 2 — Doble fondo', desc: 'Dos cuentas: una de ahorro fija (mínimo garantizado) y una variable (lo extra de meses buenos).', ejemplo: 'Fondo A: $300/mes siempre. Fondo B: cualquier extra que llegue ese mes.', emoji: '🏦' },
-  { id: 'mes_base' as const, title: 'Estrategia 3 — Mes base', desc: 'Calcula tu ingreso mínimo de los últimos 3 meses. Basa tu plan en ese número.', ejemplo: 'Si en 3 meses ganaste $1,500, $2,200 y $1,800, tu base es $1,500. Lo extra, ahorra de inmediato.', emoji: '📊' },
+  { id: 'porcentaje' as const, title: 'Estrategia 1 — Porcentaje fijo', desc: 'Ahorra siempre el mismo porcentaje de lo que ganes.', ejemplo: 'Si ganas $3,000 apartas 20% ($600). Si ganas $1,500, apartas 20% ($300). Siempre proporcionado.' },
+  { id: 'doble_fondo' as const, title: 'Estrategia 2 — Doble fondo', desc: 'Dos cuentas: una de ahorro fija (mínimo garantizado) y una variable (lo extra de meses buenos).', ejemplo: 'Fondo A: $300/mes siempre. Fondo B: cualquier extra que llegue ese mes.' },
+  { id: 'mes_base' as const, title: 'Estrategia 3 — Mes base', desc: 'Calcula tu ingreso mínimo de los últimos 3 meses. Basa tu plan en ese número.', ejemplo: 'Si en 3 meses ganaste $1,500, $2,200 y $1,800, tu base es $1,500. Lo extra, ahorra de inmediato.' },
 ];
 
 const CASOS = [
@@ -84,7 +84,7 @@ export default function L07() {
             <div className="space-y-3">
               {ESTRATEGIAS.map((e) => (
                 <FECard key={e.id} variant="flat" className="border border-[var(--color-neutral-200)]">
-                  <p className="font-bold text-sm">{e.emoji} {e.title}</p>
+                  <p className="font-bold text-sm">{e.title}</p>
                   <p className="text-sm text-[var(--color-text-secondary)] mt-1">{e.desc}</p>
                   <p className="text-xs mt-1" style={{ color: successColor }}>Ejemplo: {e.ejemplo}</p>
                 </FECard>
@@ -181,7 +181,7 @@ export default function L07() {
                   className="w-full text-left px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors"
                   style={{ borderColor: successColor, backgroundColor: estrategia === e.id ? successColor : 'transparent', color: estrategia === e.id ? 'white' : 'inherit' }}
                 >
-                  {e.emoji} {e.title.replace(/Estrategia \d — /, '')}
+                  {e.title.replace(/Estrategia \d — /, '')}
                 </button>
               ))}
             </div>
@@ -197,7 +197,7 @@ export default function L07() {
         {step === 4 && (
           <div className="space-y-6">
             <FECard variant="flat" className="text-center py-4 border-2" style={{ backgroundColor: successBg, borderColor: successColor }}>
-              <p className="text-2xl font-bold">✅ Estrategia elegida</p>
+              <p className="text-2xl font-bold">Estrategia elegida</p>
               <span className="inline-block mt-2 px-3 py-1 rounded-full text-sm font-bold text-white" style={{ backgroundColor: successColor }}>
                 {ESTRATEGIAS.find((e) => e.id === estrategia)?.title ?? ''}
               </span>

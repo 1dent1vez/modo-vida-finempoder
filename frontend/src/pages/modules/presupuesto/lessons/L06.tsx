@@ -66,20 +66,20 @@ export default function L06() {
           <div className="space-y-3">
             <FinniMessage
               variant="coach"
-              title="Finni con calculadora 🧮"
+              title="Finni con calculadora"
               message="¿Sabes si este mes gastaste más de lo que ganaste? No asumir, calcular. Esa es la diferencia entre saber y creer que sabes."
             />
             <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
               <p className="font-bold mb-2">Conceptos clave:</p>
               <div className="space-y-2">
                 <p className="text-sm">
-                  📊 <b>Balance mensual</b> = Ingresos totales − Gastos totales
+                  <b>Balance mensual</b> = Ingresos totales − Gastos totales
                 </p>
                 <p className="text-sm font-semibold text-[var(--color-brand-success)]">
-                  ✅ Superávit: sobra dinero → ¿lo estás ahorrando o gastando después?
+                  Superávit: sobra dinero → ¿lo estás ahorrando o gastando después?
                 </p>
                 <p className="text-sm font-semibold text-[var(--color-brand-error)]">
-                  ❌ Déficit: gastaste más de lo que entraste → ¿es temporal o tu patrón normal?
+                  Déficit: gastaste más de lo que entraste → ¿es temporal o tu patrón normal?
                 </p>
               </div>
             </FECard>
@@ -100,7 +100,7 @@ export default function L06() {
         {step === 1 && (
           <div className="space-y-3">
             <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 text-center py-3">
-              <p className="font-bold text-base">El mes de Roberto 📊</p>
+              <p className="font-bold text-base">El mes de Roberto</p>
               <p className="text-sm text-[var(--color-text-secondary)]">Un caso real de un usuario</p>
             </FECard>
 
@@ -177,7 +177,7 @@ export default function L06() {
                 </FECard>
                 <FECard variant="flat" className="bg-[var(--color-brand-success)]/10 border-2 border-[var(--color-brand-success)] text-center py-4">
                   <p className="text-2xl font-bold text-[var(--color-brand-success)]">${BALANCE.toLocaleString()}</p>
-                  <p className="font-bold text-[var(--color-brand-success)]">Superávit ✓</p>
+                  <p className="font-bold text-[var(--color-brand-success)]">Superávit</p>
                 </FECard>
                 <FinniMessage
                   variant="success"

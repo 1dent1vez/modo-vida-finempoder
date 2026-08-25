@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AlertTriangle, BookOpen, Droplet, Hourglass, Target, TrendingUp } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -9,11 +10,11 @@ const infoColor = 'var(--color-brand-info)';
 
 type ConceptoColor = 'success' | 'error' | 'warning' | 'info';
 
-const CONCEPTOS: { nombre: string; emoji: string; color: ConceptoColor; def: string; ejemplo: string; analogia: string; nota: string }[] = [
-  { nombre: 'Rendimiento', emoji: '📈', color: 'success', def: 'El dinero extra que genera tu inversión. Se expresa en % anual.', ejemplo: '8% anual sobre $10,000 = $800 al año.', analogia: 'El sueldo que le pagas al dinero por trabajar para ti.', nota: 'El rendimiento pasado no garantiza el futuro.' },
-  { nombre: 'Riesgo', emoji: '⚠️', color: 'error', def: 'La posibilidad de que la inversión no genere lo esperado o que pierdas parte del capital.', ejemplo: 'A mayor rendimiento esperado, generalmente mayor riesgo.', analogia: 'La velocidad del coche — más rápido puedes llegar, pero también más puedes lastimarte.', nota: 'El riesgo no es malo. Es algo que se gestiona con conocimiento.' },
-  { nombre: 'Plazo', emoji: '⏳', color: 'warning', def: 'El tiempo que tu dinero permanecerá invertido.', ejemplo: 'A mayor plazo, mayor potencial de rendimiento y mayor capacidad de recuperarse ante caídas.', analogia: 'Dejar fermentar el pan — necesita tiempo para crecer bien.', nota: 'Las inversiones a largo plazo históricamente superan a las de corto plazo.' },
-  { nombre: 'Liquidez', emoji: '💧', color: 'info', def: 'Qué tan rápido puedes convertir tu inversión en efectivo sin perder valor.', ejemplo: 'Una cuenta bancaria tiene alta liquidez. Un bien inmueble, baja.', analogia: 'Hielo vs agua — el hielo tarda en convertirse en efectivo.', nota: 'Mayor liquidez generalmente implica menor rendimiento.' },
+const CONCEPTOS: { nombre: string; icon: React.ComponentType<{ className?: string }>; color: ConceptoColor; def: string; ejemplo: string; analogia: string; nota: string }[] = [
+  { nombre: 'Rendimiento', icon: TrendingUp, color: 'success', def: 'El dinero extra que genera tu inversión. Se expresa en % anual.', ejemplo: '8% anual sobre $10,000 = $800 al año.', analogia: 'El sueldo que le pagas al dinero por trabajar para ti.', nota: 'El rendimiento pasado no garantiza el futuro.' },
+  { nombre: 'Riesgo', icon: AlertTriangle, color: 'error', def: 'La posibilidad de que la inversión no genere lo esperado o que pierdas parte del capital.', ejemplo: 'A mayor rendimiento esperado, generalmente mayor riesgo.', analogia: 'La velocidad del coche — más rápido puedes llegar, pero también más puedes lastimarte.', nota: 'El riesgo no es malo. Es algo que se gestiona con conocimiento.' },
+  { nombre: 'Plazo', icon: Hourglass, color: 'warning', def: 'El tiempo que tu dinero permanecerá invertido.', ejemplo: 'A mayor plazo, mayor potencial de rendimiento y mayor capacidad de recuperarse ante caídas.', analogia: 'Dejar fermentar el pan — necesita tiempo para crecer bien.', nota: 'Las inversiones a largo plazo históricamente superan a las de corto plazo.' },
+  { nombre: 'Liquidez', icon: Droplet, color: 'info', def: 'Qué tan rápido puedes convertir tu inversión en efectivo sin perder valor.', ejemplo: 'Una cuenta bancaria tiene alta liquidez. Un bien inmueble, baja.', analogia: 'Hielo vs agua — el hielo tarda en convertirse en efectivo.', nota: 'Mayor liquidez generalmente implica menor rendimiento.' },
 ];
 
 const colorVars: Record<ConceptoColor, { bg: string; border: string; text: string }> = {
@@ -106,7 +107,7 @@ export default function L03() {
                       style={{ backgroundColor: isOpen ? cv.bg : '#F9FAFB' }}
                       onClick={() => setExpandido(isOpen ? null : i)}
                     >
-                      <span className="text-xl">{c.emoji}</span>
+                      <c.icon className="h-6 w-6" aria-hidden="true" />
                       <span className="font-extrabold">{c.nombre}</span>
                     </button>
                     {isOpen && (
@@ -116,7 +117,7 @@ export default function L03() {
                         <div className="p-2 rounded-lg" style={{ backgroundColor: colorVars.info.bg, border: `1px solid ${colorVars.info.border}` }}>
                           <span className="text-xs"><strong>Analogía:</strong> {c.analogia}</span>
                         </div>
-                        <span className="text-xs text-[var(--color-text-secondary)] block">⚡ {c.nota}</span>
+                        <span className="text-xs text-[var(--color-text-secondary)] block">{c.nota}</span>
                       </div>
                     )}
                   </div>
@@ -168,11 +169,11 @@ export default function L03() {
             </FECard>
             <div className="rounded-2xl p-4 border-2" style={{ backgroundColor: colorVars.error.bg, borderColor: colorVars.error.border }}>
               <div className="flex items-center gap-2 mb-2">
-                <span>⚠️</span>
+                <AlertTriangle className="h-5 w-5 text-[var(--color-brand-warning)]" aria-hidden="true" />
                 <p className="font-extrabold" style={{ color: colorVars.error.text }}>Alerta antifraude</p>
               </div>
               <p className="text-sm font-bold">Si te ofrecen esto combinado, es fraude:</p>
-              <p className="text-sm">🚨 Rendimiento garantizado alto + cero riesgo + liquidez inmediata</p>
+              <p className="text-sm">Rendimiento garantizado alto + cero riesgo + liquidez inmediata</p>
               <p className="text-sm mt-2" style={{ color: colorVars.error.text }}>
                 Ejemplos en México: esquemas Ponzi de cripto, tandas fraudulentas, apps sin regulación CNBV.
               </p>
@@ -233,7 +234,7 @@ export default function L03() {
                     </div>
                     {respondido && (
                       <p className="text-xs mt-2" style={{ color: correcto ? colorVars.success.text : colorVars.error.text }}>
-                        {correcto ? '✓ Correcto' : `✗ La respuesta correcta era: "${q.opciones[q.correcta]}"`}
+                        {correcto ? 'Correcto' : `La respuesta correcta era: "${q.opciones[q.correcta]}"`}
                       </p>
                     )}
                   </FECard>
@@ -249,7 +250,11 @@ export default function L03() {
                   borderColor: aciertos >= 3 ? colorVars.success.border : colorVars.info.border,
                 }}
               >
-                <p className="text-2xl">{aciertos >= 3 ? '🎯' : '📚'}</p>
+                {aciertos >= 3 ? (
+                  <Target className="h-9 w-9 mx-auto" aria-hidden="true" />
+                ) : (
+                  <BookOpen className="h-9 w-9 mx-auto" aria-hidden="true" />
+                )}
                 <p className="font-extrabold">{aciertos}/4 correctas</p>
                 <p className="text-sm">
                   {aciertos === 4 ? '¡Perfecto! Dominas el vocabulario del inversionista.'

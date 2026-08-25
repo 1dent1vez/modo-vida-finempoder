@@ -1,3 +1,4 @@
+import { Wrench } from 'lucide-react';
 import { setAdminMode } from '@/lib/adminMode';
 
 export default function AdminBanner() {
@@ -6,7 +7,8 @@ export default function AdminBanner() {
       role="status"
       className="fixed bottom-20 left-1/2 z-[2000] flex -translate-x-1/2 items-center gap-2 rounded-full bg-[var(--color-brand-warning)] px-4 py-2 text-xs font-bold text-white shadow-[var(--shadow-lg)]"
     >
-      <span>🛠 MODO ADMIN</span>
+      <Wrench className="h-3.5 w-3.5" aria-hidden="true" />
+      <span>MODO ADMIN</span>
       <button
         type="button"
         className="underline underline-offset-2 hover:opacity-80"

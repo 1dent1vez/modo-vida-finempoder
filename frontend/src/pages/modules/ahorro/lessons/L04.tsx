@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Square, SquareCheck } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -144,7 +145,7 @@ export default function L04() {
                         className="px-3 py-1.5 rounded-lg text-xs font-bold border-2 disabled:cursor-default transition-colors"
                         style={{ borderColor: successColor, backgroundColor: ans === 'aliado' ? successColor : 'transparent', color: ans === 'aliado' ? 'white' : successColor }}
                       >
-                        ✅ Aliado
+                        Aliado
                       </button>
                       <button
                         onClick={() => classify(c.id, 'saboteador')}
@@ -152,12 +153,12 @@ export default function L04() {
                         className="px-3 py-1.5 rounded-lg text-xs font-bold border-2 disabled:cursor-default transition-colors"
                         style={{ borderColor: errorColor, backgroundColor: ans === 'saboteador' ? errorColor : 'transparent', color: ans === 'saboteador' ? 'white' : errorColor }}
                       >
-                        ❌ Saboteador
+                        Saboteador
                       </button>
                     </div>
                     {showFeedback[c.id] && (
                       <p className="text-xs mt-1" style={{ color: isCorrect ? successColor : errorColor }}>
-                        {isCorrect ? '✅ Correcto. ' : `❌ Es un ${c.correct}. `}{c.tip}
+                        {isCorrect ? 'Correcto. ' : `Es un ${c.correct}. `}{c.tip}
                       </p>
                     )}
                   </FECard>
@@ -190,7 +191,7 @@ export default function L04() {
                   role="checkbox"
                   tabIndex={0}
                 >
-                  <p className="text-sm">{saboteadoresCheck.has(c.id) ? '☑' : '☐'} {c.label}</p>
+                  <p className="text-sm flex items-center gap-1.5">{saboteadoresCheck.has(c.id) ? <SquareCheck className="h-4 w-4 text-[var(--color-brand-success)]" aria-hidden="true" /> : <Square className="h-4 w-4 text-[var(--color-text-muted)]" aria-hidden="true" />} {c.label}</p>
                 </FECard>
               ))}
             </div>

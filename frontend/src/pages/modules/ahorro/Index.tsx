@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PiggyBank, Sparkles } from 'lucide-react';
 import { SAVINGS_LESSONS } from './lessonFlow';
 
 const warnColor = 'var(--color-brand-warning)';
@@ -29,7 +30,7 @@ export default function AhorroIndex() {
     <div className="p-4 pb-24 space-y-4">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <span className="text-2xl">💰</span>
+        <PiggyBank className="h-7 w-7 text-[var(--color-brand-success)]" aria-hidden="true" />
         <p className="text-lg font-extrabold">Plan rapido de ahorro</p>
       </div>
 
@@ -128,7 +129,7 @@ export default function AhorroIndex() {
       {/* Atajos */}
       <div className="p-4 rounded-2xl border border-[var(--color-neutral-200)] space-y-3">
         <div className="flex items-center gap-2">
-          <span className="text-lg">✨</span>
+          <Sparkles className="h-5 w-5 text-[var(--color-brand-warning)]" aria-hidden="true" />
           <p className="font-bold">Atajos</p>
         </div>
         <p className="text-sm text-[var(--color-text-secondary)]">Selecciona un atajo para precargar meta y frecuencia.</p>

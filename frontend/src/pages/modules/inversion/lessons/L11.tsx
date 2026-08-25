@@ -174,7 +174,7 @@ export default function L11() {
             </div>
             {!calculado && (
               <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setCalculado(true)}>
-                ✅ Confirmar cálculo
+                Confirmar cálculo
               </button>
             )}
 
@@ -219,7 +219,7 @@ export default function L11() {
                 ))}
                 {simulacroListo && !simulacroHecho && (
                   <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setSimulacroHecho(true)}>
-                    ✅ Completar simulacro
+                    Completar simulacro
                   </button>
                 )}
                 {simulacroHecho && (

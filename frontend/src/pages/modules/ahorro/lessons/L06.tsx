@@ -195,7 +195,7 @@ export default function L06() {
         {step === 3 && (
           <div className="space-y-6">
             <FECard variant="flat" className="text-center py-4 border-2" style={{ backgroundColor: successBg, borderColor: successColor }}>
-              <p className="text-2xl font-bold">✅ Plan guardado</p>
+              <p className="text-2xl font-bold">Plan guardado</p>
               <p className="text-sm text-[var(--color-text-secondary)] mt-1">{horizon && PLAN_DESCRIPTIONS[horizon].title} · ${totalPlanado.toLocaleString()} planeados</p>
             </FECard>
             <FinniMessage variant="success" title="Tu plan está listo" message="Cada semana recibirás un aviso para aportar a tu meta. La constancia es lo que distingue a quien ahorra de quien intenta ahorrar." />

@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
+import { Star } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -206,7 +207,7 @@ export default function L13() {
         {step === 1 && (
           <div className="space-y-3">
             <p className="font-bold">
-              Reporte semáforo de Finni 🚦
+              Reporte semáforo de Finni
             </p>
             <p className="text-sm text-[var(--color-text-secondary)]">
               Toca cada indicador para ver el análisis completo.
@@ -256,7 +257,7 @@ export default function L13() {
           <div className="space-y-3">
             <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 border-2 border-[var(--color-brand-warning)] text-center py-4">
               <p className="text-4xl">
-                {'⭐'.repeat(stars)}{'☆'.repeat(5 - stars)}
+                {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="h-8 w-8 inline" style={{ color: i < stars ? 'var(--color-brand-warning)' : 'var(--color-neutral-300)' }} fill="currentColor" aria-hidden="true" />)}
               </p>
               <p className="font-bold text-base mt-2">{stars}/5 indicadores en verde</p>
             </FECard>

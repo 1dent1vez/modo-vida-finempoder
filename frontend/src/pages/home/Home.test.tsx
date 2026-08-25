@@ -72,9 +72,9 @@ describe('Home (rediseño F1-OLA3)', () => {
     expect(screen.getByText('Ver todo')).toBeVisible();
   });
 
-  it('sin sesión y sin nombre saluda "Hola 👋" y NUNCA dice "Estudiante"', () => {
+  it('sin sesión y sin nombre saluda "Hola" y NUNCA dice "Estudiante"', () => {
     renderHome();
-    expect(screen.getByRole('heading', { name: 'Hola 👋' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Hola' })).toBeVisible();
     expect(screen.queryByText(/Estudiante/i)).toBeNull();
   });
 
