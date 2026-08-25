@@ -9,9 +9,7 @@ import { Badge } from '../../shared/components/ui/badge';
 import { Progress } from '../../shared/components/ui/progress';
 import { useGamification } from '../../hooks/gamification/useGamification';
 import { useProgress } from '../../store/progress';
-import { useResearchStatus } from '../../hooks/research/useResearchStatus';
-import { BADGES } from '../../data/badges';
-import type { BadgeStats } from '../../data/badges';
+import { BADGES, buildBadgeStats, maxTier } from '../../data/badges';
 
 const MODULE_LABELS: Record<string, string> = {
   presupuesto: 'Presupuestación',
@@ -35,39 +33,27 @@ export default function Achievements() {
   const { data: gamification } = useGamification();
   const modules = useProgress((s) => s.modules);
   const streak = useProgress((s) => s.streak);
-  const { data: research } = useResearchStatus();
 
   const xp = gamification?.xp ?? 0;
   const level = gamification?.level ?? 1;
   const streakCurrent = streak.current ?? 0;
   const streakBest = streak.best ?? 0;
 
-  const presupuestoProgress = modules.presupuesto?.progress ?? 0;
-  const ahorroProgress = modules.ahorro?.progress ?? 0;
-  const inversionProgress = modules.inversion?.progress ?? 0;
-
-  const totalCompleted = Math.round(
-    ((presupuestoProgress + ahorroProgress + inversionProgress) / 100) * 15
-  );
-
-  const badgeStats: BadgeStats = {
-    totalCompleted,
-    presupuestoProgress,
-    ahorroProgress,
-    inversionProgress,
+  const badgeStats = buildBadgeStats({
+    presupuestoProgress: modules.presupuesto?.progress ?? 0,
+    ahorroProgress: modules.ahorro?.progress ?? 0,
+    inversionProgress: modules.inversion?.progress ?? 0,
     streakBest,
     streakCurrent,
-    preDone: research?.preDone ?? false,
-    postDone: research?.postDone ?? false,
-  };
+  });
 
-  const unlockedCount = BADGES.filter((b) => b.condition(badgeStats)).length;
+  const unlockedCount = BADGES.filter((serie) => maxTier(serie, badgeStats) > 0).length;
 
   return (
     <div className="min-h-screen pb-24 bg-[var(--color-bg-app)]">
       <PageHeader
         title="Logros"
-        subtitle={`${unlockedCount} de ${BADGES.length} desbloqueados`}
+        subtitle={`${unlockedCount} de ${BADGES.length} series desbloqueadas`}
         rightSlot={
           <>
             <XPChip xp={xp} />
@@ -112,8 +98,8 @@ export default function Achievements() {
         <div>
           <h2 className="text-base font-bold mb-3">Mis logros</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {BADGES.map((badge) => (
-              <BadgeCard key={badge.id} badge={badge} unlocked={badge.condition(badgeStats)} />
+            {BADGES.map((serie) => (
+              <BadgeCard key={serie.id} serie={serie} nivel={maxTier(serie, badgeStats)} />
             ))}
           </div>
         </div>
