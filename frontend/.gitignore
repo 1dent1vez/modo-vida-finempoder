@@ -26,3 +26,4 @@ dist-ssr
 # Artefactos de tests
 test-results/
 playwright-report/
+.vercel
