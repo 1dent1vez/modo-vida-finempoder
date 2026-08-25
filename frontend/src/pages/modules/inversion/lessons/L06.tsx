@@ -6,6 +6,7 @@ import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
 import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import { MX, fmtFecha, fmtTasa } from '@/lib/datos-mx';
 
 const infoColor    = 'var(--color-brand-info)';
 const infoBg       = 'var(--color-brand-info-bg)';
@@ -15,14 +16,14 @@ const successColor = 'var(--color-brand-success)';
 const successBg    = 'var(--color-brand-success-bg)';
 
 const FICHAS = [
-  { nombre: 'CETES', frente: { plazo: '28, 91, 182 o 364 días', tasa: '~10% anual (referencial)', minimo: '$100 pesos', donde: 'cetesdirecto.com (sin intermediarios)', riesgo: 'Muy bajo' }, reverso: 'Desventajas: si retiras antes del plazo puedes perder algo del rendimiento. La tasa es fija — no se beneficia de alzas del mercado.' },
+  { nombre: 'CETES', frente: { plazo: '28, 91, 182 o 364 días', tasa: `≈${fmtTasa(MX.cetes.tasa28d * 100)} anual (${fmtFecha(MX.cetes)}) — la tasa cambia cada semana`, minimo: '$100 pesos', donde: 'cetesdirecto.com (sin intermediarios)', riesgo: 'Muy bajo' }, reverso: 'Desventajas: si retiras antes del plazo puedes perder algo del rendimiento. La tasa es fija — no se beneficia de alzas del mercado.' },
   { nombre: 'BONDES', frente: { plazo: '3-5 años', tasa: 'Variable (ligada a TIIE)', minimo: '$100 pesos', donde: 'cetesdirecto.com', riesgo: 'Bajo' }, reverso: 'Tasa variable significa que puede subir o bajar con el mercado. Plazo largo — no ideal si necesitas liquidez pronto.' },
-  { nombre: 'PRLV', frente: { plazo: 'Plazo fijo (días a meses)', tasa: 'Garantizada', minimo: 'Varía por banco', donde: 'Bancos comerciales', riesgo: 'Bajo (IPAB)' }, reverso: 'Ofrecidos por bancos, no directamente del gobierno. Protegidos por IPAB hasta 400,000 UDIS. Rendimientos algo menores que CETES.' },
+  { nombre: 'PRLV', frente: { plazo: 'Plazo fijo (días a meses)', tasa: 'Garantizada', minimo: 'Varía por banco', donde: 'Bancos comerciales', riesgo: 'Bajo (IPAB)' }, reverso: `Ofrecidos por bancos, no directamente del gobierno. Protegidos por IPAB hasta 400,000 UDIs ≈ $3.5M (${fmtFecha(MX.ipab)}). Rendimientos algo menores que CETES.` },
 ];
 
 const MONTOS_SIMULACION = [100, 500, 1000];
 const PLAZOS = [28, 91];
-const TASA_ANUAL = 0.10;
+const TASA_ANUAL = MX.cetes.tasa28d;
 
 function calcRendimiento(monto: number, plazo: number): number {
   return monto * TASA_ANUAL * (plazo / 365);
@@ -230,7 +231,7 @@ export default function L06() {
             </FECard>
             <FECard variant="flat" className="border-2" style={{ backgroundColor: successBg, borderColor: successColor }}>
               <p className="text-sm">Paso 3: Tu rendimiento estimado</p>
-              <p className="text-xs text-[var(--color-text-secondary)]">(Tasa referencial: {(TASA_ANUAL * 100).toFixed(1)}% anual)</p>
+              <p className="text-xs text-[var(--color-text-secondary)]">(Tasa referencial: {fmtTasa(TASA_ANUAL * 100)}, {fmtFecha(MX.cetes)})</p>
               <div className="flex justify-between mt-2">
                 <div>
                   <p className="text-xs text-[var(--color-text-secondary)]">Inviertes</p>
@@ -251,7 +252,7 @@ export default function L06() {
               <div>
                 <p className="text-xs font-bold">Alerta fiscal</p>
                 <p className="text-xs text-[var(--color-text-secondary)]">
-                  Los rendimientos de CETES pagan ISR (retención automática ~0.15% en 2024). Ya viene descontado — sin sorpresas.
+                  Los rendimientos de CETES pagan ISR con retención automática: {MX.isr.retencionCetesPct.toFixed(2)}% del capital en {MX.isr.anio} (SAT). Se ajusta cada año según la tasa de interés — ya viene descontado.
                 </p>
               </div>
             </div>

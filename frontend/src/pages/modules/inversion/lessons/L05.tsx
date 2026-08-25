@@ -5,12 +5,13 @@ import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
 import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import { MX, fmtFecha } from '@/lib/datos-mx';
 
 const INSTRUMENTOS = [
-  { color: '#3B82F6', nombre: 'Instrumentos de Deuda (Renta Fija)', desc: 'Prestas dinero al gobierno o empresa y te pagan interés. Monto y plazo conocidos.', ejemplos: 'CETES, Bondes, depósitos a plazo', minimo: '$100', riesgo: 2, rendimiento: '8-11% anual', tipo: 'deuda', liquidez: 'Alta', paraQuien: 'Ideal para principiantes y perfil conservador.' },
+  { color: '#3B82F6', nombre: 'Instrumentos de Deuda (Renta Fija)', desc: 'Prestas dinero al gobierno o empresa y te pagan interés. Monto y plazo conocidos.', ejemplos: 'CETES, Bondes, depósitos a plazo', minimo: '$100', riesgo: 2, rendimiento: `~6-7% anual (${fmtFecha(MX.cetes)}) — en 2023-2024 llegó a 11%`, tipo: 'deuda', liquidez: 'Alta', paraQuien: 'Ideal para principiantes y perfil conservador.' },
   { color: '#EF4444', nombre: 'Renta Variable (Acciones)', desc: 'Compras parte de una empresa. Mayor riesgo y mayor potencial de rendimiento.', ejemplos: 'Acciones en la BMV (Cemex, Bimbo, América Móvil)', minimo: '~$200', riesgo: 4, rendimiento: 'Variable (puede ser negativo)', tipo: 'variable', liquidez: 'Media', paraQuien: 'Para perfiles moderados a agresivos con horizonte largo.' },
   { color: '#EAB308', nombre: 'Fondos de Inversión', desc: 'Grupo de personas que juntan su dinero e invierten colectivamente. Un gestor decide dónde.', ejemplos: 'Fondos de deuda, balanceados o de acciones regulados por CNBV', minimo: '$100-$5,000', riesgo: 3, rendimiento: 'Varía según el fondo', tipo: 'deuda', liquidez: 'Media-Alta', paraQuien: 'Accesibles con montos pequeños. Riesgo variable según el fondo.' },
-  { color: '#22C55E', nombre: 'Bienes Raíces Digitales (FIBRAs)', desc: 'Inversión en bienes inmuebles a través de la bolsa. Desde montos pequeños.', ejemplos: 'FIBRA Uno, FIBRA Danhos en la BMV', minimo: '~$500', riesgo: 3, rendimiento: '7-10% anual', tipo: 'variable', liquidez: 'Media', paraQuien: 'Para quienes quieren bienes raíces sin comprar un inmueble.' },
+  { color: '#22C55E', nombre: 'Bienes Raíces Digitales (FIBRAs)', desc: 'Inversión en bienes inmuebles a través de la bolsa. Desde montos pequeños.', ejemplos: 'FIBRA Uno, FIBRA Danhos en la BMV', minimo: '~$500', riesgo: 3, rendimiento: '7-10% anual (estimado histórico)', tipo: 'variable', liquidez: 'Media', paraQuien: 'Para quienes quieren bienes raíces sin comprar un inmueble.' },
 ];
 
 const QUIZ_ITEMS = [

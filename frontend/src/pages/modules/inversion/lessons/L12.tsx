@@ -5,16 +5,15 @@ import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
 import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
-
-// Dato referencial INEGI 2024
-const INFLACION_MEXICO_2024 = 4.66;
+import { MX, fmtFecha, fmtTasa } from '@/lib/datos-mx';
 
 const HISTORICO = [
   { año: '2020', cetes: 4.5, inflacion: 3.15 },
   { año: '2021', cetes: 4.4, inflacion: 7.36 },
-  { año: '2022', cetes: 9.5, inflacion: 8.7 },
+  { año: '2022', cetes: 7.7, inflacion: 7.82 },
   { año: '2023', cetes: 11.2, inflacion: 4.66 },
-  { año: '2024', cetes: 10.0, inflacion: 4.66 },
+  { año: '2024', cetes: 10.4, inflacion: 4.21 },
+  { año: '2025', cetes: 7.3, inflacion: 3.69 },
 ];
 
 const infoColor = 'var(--color-brand-info)';
@@ -36,7 +35,7 @@ export default function L12() {
     if (step > 0) resume.save({ step });
   }, [step, resume]);
   const [rendimientoUsuario, setRendimientoUsuario] = useState(10);
-  const [inflacionUsuario, setInflacionUsuario] = useState(INFLACION_MEXICO_2024);
+  const [inflacionUsuario, setInflacionUsuario] = useState(MX.inflacion.anualPct);
   const [montoCalc, setMontoCalc] = useState(10000);
   const [calculado, setCalculado] = useState(false);
 
@@ -123,7 +122,7 @@ export default function L12() {
             <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
               <p className="text-sm font-bold">El INPC (Índice Nacional de Precios al Consumidor)</p>
               <p className="text-sm">
-                Mide la inflación en México. Puedes consultarlo en INEGI.gob.mx. Dato actual referencial: <b>{INFLACION_MEXICO_2024}%</b>
+                Mide la inflación en México. Dato actual referencial: <b>{MX.inflacion.anualPct}%</b> (INEGI, julio 2026). Cambia cada mes: consúltala en INEGI.gob.mx
               </p>
             </FECard>
             <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setStep(1)}>
@@ -149,7 +148,7 @@ export default function L12() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-                  Inflación actual de México (% INEGI — referencia: {INFLACION_MEXICO_2024}%)
+                  Inflación actual de México (% INEGI — referencia: {fmtTasa(MX.inflacion.anualPct)}, {fmtFecha(MX.inflacion)})
                 </label>
                 <input
                   type="number"
@@ -210,11 +209,14 @@ export default function L12() {
                 );
               })}
             </FECard>
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              Las tasas cambian cada semana (subasta Banxico) y la inflación cada mes (INEGI). Consulta la tasa vigente en cetesdirecto.com.
+            </p>
 
             <FinniMessage
               variant="coach"
               title="Ahora cuando veas un rendimiento, la primera pregunta es:"
-              message={`¿Es mayor que la inflación actual (${INFLACION_MEXICO_2024}%)? Si no lo supera, en términos reales estás perdiendo poder adquisitivo.`}
+              message={`¿Es mayor que la inflación actual (${fmtTasa(MX.inflacion.anualPct)}, ${fmtFecha(MX.inflacion)})? Si no lo supera, en términos reales estás perdiendo poder adquisitivo.`}
             />
             {!calculado && (
               <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setCalculado(true)}>

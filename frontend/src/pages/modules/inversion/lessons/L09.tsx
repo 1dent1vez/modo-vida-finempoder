@@ -5,12 +5,13 @@ import FinniMessage from '../../../../components/FinniMessage';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
 import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
 import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import { MX, fmtFecha, fmtTasa } from '@/lib/datos-mx';
 
 type Instrumento = 'cetes' | 'fondoBalanceado' | 'acciones';
 type Portafolio = Record<Instrumento, number>;
 
 const INSTRUMENTOS: { key: Instrumento; nombre: string; rendimiento: number; riesgo: string }[] = [
-  { key: 'cetes', nombre: 'CETES (deuda)', rendimiento: 0.10, riesgo: 'Bajo' },
+  { key: 'cetes', nombre: 'CETES (deuda)', rendimiento: MX.cetes.tasa28d, riesgo: 'Bajo' },
   { key: 'fondoBalanceado', nombre: 'Fondo balanceado', rendimiento: 0.08, riesgo: 'Medio' },
   { key: 'acciones', nombre: 'Acciones BMV', rendimiento: 0.12, riesgo: 'Alto' },
 ];
@@ -190,7 +191,7 @@ export default function L09() {
                     <div className="flex justify-between items-center mb-2">
                       <p className="font-bold">{inst.nombre}</p>
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-full text-xs font-bold border" style={{ borderColor: successColor, color: successColor }}>{inst.rendimiento * 100}%/año</span>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-bold border" style={{ borderColor: successColor, color: successColor }}>{fmtTasa(inst.rendimiento * 100)}/año</span>
                         <p className="font-black" style={{ color: warnColor }}>{pct}%</p>
                       </div>
                     </div>
@@ -204,6 +205,11 @@ export default function L09() {
                     <p className="text-xs text-[var(--color-text-secondary)]">
                       Riesgo: {inst.riesgo} · ${portafolio[inst.key].toLocaleString()}
                     </p>
+                    {inst.key === 'cetes' ? (
+                      <p className="text-[10px] text-[var(--color-text-secondary)] mt-1">Tasa vigente ({fmtFecha(MX.cetes)}).</p>
+                    ) : (
+                      <p className="text-[10px] text-[var(--color-text-secondary)] mt-1">Estimado histórico (no es rendimiento garantizado ni actual).</p>
+                    )}
                   </div>
                 );
               })}

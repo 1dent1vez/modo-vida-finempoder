@@ -6,6 +6,7 @@ import FinniMessage from '../../../../components/FinniMessage';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
 import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
 import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import { MX, fmtFecha, fmtTasa } from '@/lib/datos-mx';
 
 const INSTRUMENTOS_POR_PERFIL: Record<string, string[]> = {
   conservador: ['CETES 28 días', 'CETES 91 días', 'Fondo de deuda gubernamental'],
@@ -15,9 +16,9 @@ const INSTRUMENTOS_POR_PERFIL: Record<string, string[]> = {
 };
 
 const TASA_POR_INSTRUMENTO: Record<string, number> = {
-  'CETES 28 días': 0.10,
-  'CETES 91 días': 0.102,
-  'CETES 91 días + fondo mixto': 0.095,
+  'CETES 28 días': MX.cetes.tasa28d,
+  'CETES 91 días': MX.cetes.tasa91d,
+  'CETES 91 días + fondo mixto': (MX.cetes.tasa28d + MX.cetes.tasa91d) / 2, // ≈6.3% — media de las tasas CETES verificadas
   'Fondo de deuda gubernamental': 0.09,
   'Fondo balanceado': 0.11,
   'FIBRAs': 0.10,
@@ -85,7 +86,7 @@ export default function L13() {
   const proyeccion = calcProyeccion(capitalInicial, aportacionMensual, tasaAnual, plazoMeses);
   const totalAportado = capitalInicial + aportacionMensual * plazoMeses;
   const ganancia = proyeccion - totalAportado;
-  const inflacion = 0.0466;
+  const inflacion = MX.inflacion.anualPct / 100; // 0.0312 — INEGI jul 2026
   const supera = tasaAnual > inflacion;
 
   const seccion1Lista = objetivo.trim().length >= 3 && categoriaObjetivo;
@@ -265,6 +266,9 @@ export default function L13() {
                   <option key={inst} value={inst}>{inst}</option>
                 ))}
               </select>
+              <p className="text-xs text-[var(--color-text-secondary)] mt-1">
+                CETES usa la tasa vigente ({fmtTasa(MX.cetes.tasa28d * 100)}, {fmtFecha(MX.cetes)}); el resto son estimados históricos.
+              </p>
             </div>
 
             {/* Proyección dinámica */}
@@ -284,11 +288,11 @@ export default function L13() {
                     </div>
                     <div>
                       <p className="text-xs text-[var(--color-text-secondary)]">Tasa anual</p>
-                      <p className="text-sm font-bold">{(tasaAnual * 100).toFixed(1)}%</p>
+                      <p className="text-sm font-bold">{instrumento === 'CETES 91 días + fondo mixto' ? '≈' : ''}{fmtTasa(tasaAnual * 100)}</p>
                     </div>
                   </div>
                   <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: supera ? successColor : warnColor }}>
-                    {supera ? `Supera la inflación (${(inflacion * 100).toFixed(1)}%)` : `No supera la inflación (${(inflacion * 100).toFixed(1)}%)`}
+                    {supera ? `Supera la inflación (${fmtTasa(MX.inflacion.anualPct)}, ${fmtFecha(MX.inflacion)})` : `No supera la inflación (${fmtTasa(MX.inflacion.anualPct)}, ${fmtFecha(MX.inflacion)})`}
                   </span>
                 </div>
                 <button

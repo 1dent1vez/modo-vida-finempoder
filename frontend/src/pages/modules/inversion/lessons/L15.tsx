@@ -7,10 +7,11 @@ import { lessonDataRepository } from '../../../../db/lessonData.repository';
 import { useAuth } from '../../../../store/auth';
 import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
 import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import { MX, fmtFecha, fmtTasa } from '@/lib/datos-mx';
 
 const INSTRUMENTOS_SIM = [
-  { key: 'cetes28',        nombre: 'CETES 28 días',                   tasaAnual: 0.100, riesgo: 1 },
-  { key: 'cetes91',        nombre: 'CETES 91 días',                   tasaAnual: 0.102, riesgo: 1 },
+  { key: 'cetes28',        nombre: 'CETES 28 días',                   tasaAnual: MX.cetes.tasa28d, riesgo: 1 },
+  { key: 'cetes91',        nombre: 'CETES 91 días',                   tasaAnual: MX.cetes.tasa91d, riesgo: 1 },
   { key: 'fondoDeuda',     nombre: 'Fondo de deuda gubernamental',     tasaAnual: 0.090, riesgo: 2 },
   { key: 'fondoBalanceado',nombre: 'Fondo balanceado',                 tasaAnual: 0.110, riesgo: 3 },
   { key: 'bimbo',          nombre: 'Acciones Bimbo (consumo)',         tasaAnual: 0.12,  riesgo: 4 },
@@ -40,7 +41,7 @@ const EVENTOS_TRIM = [
 type PortafolioKey = typeof INSTRUMENTOS_SIM[number]['key'];
 type Portafolio = Record<PortafolioKey, number>;
 
-const INFLACION_SIM = 0.04;
+const INFLACION_SIM = MX.inflacion.anualPct / 100; // 0.0312 — INEGI jul 2026
 const BADGES_PROGRAMA = [
   { icon: Coins, nombre: 'Presupuesto Pro',       modulo: 'Módulo 1' },
   { icon: Leaf, nombre: 'Ahorrador Constante',   modulo: 'Módulo 2' },
@@ -218,7 +219,7 @@ export default function L15() {
               <p className="font-bold mb-2">El reto:</p>
               <p className="text-sm mb-2">Tienes <strong>${capitalInicial.toLocaleString()} virtuales</strong> y <strong>12 meses simulados</strong> (4 trimestres). Tu misión:</p>
               <div className="space-y-1">
-                <p className="text-sm">Construir un portafolio que supere la inflación ({(INFLACION_SIM * 100).toFixed(0)}%)</p>
+                <p className="text-sm">Construir un portafolio que supere la inflación ({fmtTasa(MX.inflacion.anualPct)}, {fmtFecha(MX.inflacion)})</p>
                 <p className="text-sm">Sea coherente con tu perfil: <strong>{perfilRiesgo}</strong></p>
                 <p className="text-sm">Diversificar en al menos 2 instrumentos</p>
                 <p className="text-sm">Tomar decisiones trimestrales ante eventos del mercado</p>
@@ -255,11 +256,16 @@ export default function L15() {
                       <p className="text-sm font-bold">{inst.nombre}</p>
                       <div className="flex items-center gap-2">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold border" style={{ color: successColor, borderColor: successColor }}>
-                          {(inst.tasaAnual * 100).toFixed(1)}%/año
+                          {fmtTasa(inst.tasaAnual * 100)}/año
                         </span>
                         <span className="font-extrabold text-sm min-w-[36px] text-right" style={{ color: 'var(--color-brand-warning)' }}>{pct}%</span>
                       </div>
                     </div>
+                    <p className="text-[10px] text-[var(--color-text-secondary)] mt-0.5">
+                      {inst.key === 'cetes28' || inst.key === 'cetes91'
+                        ? `Tasa vigente (${fmtFecha(MX.cetes)})`
+                        : 'Estimado histórico (no es rendimiento garantizado ni actual)'}
+                    </p>
                     <div className="flex gap-2 items-center">
                       <button className="px-2 py-1 rounded-lg text-xs border border-[var(--color-neutral-200)] font-bold disabled:opacity-30" onClick={() => setPct(inst.key as PortafolioKey, pct - 5)} disabled={pct <= 0}>-5</button>
                       <div className="flex-1 bg-[var(--color-neutral-100)] rounded-full h-2">
@@ -382,7 +388,7 @@ export default function L15() {
               <p className="text-2xl font-black mt-2">${valorPortafolio.toFixed(0)}</p>
               <p className="text-base">Rendimiento: <strong>{rendimientoFinal.toFixed(2)}%</strong> en 12 meses</p>
               <span className="inline-flex items-center mt-2 px-3 py-1 rounded-full text-sm font-bold" style={{ backgroundColor: superoInflacion ? successBg : warnBg, color: superoInflacion ? 'var(--color-brand-success)' : 'var(--color-brand-warning)', border: `1px solid ${superoInflacion ? successColor : warnColor}` }}>
-                {superoInflacion ? `Superaste la inflación (${(INFLACION_SIM * 100).toFixed(0)}%)` : `No superaste la inflación (${(INFLACION_SIM * 100).toFixed(0)}%)`}
+                {superoInflacion ? `Superaste la inflación (${fmtTasa(MX.inflacion.anualPct)}, ${fmtFecha(MX.inflacion)})` : `No superaste la inflación (${fmtTasa(MX.inflacion.anualPct)}, ${fmtFecha(MX.inflacion)})`}
               </span>
             </div>
             <FECard variant="flat" className="border border-[var(--color-neutral-200)]">

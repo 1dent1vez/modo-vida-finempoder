@@ -4,6 +4,7 @@ import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
 import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import { MX } from '@/lib/datos-mx';
 
 const TIPOS_COMISION = [
   { tipo: 'Por administración', desc: 'Cobro anual del fondo por gestionar tu dinero.', ejemplo: '2% anual' },
@@ -18,7 +19,7 @@ const FONDOS_FICTICIOS = [
   { nombre: 'Fondo C', rendimientoBruto: 10, comision: 3.5 },
 ];
 
-const ISR_RETENCION = 0.15;
+const ISR_RETENCION = MX.isr.retencionCetesPct; // 0.90 — Ley de Ingresos 2026
 
 function calcRendimientoNeto(bruto: number, comision: number, isr: number): number {
   const despuesComision = bruto - comision;
@@ -114,7 +115,7 @@ export default function L11() {
               <p className="font-bold mb-1">ISR (Impuesto sobre Rendimientos)</p>
               <p className="text-sm">
                 Los rendimientos de inversiones en México pagan ISR. En CETES es automático
-                (retención de ~0.15% en 2024 — ya viene descontado). En acciones, debes declarar.
+                (retención de {MX.isr.retencionCetesPct.toFixed(2)}% en {MX.isr.anio} — ya viene descontado). En acciones, debes declarar.
               </p>
               <p className="text-sm mt-2 italic">
                 "No es para asustarte. Es para que tus cálculos sean realistas desde el principio."
