@@ -39,7 +39,8 @@ Rama: `f1-ola3-fixes-home-redesign` (base: `qa-identivezz`).
   - `researcher`: 'Colaborador ITT' → **'Colaborador de la comunidad'**. La
     condición (`preDone`) depende del pre-test de investigación (que sigue
     existiendo en la app) y es auto-otorgable, no del rol estudiantil → solo
-    cambió el título; id/condición/otorgamiento intactos.
+    cambió el título; id/condición/otorgamiento intactos. (NOTA F2: el badge
+    `researcher` se eliminó del sistema de logros; el pre-test sigue vivo.)
 - `frontend/src/pages/profile/Profile.tsx`: fallback de nombre
   `'Estudiante FinEmpoder'` → **`'FinEMPODER'`**.
 - `frontend/src/pages/legal/Terms.tsx`: titular de la marca
@@ -240,7 +241,8 @@ y `BadgeCard` renderiza `<badge.icon />` (mismo tamaño visual, `h-9 w-9`):
 | `finempoder_pro` | 🏆 | `Trophy` |
 
 Ids, títulos, descripciones, hints y condiciones quedaron intactos: solo
-cambió el disfraz visual.
+cambió el disfraz visual. (NOTA F2: con el esquema de series/tiers, el badge
+`researcher` se retiró; ver `F2_GAMIFICACION.md`.)
 
 ## Archivos tocados (resumen)
 
