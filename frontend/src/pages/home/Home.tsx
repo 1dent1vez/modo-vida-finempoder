@@ -1,10 +1,22 @@
 import { Fragment, useEffect, useMemo } from 'react';
-import { Check, Coins, Lock, PiggyBank, Play, TrendingUp } from 'lucide-react';
+import {
+  BookOpen,
+  Check,
+  Coins,
+  Flame,
+  Lightbulb,
+  Lock,
+  PiggyBank,
+  Play,
+  TrendingUp,
+  Trophy,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useProgress } from '../../store/progress';
 import { useAuth } from '../../store/auth';
 import { useDailyXp } from '../../hooks/gamification/useDailyXp';
+import { useWeekStats } from '../../hooks/gamification/useWeekStats';
 import { DAILY_GOAL_META, resolveDailyXpTarget, useDailyGoal } from '../../store/dailyGoal';
 import { localDayKey } from '../../lib/localDate';
 import { isAdminMode } from '../../lib/adminMode';
@@ -13,6 +25,7 @@ import { Progress } from '../../shared/components/ui/progress';
 import { DailyGoalRing } from '../../shared/components/gamification/DailyGoalRing';
 import FECard from '../../shared/components/FECard';
 import { DailyGoalDialog } from './DailyGoalDialog';
+import { getDailyTip } from './dailyTips';
 import {
   getLessonPath,
   getProgressPercent,
@@ -146,10 +159,39 @@ function capitalizeWords(value: string): string {
     .join(' ');
 }
 
+function StatBox({
+  icon,
+  value,
+  label,
+  pillClass,
+}: {
+  icon: React.ReactNode;
+  value: number | string;
+  label: string;
+  pillClass: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-2xl border border-[var(--color-neutral-200)] bg-white p-4 text-center shadow-[var(--shadow-soft)]">
+      <div
+        className={cn(
+          'flex h-10 w-10 items-center justify-center rounded-full [&_svg]:h-5 [&_svg]:w-5',
+          pillClass
+        )}
+      >
+        {icon}
+      </div>
+      <p className="text-2xl font-extrabold leading-none">{value}</p>
+      <p className="text-xs font-semibold text-[var(--color-text-secondary)]">{label}</p>
+    </div>
+  );
+}
+
 export default function Home() {
   const nav = useNavigate();
+  const streak = useProgress((s) => s.streak);
   const { user } = useAuth();
   const { xpToday, loaded } = useDailyXp();
+  const { stats: week } = useWeekStats();
   const goalLevel = useDailyGoal((s) => s.level);
   const celebratedDay = useDailyGoal((s) => s.celebratedDay);
   const markCelebrated = useDailyGoal((s) => s.markCelebrated);
@@ -178,6 +220,7 @@ export default function Home() {
   const todayLabel = capitalizeWords(rawDate);
 
   const goalLabel = goalLevel ? DAILY_GOAL_META[goalLevel].label : DAILY_GOAL_META.regular.label;
+  const tip = getDailyTip();
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-app)] px-4 pb-24 pt-5">
@@ -364,6 +407,47 @@ export default function Home() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* ── Estadísticas (ventana 7 días) ───────────────────────────────── */}
+      <section data-testid="section-stats" aria-label="Estadísticas" className="mt-6">
+        <div className="grid grid-cols-3 gap-2">
+          <StatBox
+            icon={<BookOpen />}
+            value={week.completed}
+            label="Lecciones"
+            pillClass="bg-[var(--color-brand-info-bg)] text-[var(--color-brand-info)]"
+          />
+          <StatBox
+            icon={<Flame />}
+            value={`${streak.current}d`}
+            label="Racha"
+            pillClass="bg-[var(--color-brand-warning-bg)] text-[var(--color-brand-warning)]"
+          />
+          <StatBox
+            icon={<Trophy />}
+            value={week.xp}
+            label="XP"
+            pillClass="bg-[var(--color-brand-success-bg)] text-[var(--color-brand-success)]"
+          />
+        </div>
+      </section>
+
+      {/* ── Tip del día ─────────────────────────────────────────────────── */}
+      <section data-testid="section-tip" aria-label="Tip del día" className="mt-6">
+        <FECard variant="flat" className="rounded-2xl shadow-[var(--shadow-soft)]">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-warning-bg)] text-[var(--color-brand-warning)]">
+              <Lightbulb className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base font-bold">Tip del día</h2>
+              <p className="mt-1 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                {tip}
+              </p>
+            </div>
+          </div>
+        </FECard>
       </section>
 
       <DailyGoalDialog />
