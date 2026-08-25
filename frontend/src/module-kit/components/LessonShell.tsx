@@ -300,13 +300,11 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
               {!reducedMotion && (
                 <span
                   data-testid="xp-float"
-                  className="text-sm font-bold text-[var(--color-brand-success)]"
-                  style={{ animation: 'finniXpFloat 900ms ease-out both' }}
+                  className="finni-xp-float text-sm font-bold text-[var(--color-brand-success)]"
                 >
                   +{completion.score ?? 100} XP
                 </span>
               )}
-              <style>{`@keyframes finniXpFloat { 0% { opacity: 0; transform: translateY(6px); } 100% { opacity: 1; transform: translateY(0); } }`}</style>
             </div>
             <FinniMessage
               variant="success"

@@ -33,3 +33,28 @@ body {
     animation: none;
   }
 }
+
+/* Animaciones del tema (LM-03: keyframes que vivían inline en LessonShell) */
+@keyframes finni-xp-float {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.finni-xp-float {
+  animation: finni-xp-float 900ms ease-out both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
