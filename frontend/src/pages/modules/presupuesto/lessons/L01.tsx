@@ -11,7 +11,7 @@ type Classification = 'planned' | 'unplanned' | null;
 const WEEK_EVENTS = [
   { day: 'Lunes', desc: 'Cobro de quincena/mesada/beca', amount: 2000, isIncome: true },
   { day: 'Martes', desc: 'Café + transporte', amount: -75 },
-  { day: 'Miércoles', desc: 'Comida rápida + streaming', amount: -219 },
+  { day: 'Miércoles', desc: 'Comida rápida + streaming', amount: -309 },
   { day: 'Jueves', desc: 'Salida con amigos', amount: -350 },
   { day: 'Viernes', desc: 'Impresiones + snack', amount: -95 },
   { day: 'Sábado', desc: 'Gastos varios', amount: -200 },
