@@ -3,7 +3,7 @@ import { Check, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FinniMessage from '../../shared/components/FinniMessage';
 import { isAdminMode } from '../../lib/adminMode';
-import type { ModuleFlowConfig, ModuleLesson } from '../moduleFlow';
+import type { ModuleFlowConfig } from '../moduleFlow';
 import { getPathNodeStates, type LessonNodeState } from '../lessonPathState';
 
 const PATH_WELCOME = [
@@ -19,8 +19,6 @@ export interface LessonPathProps {
   completedMap: Record<string, boolean>;
   onNavigate: (lessonId: string) => void;
 }
-
-type MiniNode = { lesson: ModuleLesson; state: LessonNodeState };
 
 function NodeIcon({ state, number }: { state: LessonNodeState; number: number }) {
   if (state === 'completed') return <Check className="h-5 w-5" />;
@@ -143,56 +141,3 @@ export function LessonPath({ config, completedMap, onNavigate }: LessonPathProps
  * Resumen compacto de un módulo para Home: nodos-chico de la lección
  * anterior (completada), la actual y la siguiente.
  */
-export function ModuleMiniPath({
-  config,
-  completedMap,
-  onNavigate,
-}: LessonPathProps) {
-  const states = useMemo(() => getPathNodeStates(config, completedMap), [config, completedMap]);
-  const currentIndex = config.lessons.findIndex((lesson) => states[lesson.id] === 'current');
-
-  const nodes: MiniNode[] = [];
-  if (currentIndex === -1 && config.lessons.length > 0) {
-    nodes.push({ lesson: config.lessons[config.lessons.length - 1], state: 'completed' });
-  }
-  if (currentIndex > 0) {
-    nodes.push({ lesson: config.lessons[currentIndex - 1], state: states[config.lessons[currentIndex - 1].id] });
-  }
-  if (currentIndex >= 0) {
-    nodes.push({ lesson: config.lessons[currentIndex], state: 'current' });
-  }
-  if (currentIndex >= 0 && currentIndex < config.lessons.length - 1) {
-    const next = config.lessons[currentIndex + 1];
-    nodes.push({ lesson: next, state: states[next.id] });
-  }
-
-  return (
-    <div className="flex items-center gap-1.5" role="list" aria-label="Mini camino de lecciones">
-      {nodes.map(({ lesson, state }, index) => {
-        const isLocked = state === 'locked';
-        return (
-          <button
-            key={lesson.id}
-            type="button"
-            onClick={() => {
-              if (!isLocked) onNavigate(lesson.id);
-            }}
-            aria-label={`${lesson.id}: ${lesson.title}${isLocked ? ' (bloqueada)' : ''}`}
-            className={cn(
-              'flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-xs font-extrabold transition-colors',
-              state === 'completed' &&
-                'border-[var(--color-brand-success)] bg-[var(--color-brand-success-bg)] text-[var(--color-brand-success)]',
-              state === 'current' &&
-                'border-[var(--color-brand-primary)] bg-white text-[var(--color-brand-primary)]',
-              state === 'current' && 'finni-node-pulse',
-              isLocked &&
-                'border-[var(--color-neutral-300)] bg-[var(--color-neutral-100)] text-[var(--color-neutral-400)] opacity-80'
-            )}
-          >
-            {state === 'completed' ? <Check className="h-4 w-4" /> : isLocked ? <Lock className="h-3.5 w-3.5" /> : index + 1}
-          </button>
-        );
-      })}
-    </div>
-  );
-}

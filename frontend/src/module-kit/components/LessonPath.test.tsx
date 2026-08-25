@@ -5,7 +5,7 @@ import * as jestDomMatchers from '@testing-library/jest-dom/matchers';
 expect.extend(jestDomMatchers);
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { LessonPath, ModuleMiniPath } from './LessonPath';
+import { LessonPath } from './LessonPath';
 import { getLessonNodeState, getPathNodeStates } from '../lessonPathState';
 import { setAdminMode } from '../../lib/adminMode';
 import type { ModuleFlowConfig } from '../moduleFlow';
@@ -98,32 +98,5 @@ describe('LessonPath — render e interacción', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /L03/ }));
     expect(onNavigate).toHaveBeenCalledWith('L03');
-  });
-});
-
-describe('ModuleMiniPath — resumen compacto', () => {
-  it('muestra anterior (check), actual (número) y siguiente (candado)', () => {
-    render(
-      <ModuleMiniPath config={CONFIG} completedMap={{ L01: true }} onNavigate={vi.fn()} />
-    );
-
-    const prev = screen.getByRole('button', { name: /L01/ });
-    const current = screen.getByRole('button', { name: /L02/ });
-    const next = screen.getByRole('button', { name: /bloqueada/ });
-
-    expect(prev.querySelector('svg')).not.toBeNull();
-    expect(current).toHaveClass('finni-node-pulse');
-    expect(next.querySelector('svg')).not.toBeNull();
-  });
-
-  it('tap en bloqueada del mini camino no navega; tap en actual sí', () => {
-    const onNavigate = vi.fn();
-    render(<ModuleMiniPath config={CONFIG} completedMap={{ L01: true }} onNavigate={onNavigate} />);
-
-    fireEvent.click(screen.getByRole('button', { name: /bloqueada/ }));
-    expect(onNavigate).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByRole('button', { name: /L02/ }));
-    expect(onNavigate).toHaveBeenCalledWith('L02');
   });
 });

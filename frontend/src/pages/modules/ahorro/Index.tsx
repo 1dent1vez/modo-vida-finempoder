@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PiggyBank, Sparkles } from 'lucide-react';
+import { Clock, PiggyBank, Sparkles } from 'lucide-react';
 import { SAVINGS_LESSONS } from './lessonFlow';
 
 const warnColor = 'var(--color-brand-warning)';
@@ -76,7 +76,7 @@ export default function AhorroIndex() {
       {/* Depositos */}
       <div className="p-4 rounded-2xl border border-[var(--color-neutral-200)]" style={{ borderLeft: `6px solid ${infoColor}` }}>
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-lg">⏰</span>
+          <Clock className="h-5 w-5 text-[var(--color-brand-info)]" aria-hidden="true" />
           <p className="font-bold">Programa tus depositos</p>
         </div>
         <div className="space-y-3">

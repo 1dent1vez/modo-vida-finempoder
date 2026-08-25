@@ -29,9 +29,11 @@ const qc = new QueryClient();
 supabase.auth.onAuthStateChange((event, session) => {
   const { setAuth, clearAuth, setHydrated } = useAuth.getState();
   if (session?.access_token && session.user) {
+    const meta = (session.user.user_metadata ?? {}) as { name?: string };
     setAuth(session.access_token, {
       id: session.user.id,
       email: session.user.email ?? '',
+      name: meta.name?.trim() || undefined,
     });
   } else {
     clearAuth();

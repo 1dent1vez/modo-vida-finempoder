@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Pause } from 'lucide-react';
 import LessonShell from '../LessonShell';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
@@ -95,7 +96,7 @@ export default function L07() {
             {!audioLeido ? (
               <div className="space-y-4">
                 <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
-                  <p className="font-bold mb-2">⏸ Pausa interactiva</p>
+                  <p className="font-bold mb-2 flex items-center gap-2"><Pause className="h-4 w-4" aria-hidden="true" /> Pausa interactiva</p>
                   <p className="text-sm mb-2">¿Qué te parece más atractivo hasta ahora: fondos o acciones? ¿Por qué?</p>
                   <textarea
                     value={pausaRespuesta}
