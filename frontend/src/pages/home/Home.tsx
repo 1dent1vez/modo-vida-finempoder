@@ -1,13 +1,26 @@
-import { useEffect, useMemo } from 'react';
-import { BookOpen, Flame, Trophy, Lightbulb, Play, PiggyBank, TrendingUp, School } from 'lucide-react';
+import { Fragment, useEffect, useMemo } from 'react';
+import {
+  Bell,
+  BookOpen,
+  Check,
+  ChevronRight,
+  Flame,
+  Lightbulb,
+  Lock,
+  PiggyBank,
+  Play,
+  Star,
+  TrendingUp,
+  Wallet,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useProgress } from '../../store/progress';
 import { useAuth } from '../../store/auth';
 import { useGamification } from '../../hooks/gamification/useGamification';
 import { useDailyXp } from '../../hooks/gamification/useDailyXp';
+import { useWeekStats } from '../../hooks/gamification/useWeekStats';
 import FECard from '../../shared/components/FECard';
-import { StatCard } from '../../shared/components/StatCard';
 import { XPChip } from '../../shared/components/gamification/XPChip';
 import { StreakBadge } from '../../shared/components/gamification/StreakBadge';
 import { DailyGoalRing } from '../../shared/components/gamification/DailyGoalRing';
@@ -17,159 +30,187 @@ import { DAILY_GOAL_META, resolveDailyXpTarget, useDailyGoal } from '../../store
 import { localDayKey } from '../../lib/localDate';
 import { Button } from '../../shared/components/ui/button';
 import { Progress } from '../../shared/components/ui/progress';
-import { ModuleMiniPath } from '../../module-kit/components/LessonPath';
 import { DailyGoalDialog } from './DailyGoalDialog';
+import { getDailyTip } from './dailyTips';
 import {
   getLessonPath,
   getProgressPercent,
   loadModuleProgressSnapshot,
   toCompletedMapFromProgress,
   type ModuleFlowConfig,
+  type ModuleLesson,
 } from '../../module-kit/moduleFlow';
+import { getLessonNodeState } from '../../module-kit/lessonPathState';
 import { BUDGET_MODULE_CONFIG } from '../modules/presupuesto/lessonFlow';
 import { SAVINGS_MODULE_CONFIG } from '../modules/ahorro/lessonFlow';
 import { INVESTMENT_MODULE_CONFIG } from '../modules/inversion/lessonFlow';
 
-const DAILY_TIPS = [
-  'Separa el 10% de tu ingreso antes de gastar. Paga primero a tu yo futuro.',
-  'El gasto hormiga suma más de lo que crees: un café diario = $1,500 al mes.',
-  'La regla 50-30-20: 50% necesidades, 30% deseos, 20% ahorro e inversión.',
-  'Un fondo de emergencia de 3-6 meses de gastos es tu escudo financiero.',
-  'Antes de invertir, elimina deudas con tasas mayores al 15% anual.',
-  'Anota cada gasto hoy. En una semana verás patrones que no esperabas.',
-  'La inflación reduce el poder de tu dinero. Invertirlo lo protege.',
-  'Automatiza tu ahorro: transfiérelo el día que cobras, no lo que sobre.',
-  'Diversificar es no poner todos los huevos en una canasta.',
-  'El interés compuesto es magia: $1,000 al 10% anual = $2,594 en 10 años.',
-  'Define tu meta de ahorro con monto y fecha límite. Sin fecha, no es meta.',
-  'Revisa tus suscripciones cada mes. Las olvidadas cuestan más de $500/año.',
-  'El mejor momento para empezar a invertir fue ayer. El segundo mejor es hoy.',
-  'Conoce tu perfil de riesgo antes de elegir instrumento de inversión.',
-];
+type ModuleColor = 'warning' | 'success' | 'info';
 
-function getDailyTip(): string {
-  const start = new Date(new Date().getFullYear(), 0, 0);
-  const dayOfYear = Math.floor((Date.now() - start.getTime()) / 86_400_000);
-  return DAILY_TIPS[dayOfYear % DAILY_TIPS.length];
-}
-
-type ModuleContinue = {
-  path: string;
-  lessonTitle: string;
-  moduleTitle: string;
-  color: 'warning' | 'success' | 'info';
-  progress: number;
-};
-
-function computeContinueCards(): ModuleContinue[] {
-  const modules = [
-    { config: BUDGET_MODULE_CONFIG, moduleTitle: 'Presupuestación', color: 'warning' as const },
-    { config: SAVINGS_MODULE_CONFIG, moduleTitle: 'Ahorro', color: 'success' as const },
-    { config: INVESTMENT_MODULE_CONFIG, moduleTitle: 'Inversión', color: 'info' as const },
-  ];
-  const results: ModuleContinue[] = [];
-  for (const { config, moduleTitle, color } of modules) {
-    const snapshot = loadModuleProgressSnapshot(config);
-    const progress = getProgressPercent(config, snapshot);
-    const next = (config.lessons as ReadonlyArray<{ id: string; title: string; kind: string }>)
-      .find((l) => snapshot.lessons[l.id] !== 'completed');
-    if (!next) continue;
-    results.push({ path: getLessonPath(config, next.id), lessonTitle: next.title, moduleTitle, color, progress });
-  }
-  return results.sort((a, b) => b.progress - a.progress);
-}
-
-function computeTotalCompleted(): number {
-  return [BUDGET_MODULE_CONFIG, SAVINGS_MODULE_CONFIG, INVESTMENT_MODULE_CONFIG].reduce((total, config) => {
-    const snapshot = loadModuleProgressSnapshot(config);
-    return total + Object.values(snapshot.lessons).filter((s) => s === 'completed').length;
-  }, 0);
-}
-
-const MODULE_BAR: Record<string, string> = {
+const MODULE_BAR: Record<ModuleColor, string> = {
   warning: 'bg-[var(--color-brand-warning)]',
   success: 'bg-[var(--color-brand-success)]',
   info: 'bg-[var(--color-brand-info)]',
 };
-const MODULE_TEXT: Record<string, string> = {
-  warning: 'text-[var(--color-brand-warning)]',
-  success: 'text-[var(--color-brand-success)]',
-  info: 'text-[var(--color-brand-info)]',
-};
-const MODULE_BG: Record<string, string> = {
-  warning: 'bg-[var(--color-brand-warning-bg)] border-[var(--color-brand-warning)]',
-  success: 'bg-[var(--color-brand-success-bg)] border-[var(--color-brand-success)]',
-  info: 'bg-[var(--color-brand-info-bg)] border-[var(--color-brand-info)]',
-};
-const MODULE_BTN: Record<string, string> = {
-  warning: 'bg-[var(--color-brand-warning)] hover:bg-[var(--color-brand-secondary-dark)] text-white',
-  success: 'bg-[var(--color-brand-success)] hover:opacity-90 text-white',
-  info: '',
+
+const MODULE_BG: Record<ModuleColor, string> = {
+  warning: 'bg-[var(--color-brand-warning-bg)] text-[var(--color-brand-warning)]',
+  success: 'bg-[var(--color-brand-success-bg)] text-[var(--color-brand-success)]',
+  info: 'bg-[var(--color-brand-info-bg)] text-[var(--color-brand-info)]',
 };
 
-type ModulePathSummary = {
+type ModuleMeta = {
   config: ModuleFlowConfig;
-  moduleTitle: string;
-  color: 'warning' | 'success' | 'info';
+  title: string;
+  color: ModuleColor;
+  icon: React.ReactNode;
+};
+
+const MODULES: ModuleMeta[] = [
+  { config: BUDGET_MODULE_CONFIG, title: 'Presupuestación', color: 'warning', icon: <Wallet /> },
+  { config: SAVINGS_MODULE_CONFIG, title: 'Ahorro', color: 'success', icon: <PiggyBank /> },
+  { config: INVESTMENT_MODULE_CONFIG, title: 'Inversión', color: 'info', icon: <TrendingUp /> },
+];
+
+type ModuleState = {
+  meta: ModuleMeta;
   completedMap: Record<string, boolean>;
   progress: number;
+  nextLessonId: string | null;
 };
 
-function computeModulePaths(): ModulePathSummary[] {
-  const modules = [
-    { config: BUDGET_MODULE_CONFIG, moduleTitle: 'Presupuestación', color: 'warning' as const },
-    { config: SAVINGS_MODULE_CONFIG, moduleTitle: 'Ahorro', color: 'success' as const },
-    { config: INVESTMENT_MODULE_CONFIG, moduleTitle: 'Inversión', color: 'info' as const },
-  ];
-  return modules.map(({ config, moduleTitle, color }) => {
-    const snapshot = loadModuleProgressSnapshot(config);
+/** Estado por módulo con la MISMA lógica que LessonPath (getLessonNodeState →
+ *  getRequiredLessonId + completedMap). El candado entre módulos usa la última
+ *  lección del módulo anterior (secuencia Presupuestación → Ahorro → Inversión). */
+function computeModuleStates(): ModuleState[] {
+  return MODULES.map((meta) => {
+    const snapshot = loadModuleProgressSnapshot(meta.config);
+    const completedMap = toCompletedMapFromProgress(snapshot);
+    const nextLessonId =
+      meta.config.lessons.find(
+        (lesson) => getLessonNodeState(meta.config, lesson.id, completedMap) === 'current'
+      )?.id ?? null;
     return {
-      config,
-      moduleTitle,
-      color,
-      completedMap: toCompletedMapFromProgress(snapshot),
-      progress: getProgressPercent(config, snapshot),
+      meta,
+      completedMap,
+      progress: getProgressPercent(meta.config, snapshot),
+      nextLessonId,
     };
   });
 }
 
-type ModuleCardProps = {
-  title: string;
-  subtitle: string;
+type ModuleCardData = ModuleMeta & {
+  order: number;
   progress: number;
-  color: 'warning' | 'success' | 'info';
-  icon: React.ReactNode;
-  onOpen: () => void;
+  locked: boolean;
 };
 
-function ModuleCard({ title, subtitle, progress, color, icon, onOpen }: ModuleCardProps) {
+function computeModuleCards(): ModuleCardData[] {
+  const states = computeModuleStates();
+  return states.map((state, index) => {
+    const prev = states[index - 1];
+    const prevLastId = prev
+      ? prev.meta.config.lessons[prev.meta.config.lessons.length - 1]?.id
+      : null;
+    const locked = index > 0 && (prevLastId === null || prev.completedMap[prevLastId] !== true);
+    return {
+      ...state.meta,
+      order: index + 1,
+      progress: state.progress,
+      locked,
+    };
+  });
+}
+
+type ContinueInfo = {
+  config: ModuleFlowConfig;
+  moduleTitle: string;
+  color: ModuleColor;
+  lesson: ModuleLesson;
+  progress: number;
+};
+
+/** Módulo "en curso": el más avanzado con una lección disponible (igual criterio
+ *  que la Ola 2). null solo cuando los 3 módulos están completos. */
+function computeContinueInfo(): ContinueInfo | null {
+  const candidate = computeModuleStates()
+    .filter((state) => state.nextLessonId !== null)
+    .sort((a, b) => b.progress - a.progress)[0];
+  if (!candidate?.nextLessonId) return null;
+  const lesson = candidate.meta.config.lessons.find((l) => l.id === candidate.nextLessonId);
+  if (!lesson) return null;
+  return {
+    config: candidate.meta.config,
+    moduleTitle: candidate.meta.title,
+    color: candidate.meta.color,
+    lesson,
+    progress: candidate.progress,
+  };
+}
+
+function CoinChartIllustration({ className }: { className?: string }) {
   return (
-    <FECard variant="elevated" clickable onClick={onOpen}>
-      <div className="flex items-center gap-3 mb-3">
-        <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl [&_svg]:h-5 [&_svg]:w-5', MODULE_BG[color])}>
-          {icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm">{title}</p>
-          <p className="text-xs text-[var(--color-text-secondary)]">{subtitle}</p>
-        </div>
+    <svg viewBox="0 0 96 96" className={cn('h-24 w-24 shrink-0', className)} aria-hidden="true" fill="none">
+      <circle cx="48" cy="48" r="40" fill="var(--color-brand-secondary-light)" opacity="0.35" />
+      <path
+        d="M26 62 40 46l12 8 18-24"
+        stroke="var(--color-brand-secondary)"
+        strokeWidth="5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="26" cy="62" r="7" fill="var(--color-brand-warning)" stroke="var(--color-brand-secondary-light)" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function CoinStackIllustration({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 96 96" className={cn('h-20 w-20 shrink-0', className)} aria-hidden="true" fill="none">
+      <ellipse cx="48" cy="34" rx="20" ry="9" fill="var(--color-brand-warning)" />
+      <path d="M28 34v22c0 5 9 9 20 9s20-4 20-9V34" fill="var(--color-brand-secondary-light)" opacity="0.55" />
+      <ellipse cx="48" cy="56" rx="20" ry="9" fill="var(--color-brand-secondary-light)" />
+      <path d="M28 56v16c0 5 9 9 20 9s20-4 20-9V56" fill="var(--color-brand-warning)" opacity="0.7" />
+    </svg>
+  );
+}
+
+function WeekStat({
+  icon,
+  label,
+  value,
+  circleClass,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  circleClass: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-2 text-center">
+      <div
+        className={cn(
+          'flex h-11 w-11 items-center justify-center rounded-full [&_svg]:h-5 [&_svg]:w-5',
+          circleClass
+        )}
+      >
+        {icon}
       </div>
-      <Progress value={progress} barClassName={MODULE_BAR[color]} className="mb-2" />
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-[var(--color-text-secondary)]">{progress}% completado</span>
-        <Button size="sm" className={cn(MODULE_BTN[color])}>Ir</Button>
-      </div>
-    </FECard>
+      <p className="text-lg font-extrabold">{value}</p>
+      <p className="text-[11px] font-semibold leading-tight text-[var(--color-text-secondary)]">
+        {label}
+      </p>
+    </div>
   );
 }
 
 export default function Home() {
   const nav = useNavigate();
-  const mod = useProgress((s) => s.modules);
   const streak = useProgress((s) => s.streak);
   const { user } = useAuth();
   const { data: gamification } = useGamification();
   const { xpToday, loaded } = useDailyXp();
+  const { stats: week } = useWeekStats();
   const goalLevel = useDailyGoal((s) => s.level);
   const celebratedDay = useDailyGoal((s) => s.celebratedDay);
   const markCelebrated = useDailyGoal((s) => s.markCelebrated);
@@ -183,124 +224,261 @@ export default function Home() {
     if (celebratedDay !== today) markCelebrated(today);
   }, [celebratedDay, goalReached, markCelebrated]);
 
-  const continueCards = useMemo(() => computeContinueCards(), []);
-  const totalCompleted = useMemo(() => computeTotalCompleted(), []);
-  const modulePaths = useMemo(() => computeModulePaths(), []);
-  const primaryContinue = continueCards[0] ?? null;
+  const continueInfo = useMemo(() => computeContinueInfo(), []);
+  const moduleCards = useMemo(() => computeModuleCards(), []);
 
-  const displayName = user?.name
-    ? user.name.split(' ')[0]
-    : user?.email?.split('@')[0] ?? 'Estudiante';
-
-  // En modo invitado no mostramos datos personales: saludo genérico.
-  const greetingName = user ? displayName : 'Estudiante';
+  const firstName = user?.name?.trim().split(/\s+/)[0];
+  const greeting = firstName ? `Hola, ${firstName}` : 'Hola 👋';
+  const avatarInitial = firstName ? firstName[0].toUpperCase() : 'F';
 
   const today = new Date().toLocaleDateString('es-MX', {
-    weekday: 'long', day: 'numeric', month: 'long',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
   });
+  const tip = getDailyTip();
+
+  const goalLabel = goalLevel ? DAILY_GOAL_META[goalLevel].label : DAILY_GOAL_META.regular.label;
 
   return (
-    <div className="min-h-screen pb-24 bg-[var(--color-bg-app)] px-4 pt-5">
-
-      {/* Greeting Header */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="min-h-screen bg-[var(--color-bg-app)] px-4 pt-5 pb-24">
+      {/* ── Header: avatar + saludo + fecha + campana ───────────────────── */}
+      <header className="mb-6 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-xl font-bold text-white">
-            {greetingName[0]?.toUpperCase() ?? 'U'}
+            {avatarInitial}
           </div>
           <div>
-            <h1 className="text-lg font-extrabold">Hola, {greetingName}</h1>
+            <h1 className="text-lg font-extrabold">{greeting}</h1>
             <p className="text-xs capitalize text-[var(--color-text-secondary)]">{today}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {gamification && <XPChip xp={gamification.xp} />}
-          <StreakBadge streak={streak.current} />
-          <ShieldBadge shields={streak.shields} />
+          <button
+            type="button"
+            aria-label="Notificaciones"
+            className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg-surface)] shadow-[var(--shadow-sm)]"
+          >
+            <Bell className="h-5 w-5 text-[var(--color-text-secondary)]" />
+            <span
+              aria-hidden="true"
+              className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[var(--color-brand-error)]"
+            />
+          </button>
         </div>
+      </header>
+
+      {/* ── Hero 60/40: Continúa aprendiendo + Meta de hoy ──────────────── */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
+        <FECard
+          variant="hero"
+          className="bg-[var(--color-brand-cream)] shadow-[var(--shadow-soft)] sm:col-span-3"
+        >
+          <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--color-text-secondary)]">
+            Continúa aprendiendo
+          </h2>
+          {continueInfo ? (
+            <div className="mt-3 flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <span
+                  className={cn(
+                    'inline-flex items-center rounded-full px-3 py-1 text-xs font-bold',
+                    MODULE_BG[continueInfo.color]
+                  )}
+                >
+                  {continueInfo.moduleTitle}
+                </span>
+                <h3 className="mt-3 text-lg font-extrabold leading-snug">
+                  {continueInfo.lesson.title}
+                </h3>
+                <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                  Sigue con tu progreso
+                </p>
+                <div className="mt-4">
+                  <Progress
+                    value={continueInfo.progress}
+                    barClassName={MODULE_BAR[continueInfo.color]}
+                  />
+                  <p className="mt-1 text-xs font-semibold text-[var(--color-text-secondary)]">
+                    {continueInfo.progress}% del módulo
+                  </p>
+                </div>
+                <Button
+                  className="mt-4 min-h-11 w-full rounded-xl bg-[var(--color-brand-warning)] text-white hover:bg-[var(--color-brand-secondary-dark)]"
+                  onClick={() => nav(getLessonPath(continueInfo.config, continueInfo.lesson.id))}
+                >
+                  <Play className="h-4 w-4" />
+                  Continuar
+                </Button>
+              </div>
+              <CoinChartIllustration className="hidden sm:block" />
+            </div>
+          ) : (
+            <div className="mt-3 flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-success-bg)] text-[var(--color-brand-success)]">
+                <Check className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="font-extrabold">¡Completaste los 3 módulos! 🎉</p>
+                <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
+                  Revisa tus logros y sigue construyendo tu hábito.
+                </p>
+              </div>
+            </div>
+          )}
+        </FECard>
+
+        <FECard variant="hero" className="shadow-[var(--shadow-soft)] sm:col-span-2">
+          <h2 className="text-sm font-bold">Meta de hoy</h2>
+          <div className="mt-3 flex items-center gap-4">
+            <DailyGoalRing xpToday={xpToday} xpTarget={xpTarget} />
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-extrabold">
+                {xpToday}/{xpTarget} XP
+              </p>
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                Meta {goalLabel.toLowerCase()} · hoy
+              </p>
+              {goalReached && (
+                <FinniMessage
+                  variant="success"
+                  title="¡Bien hecho!"
+                  message="¡Meta del día cumplida!"
+                  className="mt-2"
+                />
+              )}
+            </div>
+          </div>
+          <div className="my-3 h-px bg-[var(--color-neutral-200)]" aria-hidden="true" />
+          <div className="flex items-center gap-2">
+            {streak.current >= 2 ? (
+              <StreakBadge streak={streak.current} />
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-status-warningBg)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-brand-warning)]">
+                <Flame className="h-3 w-3" />
+                {streak.current} {streak.current === 1 ? 'día' : 'días'}
+              </span>
+            )}
+            <ShieldBadge shields={streak.shields} />
+            <span className="ml-auto text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+              Racha
+            </span>
+          </div>
+        </FECard>
       </div>
 
-      {/* Meta diaria */}
-      <FECard variant="flat" className="mb-6">
-        <div className="flex items-center gap-4">
-          <DailyGoalRing xpToday={xpToday} xpTarget={xpTarget} />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold">
-              Meta {goalLevel ? DAILY_GOAL_META[goalLevel].label : DAILY_GOAL_META.regular.label} ·{' '}
-              {xpTarget} XP
-            </p>
-            <p className="text-xs text-[var(--color-text-secondary)]">
-              {xpToday}/{xpTarget} XP hoy
-            </p>
-            {goalReached && (
-              <FinniMessage
-                variant="success"
-                title="¡Bien hecho!"
-                message="¡Meta del día cumplida!"
-                className="mt-2"
-              />
-            )}
-          </div>
+      {/* ── Tu camino: 3 módulos en secuencia con conector punteado ──────── */}
+      <section className="mt-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-base font-bold">Tu camino</h2>
+          <button
+            type="button"
+            onClick={() => nav('/app/presupuesto')}
+            className="flex min-h-11 items-center gap-0.5 text-sm font-bold text-[var(--color-brand-primary)]"
+          >
+            Ver todo
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
-      </FECard>
-
-      {/* ContinueCard */}
-      {primaryContinue && (
-        <FECard variant="hero" className={cn('mb-6 border-2', MODULE_BG[primaryContinue.color])}>
-          <p className={cn('text-xs font-bold uppercase tracking-wide mb-1', MODULE_TEXT[primaryContinue.color])}>
-            {primaryContinue.moduleTitle} · {primaryContinue.progress}% completado
-          </p>
-          <h2 className="font-bold mb-4 truncate">{primaryContinue.lessonTitle}</h2>
-          <Button className={cn('w-full min-h-11', MODULE_BTN[primaryContinue.color])} onClick={() => nav(primaryContinue.path)}>
-            <Play className="h-4 w-4" />
-            Ir ahora
-          </Button>
-        </FECard>
-      )}
-
-      {/* Tu camino */}
-      <h2 className="text-base font-bold mb-3">Tu camino</h2>
-      <FECard variant="flat" className="mb-6">
-        <div className="divide-y divide-[var(--color-neutral-200)]">
-          {modulePaths.map(({ config, moduleTitle, color, completedMap, progress }) => (
-            <div key={config.moduleId} className="flex items-center justify-between gap-3 py-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold">{moduleTitle}</p>
-                <p className={cn('text-xs font-semibold', MODULE_TEXT[color])}>{progress}%</p>
-              </div>
-              <ModuleMiniPath
-                config={config}
-                completedMap={completedMap}
-                onNavigate={(lessonId) => nav(getLessonPath(config, lessonId))}
-              />
-            </div>
+        <div className="flex flex-col">
+          {moduleCards.map((card, index) => (
+            <Fragment key={card.config.moduleId}>
+              {index > 0 && (
+                <div
+                  aria-hidden="true"
+                  className="mx-auto h-5 w-0 border-l-2 border-dashed border-[var(--color-neutral-300)]"
+                />
+              )}
+              <FECard
+                variant="flat"
+                clickable
+                onClick={() => nav(card.config.overviewPath)}
+                className={cn(
+                  'rounded-2xl shadow-[var(--shadow-soft)] transition-colors',
+                  card.locked
+                    ? 'border-[var(--color-neutral-200)]'
+                    : 'border-[var(--color-brand-primary)]'
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold',
+                      card.locked
+                        ? 'bg-[var(--color-neutral-100)] text-[var(--color-text-muted)]'
+                        : 'bg-[var(--color-brand-primary)] text-white'
+                    )}
+                  >
+                    {card.order}
+                  </div>
+                  <div
+                    className={cn(
+                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-full [&_svg]:h-5 [&_svg]:w-5',
+                      MODULE_BG[card.color]
+                    )}
+                  >
+                    {card.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold">{card.title}</p>
+                    {card.locked ? (
+                      <p className="flex items-center gap-1 text-xs font-semibold text-[var(--color-text-muted)]">
+                        <Lock className="h-3 w-3" />
+                        Próximo
+                      </p>
+                    ) : (
+                      <p className="text-xs font-semibold text-[var(--color-brand-primary)]">
+                        {card.progress}% avanzado
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </FECard>
+            </Fragment>
           ))}
         </div>
+      </section>
+
+      {/* ── Esta semana: stats reales (ventana 7 días desde lessonProgress) ─ */}
+      <FECard variant="flat" className="mt-6 rounded-2xl shadow-[var(--shadow-soft)]">
+        <h2 className="mb-4 text-base font-bold">Esta semana</h2>
+        <div className="grid grid-cols-3 gap-2">
+          <WeekStat
+            icon={<BookOpen />}
+            label="Lecciones completadas"
+            value={week.completed}
+            circleClass="bg-[var(--color-brand-info-bg)] text-[var(--color-brand-info)]"
+          />
+          <WeekStat
+            icon={<Flame />}
+            label="Racha"
+            value={streak.current}
+            circleClass="bg-[var(--color-brand-warning-bg)] text-[var(--color-brand-warning)]"
+          />
+          <WeekStat
+            icon={<Star />}
+            label="XP ganados"
+            value={week.xp}
+            circleClass="bg-[var(--color-brand-success-bg)] text-[var(--color-brand-success)]"
+          />
+        </div>
       </FECard>
 
-      {/* Tus módulos */}
-      <h2 className="text-base font-bold mb-3">Tus módulos</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-        <ModuleCard title="Presupuestación" subtitle="Organiza ingresos y gastos" progress={mod.presupuesto?.progress ?? 0} color="warning" icon={<PiggyBank />} onOpen={() => nav('/app/presupuesto')} />
-        <ModuleCard title="Ahorro" subtitle="Crea hábitos de ahorro" progress={mod.ahorro?.progress ?? 0} color="success" icon={<School />} onOpen={() => nav('/app/ahorro')} />
-        <ModuleCard title="Inversión" subtitle="Haz crecer tu dinero" progress={mod.inversion?.progress ?? 0} color="info" icon={<TrendingUp />} onOpen={() => nav('/app/inversion')} />
-      </div>
-
-      {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-2 mb-6">
-        <StatCard icon={<BookOpen />} label="Lecciones" value={totalCompleted} color="primary" size="sm" />
-        <StatCard icon={<Flame />} label="Racha" value={`${streak.current}d`} color="warning" size="sm" />
-        <StatCard icon={<Trophy />} label="XP" value={gamification?.xp ?? 0} color="success" size="sm" />
-      </div>
-
-      {/* Daily Tip */}
-      <FECard variant="flat">
-        <div className="flex gap-3 items-start">
-          <Lightbulb className="h-5 w-5 shrink-0 mt-0.5 text-[var(--color-brand-warning)]" />
-          <div>
-            <p className="text-sm font-bold mb-1">Tip del día</p>
-            <p className="text-sm text-[var(--color-text-secondary)]">{getDailyTip()}</p>
+      {/* ── Tip del día ─────────────────────────────────────────────────── */}
+      <FECard variant="hero" className="mt-6 bg-[var(--color-brand-cream)] shadow-[var(--shadow-soft)]">
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-warning-bg)] text-[var(--color-brand-warning)]">
+            <Lightbulb className="h-5 w-5" />
           </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base font-bold">Tip del día</h2>
+            <p className="mt-1 text-sm leading-relaxed">{tip}</p>
+            <p className="mt-2 text-xs font-semibold text-[var(--color-text-secondary)]">
+              Un micro-hábito hoy construye tu futuro financiero.
+            </p>
+          </div>
+          <CoinStackIllustration className="hidden sm:block" />
         </div>
       </FECard>
 
