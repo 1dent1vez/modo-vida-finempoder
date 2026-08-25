@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Tests de racha con escudos (F1-OLA2) y day key LOCAL.
  * - Lógica pura: computeNextStreak / computeGoalStreak con day keys locales.
@@ -10,6 +11,7 @@ import { addDaysLocal, daysAgoLocalKey, localDayKey } from '../lib/localDate';
 import {
   computeGoalStreak,
   computeNextStreak,
+  isStreakLoss,
   useProgress,
   type Streak,
 } from './progress';
@@ -177,6 +179,49 @@ describe('computeGoalStreak — escudos cada 3 metas consecutivas', () => {
       shields: 1,
       metaDaysStreak: 2,
     });
+  });
+});
+
+describe('isStreakLoss — detección de racha perdida (F2-GAMIFICACION)', () => {
+  it('no es pérdida: primera actividad (0 → 1) ni racha que continúa', () => {
+    expect(isStreakLoss(baseStreak(), { current: 1, best: 1, shields: 0, metaDaysStreak: 0 })).toBe(false);
+    expect(
+      isStreakLoss(baseStreak({ current: 3 }), { current: 4, best: 5, shields: 0, metaDaysStreak: 0 })
+    ).toBe(false);
+    expect(
+      isStreakLoss(baseStreak({ current: 5 }), { current: 5, best: 5, shields: 0, metaDaysStreak: 0 })
+    ).toBe(false);
+  });
+
+  it('no es pérdida: consumir un escudo mantiene la racha', () => {
+    expect(
+      isStreakLoss(baseStreak({ current: 4 }), { current: 5, best: 6, shields: 0, metaDaysStreak: 0 })
+    ).toBe(false);
+  });
+
+  it('es pérdida: gap sin escudos reinicia la racha desde >= 2', () => {
+    expect(
+      isStreakLoss(baseStreak({ current: 4 }), { current: 1, best: 9, shields: 0, metaDaysStreak: 0 })
+    ).toBe(true);
+  });
+
+  it('recordActivity dispara el evento fe:streak-lost al romper la racha', () => {
+    const onLost = vi.fn();
+    window.addEventListener('fe:streak-lost', onLost);
+    try {
+      useProgress.getState().hydrateStreak({
+        current: 4,
+        best: 9,
+        lastActiveISO: '2026-08-05', // gap de 4 días, sin escudos
+        shields: 0,
+        metaDaysStreak: 0,
+      });
+      useProgress.getState().recordActivity('presupuesto', 0);
+      expect(onLost).toHaveBeenCalledTimes(1);
+      expect(useProgress.getState().streak.current).toBe(1);
+    } finally {
+      window.removeEventListener('fe:streak-lost', onLost);
+    }
   });
 });
 

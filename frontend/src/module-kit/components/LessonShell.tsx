@@ -7,10 +7,12 @@ import FinniMessage from '../../shared/components/FinniMessage';
 import { PageHeader } from '../../shared/components/PageHeader';
 import { Button } from '../../shared/components/ui/button';
 import { cn } from '@/lib/utils';
+import { localDayKey } from '@/lib/localDate';
 import { lessonProgressRepository } from '../../db/lessonProgress.repository';
 import { lessonResumeRepository } from '../../db/lessonResume.repository';
 import { resolveLessonCompletion, type LessonCompletion } from '../lessonContract';
 import { COMPLETION_MESSAGES } from './lessonCompletionMessages';
+import { FRASES_SALUDO_DIA, fraseAleatoria } from '../../lib/finniFrases';
 import { LockedLessonScreen } from './LockedLessonScreen';
 import { useLessons } from '../../store/lessons';
 import { useProgress } from '../../store/progress';
@@ -27,6 +29,9 @@ import {
   toCompletionMap,
   type ModuleFlowConfig,
 } from '../moduleFlow';
+
+/** Flag de "saludo del día ya mostrado" (F2-GAMIFICACION, una vez por día local). */
+const DAY_GREETING_KEY = 'fe_finni_day_greeting';
 
 const MODULE_COLOR_MAP: Record<string, 'warning' | 'success' | 'info'> = {
   presupuesto: 'warning',
@@ -94,6 +99,23 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
   const confettiFired = useRef(false);
   const reducedMotion = useReducedMotion();
   const [xp, setXp] = useState(0);
+  const [showDayGreeting, setShowDayGreeting] = useState(false);
+  const [dayGreeting] = useState(() => fraseAleatoria(FRASES_SALUDO_DIA));
+
+  // F2-GAMIFICACION: saludo de Finni en la primera lección del día cuando aún
+  // no hay actividad hoy (streak.lastActiveISO !== hoy). Una vez por día
+  // (flag 'fe_finni_day_greeting' con la fecha local).
+  useEffect(() => {
+    try {
+      const today = localDayKey(new Date());
+      if (localStorage.getItem(DAY_GREETING_KEY) === today) return;
+      localStorage.setItem(DAY_GREETING_KEY, today);
+      const streak = useProgress.getState().streak;
+      if (streak.lastActiveISO !== today) setShowDayGreeting(true);
+    } catch {
+      // localStorage no disponible: sin saludo, sin error.
+    }
+  }, []);
 
   const completion = useMemo(
     () => resolveLessonCompletion({
@@ -163,6 +185,15 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
 
         recordActivity(moduleId, 0);
         await hydrateFromRepository();
+
+        // F2-GAMIFICACION: avisa a la celebración global de logros para que el
+        // modal espere ~2.5s tras el confetti/XP de esta lección (evento
+        // mínimo y documentado en F2_GAMIFICACION.md).
+        window.dispatchEvent(
+          new CustomEvent('fe:lesson-completed', {
+            detail: { moduleId, lessonId: props.id, completedAt: Date.now() },
+          })
+        );
 
         if (import.meta.env.DEV) {
           console.info(`[${moduleId}-progress] lesson completed`, { moduleId, lessonId: props.id });
@@ -285,6 +316,9 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
       <PageHeader title={props.title} onBack={goOverview} moduleColor={moduleColor} />
       <div className="p-4 pb-20">
         <FECard variant="flat" className="mt-3">
+          {showDayGreeting && !completed && (
+            <FinniMessage variant="coach" message={dayGreeting} className="mb-4" />
+          )}
           {props.children}
         </FECard>
 

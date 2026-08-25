@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   BookOpen,
   Check,
@@ -24,8 +24,10 @@ import { Button } from '../../shared/components/ui/button';
 import { Progress } from '../../shared/components/ui/progress';
 import { DailyGoalRing } from '../../shared/components/gamification/DailyGoalRing';
 import FECard from '../../shared/components/FECard';
+import FinniMessage from '../../shared/components/FinniMessage';
 import { DailyGoalDialog } from './DailyGoalDialog';
 import { getDailyTip } from './dailyTips';
+import { FRASES_META_DIARIA, fraseAleatoria } from '../../lib/finniFrases';
 import {
   getLessonPath,
   getProgressPercent,
@@ -197,12 +199,17 @@ export default function Home() {
   const markCelebrated = useDailyGoal((s) => s.markCelebrated);
   const xpTarget = resolveDailyXpTarget(goalLevel);
   const goalReached = loaded && xpTarget > 0 && xpToday >= xpTarget;
+  const [metaCelebradaEnSesion, setMetaCelebradaEnSesion] = useState(false);
+  const [mensajeMeta] = useState(() => fraseAleatoria(FRASES_META_DIARIA));
 
   useEffect(() => {
     if (!goalReached) return;
     useProgress.getState().markDailyGoalReached();
     const today = localDayKey(new Date());
-    if (celebratedDay !== today) markCelebrated(today);
+    if (celebratedDay !== today) {
+      markCelebrated(today);
+      setMetaCelebradaEnSesion(true);
+    }
   }, [celebratedDay, goalReached, markCelebrated]);
 
   const moduleStates = useMemo(() => computeModuleStates(), []);
@@ -250,6 +257,9 @@ export default function Home() {
             </div>
           </div>
         </FECard>
+        {metaCelebradaEnSesion && (
+          <FinniMessage variant="success" message={mensajeMeta} className="mt-3" />
+        )}
       </section>
 
       {/* ── Continúa aprendiendo ────────────────────────────────────────── */}

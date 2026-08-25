@@ -125,6 +125,17 @@ export function computeGoalStreak(
   return { shields, metaDaysStreak };
 }
 
+/**
+ * F2-GAMIFICACION: la racha se PERDIÓ cuando venía de >= 2 días y el
+ * siguiente estado la reinicia a 1 por un gap sin escudos (o gap de 2+).
+ * Las primeras actividades (0 → 1) y el consumo de escudo (racha continúa)
+ * NO cuentan como pérdida. El store emite 'fe:streak-lost' para que Finni
+ * acompañe con una frase de ánimo (ver GlobalSnackbar).
+ */
+export function isStreakLoss(prev: Streak, update: StreakUpdate): boolean {
+  return prev.current >= 2 && update.current === 1;
+}
+
 /* ---------------------- estado inicial ---------------------- */
 
 const initialModules: Record<ModKey, ModuleProgress> = {
@@ -175,6 +186,10 @@ export const useProgress = create<ProgressState>()(
           daysAgoLocalKey(1),
           daysAgoLocalKey(2)
         );
+
+        if (isStreakLoss(state.streak, streakUpdate) && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('fe:streak-lost'));
+        }
 
         set(() => ({
           modules: { ...state.modules, [key]: { progress: nextProgress } },
