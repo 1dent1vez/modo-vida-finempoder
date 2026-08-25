@@ -80,7 +80,7 @@ export const BADGES: Badge[] = [
   },
   {
     id: 'ten_lessons',
-    title: 'Estudiante comprometido',
+    title: 'Comprometido con tu dinero',
     description: 'Completaste 10 lecciones en total.',
     icon: '📚',
     hint: 'Completa 10 lecciones entre todos los módulos.',
@@ -88,7 +88,7 @@ export const BADGES: Badge[] = [
   },
   {
     id: 'researcher',
-    title: 'Colaborador ITT',
+    title: 'Colaborador de la comunidad',
     description: 'Participaste en el pre-test de la investigación.',
     icon: '🔬',
     hint: 'Completa el cuestionario de pre-test.',

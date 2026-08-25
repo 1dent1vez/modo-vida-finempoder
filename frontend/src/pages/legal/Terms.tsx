@@ -22,7 +22,7 @@ export default function Terms() {
       <div className="flex-1 px-4 pt-6">
         <h1 className="mb-4 text-xl font-extrabold">Términos y Condiciones</h1>
         <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
-          Estos Términos y Condiciones regulan el uso de la aplicación <b className="text-[var(--color-text-primary)]">FinEmpoder</b>, propiedad del Instituto Tecnológico de Toluca.
+          Estos Términos y Condiciones regulan el uso de la aplicación <b className="text-[var(--color-text-primary)]">FinEmpoder</b>, propiedad de FinEMPODER.
           <br /><br />
           Al crear una cuenta o utilizar la aplicación, el usuario acepta cumplir con las siguientes disposiciones:
           <br /><br />

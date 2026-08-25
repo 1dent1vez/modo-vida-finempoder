@@ -30,7 +30,7 @@ export default function Profile() {
   if (!user) return <GuestProfile stats={{ totalCompleted, streakCurrent, xp }} onNavigate={navigate} />;
 
   // Usuario logueado: perfil normal SIN botón de cerrar sesión (decisión de producto Fase 0.5).
-  const displayName = user.name ?? 'Estudiante FinEmpoder';
+  const displayName = user.name ?? 'FinEMPODER';
   const initials = displayName
     .split(' ')
     .slice(0, 2)
