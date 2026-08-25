@@ -27,7 +27,7 @@ export function DailyGoalRing({ xpToday, xpTarget }: DailyGoalRingProps) {
           cy="32"
           r={RADIUS}
           fill="none"
-          stroke="var(--color-neutral-100)"
+          stroke="var(--color-border)"
           strokeWidth="6"
         />
         <circle

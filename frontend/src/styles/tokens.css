@@ -64,9 +64,10 @@
   --color-brand-accent:   #8B5CF6;
   --color-brand-accentBg: #EDE9FE;
 
-  /* Superficie "crema" de la Home (mockup F1-OLA3). El tema es light-only,
-     así que el valor se define único; documentado en F1_OL3_CAMBIOS.md. */
-  --color-brand-cream:    #FFF6E3;
+  /* Superficie "crema" de la Home (mockup F1-HOME-MOCKUP-V2, hex #FEF3C7).
+     El tema es light-only, así que el valor se define único; documentado en
+     F1_HOME_MOCKUP_V2.md. */
+  --color-brand-cream:    #FEF3C7;
 
   /* Border radius */
   --radius-sm: 8px;
