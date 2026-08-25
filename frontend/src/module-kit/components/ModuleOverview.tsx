@@ -25,6 +25,7 @@ import {
   type ModuleProgress,
 } from '../moduleFlow';
 import { ModuleLessonList } from './ModuleLessonList';
+import { LessonPath } from './LessonPath';
 
 const MODULE_COLOR_MAP: Record<string, 'warning' | 'success' | 'info'> = {
   presupuesto: 'warning',
@@ -196,8 +197,20 @@ export function ModuleOverview({ config, moduleTitle }: ModuleOverviewProps) {
           </FECard>
         )}
 
-        {/* Lista de lecciones */}
+        {/* Sendero de lecciones */}
         <FECard variant="flat">
+          <LessonPath
+            config={config}
+            completedMap={completedMap}
+            onNavigate={(lessonId) => nav(getLessonPath(config, lessonId))}
+          />
+        </FECard>
+
+        {/* Lista detallada (se conserva: badges PROBAR de admin y acceso directo) */}
+        <FECard variant="flat">
+          <h3 className="mb-2 text-sm font-bold text-[var(--color-text-secondary)]">
+            Lista de lecciones
+          </h3>
           <ModuleLessonList
             lessons={config.lessons}
             lessonStatuses={moduleState.lessons as Record<string, LessonStatus>}

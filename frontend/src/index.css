@@ -12,3 +12,24 @@ body {
   background-color: var(--color-bg-app);
   color: var(--color-text-primary);
 }
+
+/* Pulso sutil del nodo "actual" en el sendero de lecciones */
+@keyframes finni-node-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(27, 79, 216, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(27, 79, 216, 0);
+  }
+}
+
+.finni-node-pulse {
+  animation: finni-node-pulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finni-node-pulse {
+    animation: none;
+  }
+}

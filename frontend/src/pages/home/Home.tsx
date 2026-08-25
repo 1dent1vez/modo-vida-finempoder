@@ -11,10 +11,13 @@ import { XPChip } from '../../shared/components/gamification/XPChip';
 import { StreakBadge } from '../../shared/components/gamification/StreakBadge';
 import { Button } from '../../shared/components/ui/button';
 import { Progress } from '../../shared/components/ui/progress';
+import { ModuleMiniPath } from '../../module-kit/components/LessonPath';
 import {
   getLessonPath,
   getProgressPercent,
   loadModuleProgressSnapshot,
+  toCompletedMapFromProgress,
+  type ModuleFlowConfig,
 } from '../../module-kit/moduleFlow';
 import { BUDGET_MODULE_CONFIG } from '../modules/presupuesto/lessonFlow';
 import { SAVINGS_MODULE_CONFIG } from '../modules/ahorro/lessonFlow';
@@ -97,6 +100,32 @@ const MODULE_BTN: Record<string, string> = {
   info: '',
 };
 
+type ModulePathSummary = {
+  config: ModuleFlowConfig;
+  moduleTitle: string;
+  color: 'warning' | 'success' | 'info';
+  completedMap: Record<string, boolean>;
+  progress: number;
+};
+
+function computeModulePaths(): ModulePathSummary[] {
+  const modules = [
+    { config: BUDGET_MODULE_CONFIG, moduleTitle: 'Presupuestación', color: 'warning' as const },
+    { config: SAVINGS_MODULE_CONFIG, moduleTitle: 'Ahorro', color: 'success' as const },
+    { config: INVESTMENT_MODULE_CONFIG, moduleTitle: 'Inversión', color: 'info' as const },
+  ];
+  return modules.map(({ config, moduleTitle, color }) => {
+    const snapshot = loadModuleProgressSnapshot(config);
+    return {
+      config,
+      moduleTitle,
+      color,
+      completedMap: toCompletedMapFromProgress(snapshot),
+      progress: getProgressPercent(config, snapshot),
+    };
+  });
+}
+
 type ModuleCardProps = {
   title: string;
   subtitle: string;
@@ -136,6 +165,7 @@ export default function Home() {
 
   const continueCards = useMemo(() => computeContinueCards(), []);
   const totalCompleted = useMemo(() => computeTotalCompleted(), []);
+  const modulePaths = useMemo(() => computeModulePaths(), []);
   const primaryContinue = continueCards[0] ?? null;
 
   const displayName = user?.name
@@ -182,6 +212,26 @@ export default function Home() {
           </Button>
         </FECard>
       )}
+
+      {/* Tu camino */}
+      <h2 className="text-base font-bold mb-3">Tu camino</h2>
+      <FECard variant="flat" className="mb-6">
+        <div className="divide-y divide-[var(--color-neutral-200)]">
+          {modulePaths.map(({ config, moduleTitle, color, completedMap, progress }) => (
+            <div key={config.moduleId} className="flex items-center justify-between gap-3 py-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold">{moduleTitle}</p>
+                <p className={cn('text-xs font-semibold', MODULE_TEXT[color])}>{progress}%</p>
+              </div>
+              <ModuleMiniPath
+                config={config}
+                completedMap={completedMap}
+                onNavigate={(lessonId) => nav(getLessonPath(config, lessonId))}
+              />
+            </div>
+          ))}
+        </div>
+      </FECard>
 
       {/* Tus módulos */}
       <h2 className="text-base font-bold mb-3">Tus módulos</h2>
