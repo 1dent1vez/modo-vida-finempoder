@@ -184,7 +184,7 @@ export function ModuleMiniPath({
                 'border-[var(--color-brand-success)] bg-[var(--color-brand-success-bg)] text-[var(--color-brand-success)]',
               state === 'current' &&
                 'border-[var(--color-brand-primary)] bg-white text-[var(--color-brand-primary)]',
-              state === 'current' && index === 1 && 'finni-node-pulse',
+              state === 'current' && 'finni-node-pulse',
               isLocked &&
                 'border-[var(--color-neutral-300)] bg-[var(--color-neutral-100)] text-[var(--color-neutral-400)] opacity-80'
             )}
