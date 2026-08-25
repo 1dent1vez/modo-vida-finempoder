@@ -7,6 +7,7 @@ import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
 import OfflineBanner from './components/OfflineBanner';
 import GlobalSnackbar from './components/GlobalSnackbar';
 import AdminBanner from './components/AdminBanner';
+import { AchievementModal } from './shared/components/gamification/AchievementModal';
 import { isAdminMode } from './lib/adminMode';
 import { LessonWrapper } from '@/features/lessons/components/LessonWrapper';
 
@@ -68,6 +69,7 @@ export default function App() {
       {!online && <OfflineBanner dense />}
       {admin && <AdminBanner />}
       <GlobalSnackbar />
+      <AchievementModal />
 
       <Suspense fallback={<PageLoader />}>
         <Routes>
