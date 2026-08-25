@@ -1,12 +1,15 @@
-import { useEffect, useMemo } from 'react';
-import { Check, Coins, PiggyBank, Play, TrendingUp } from 'lucide-react';
+import { Fragment, useEffect, useMemo } from 'react';
+import { Check, Coins, Lock, PiggyBank, Play, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { useProgress } from '../../store/progress';
 import { useAuth } from '../../store/auth';
 import { useDailyXp } from '../../hooks/gamification/useDailyXp';
 import { DAILY_GOAL_META, resolveDailyXpTarget, useDailyGoal } from '../../store/dailyGoal';
 import { localDayKey } from '../../lib/localDate';
+import { isAdminMode } from '../../lib/adminMode';
 import { Button } from '../../shared/components/ui/button';
+import { Progress } from '../../shared/components/ui/progress';
 import { DailyGoalRing } from '../../shared/components/gamification/DailyGoalRing';
 import FECard from '../../shared/components/FECard';
 import { DailyGoalDialog } from './DailyGoalDialog';
@@ -16,39 +19,89 @@ import {
   loadModuleProgressSnapshot,
   toCompletedMapFromProgress,
   type ModuleFlowConfig,
+  type ModuleLesson,
 } from '../../module-kit/moduleFlow';
 import { getLessonNodeState } from '../../module-kit/lessonPathState';
 import { BUDGET_MODULE_CONFIG } from '../modules/presupuesto/lessonFlow';
 import { SAVINGS_MODULE_CONFIG } from '../modules/ahorro/lessonFlow';
 import { INVESTMENT_MODULE_CONFIG } from '../modules/inversion/lessonFlow';
 
+type ModuleAccent = 'warning' | 'success' | 'info';
+
 type ModuleMeta = {
   config: ModuleFlowConfig;
   title: string;
+  subtitle: string;
+  accent: ModuleAccent;
   icon: React.ReactNode;
+};
+
+/** Rutas de overview por módulo (spec F1: /app/presupuesto, /app/ahorro,
+ *  /app/inversion — esta última redirige al overview real de inversión). */
+const MODULE_OVERVIEW: Record<string, string> = {
+  presupuesto: '/app/presupuesto',
+  ahorro: '/app/ahorro',
+  inversion: '/app/inversion',
 };
 
 const MODULES: ModuleMeta[] = [
   {
     config: BUDGET_MODULE_CONFIG,
     title: 'Presupuestación',
+    subtitle: 'Organiza ingresos y gastos',
+    accent: 'warning',
     icon: <PiggyBank />,
   },
   {
     config: SAVINGS_MODULE_CONFIG,
     title: 'Ahorro',
+    subtitle: 'Crea hábitos de ahorro',
+    accent: 'success',
     icon: <Coins />,
   },
   {
     config: INVESTMENT_MODULE_CONFIG,
     title: 'Inversión',
+    subtitle: 'Haz crecer tu dinero',
+    accent: 'info',
     icon: <TrendingUp />,
   },
 ];
 
+const ACCENT_TEXT: Record<ModuleAccent, string> = {
+  warning: 'text-[var(--color-brand-warning)]',
+  success: 'text-[var(--color-brand-success)]',
+  info: 'text-[var(--color-brand-info)]',
+};
+
+const ACCENT_PILL: Record<ModuleAccent, string> = {
+  warning: 'bg-[var(--color-brand-warning-bg)] text-[var(--color-brand-warning)]',
+  success: 'bg-[var(--color-brand-success-bg)] text-[var(--color-brand-success)]',
+  info: 'bg-[var(--color-brand-info-bg)] text-[var(--color-brand-info)]',
+};
+
+const ACCENT_BAR: Record<ModuleAccent, string> = {
+  warning: 'bg-[var(--color-brand-warning)]',
+  success: 'bg-[var(--color-brand-success)]',
+  info: 'bg-[var(--color-brand-info)]',
+};
+
+const ACCENT_BUTTON: Record<ModuleAccent, string> = {
+  warning: 'bg-[var(--color-brand-warning)] hover:bg-[var(--color-brand-secondary-dark)]',
+  success: 'bg-[var(--color-brand-success)] hover:opacity-90',
+  info: 'bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-dark)]',
+};
+
+type ModuleState = {
+  meta: ModuleMeta;
+  completedMap: Record<string, boolean>;
+  progress: number;
+  currentLesson: ModuleLesson | null;
+};
+
 /** Estado por módulo con la MISMA lógica que LessonPath (getLessonNodeState →
  *  getRequiredLessonId + completedMap, única fuente de bloqueo por lección). */
-function computeModuleStates() {
+function computeModuleStates(): ModuleState[] {
   return MODULES.map((meta) => {
     const snapshot = loadModuleProgressSnapshot(meta.config);
     const completedMap = toCompletedMapFromProgress(snapshot);
@@ -67,8 +120,18 @@ function computeModuleStates() {
   });
 }
 
+/** Candado ENTRE módulos (secuencia Presupuestación → Ahorro → Inversión):
+ *  el módulo queda bloqueado hasta completar la última lección del anterior.
+ *  En modo admin nunca hay candados. */
+function isModuleLocked(states: ModuleState[], index: number): boolean {
+  if (isAdminMode() || index === 0) return false;
+  const prev = states[index - 1];
+  const prevLastId = prev?.meta.config.lessons[prev.meta.config.lessons.length - 1]?.id;
+  return !prevLastId || prev.completedMap[prevLastId] !== true;
+}
+
 /** Módulo "en curso": el más avanzado con una lección disponible. */
-function computeContinueState() {
+function computeContinueState(): ModuleState | null {
   return (
     computeModuleStates()
       .filter((state) => state.currentLesson !== null)
@@ -100,6 +163,7 @@ export default function Home() {
     if (celebratedDay !== today) markCelebrated(today);
   }, [celebratedDay, goalReached, markCelebrated]);
 
+  const moduleStates = useMemo(() => computeModuleStates(), []);
   const continueState = useMemo(() => computeContinueState(), []);
 
   const firstName = user?.name?.trim().split(/\s+/)[0];
@@ -181,6 +245,125 @@ export default function Home() {
             </div>
           )}
         </FECard>
+      </section>
+
+      {/* ── Tu camino ───────────────────────────────────────────────────── */}
+      <section data-testid="section-path" aria-label="Tu camino" className="mt-6">
+        <h2 className="text-base font-bold">Tu camino</h2>
+        <div className="mt-3 flex flex-col">
+          {moduleStates.map((state, index) => {
+            const locked = isModuleLocked(moduleStates, index);
+            const completed = !locked && state.currentLesson === null;
+            const currentNodeNumber = state.currentLesson
+              ? state.meta.config.lessons.findIndex((l) => l.id === state.currentLesson!.id) + 1
+              : null;
+            return (
+              <Fragment key={state.meta.config.moduleId}>
+                {index > 0 && (
+                  <div
+                    aria-hidden="true"
+                    className="mx-auto h-5 w-0 border-l-2 border-dashed border-[var(--color-neutral-300)]"
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => nav(MODULE_OVERVIEW[state.meta.config.moduleId])}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-[var(--color-neutral-200)] bg-white p-4 text-left shadow-[var(--shadow-soft)] transition-colors hover:border-[var(--color-brand-primary)]"
+                >
+                  <div
+                    className={cn(
+                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-extrabold',
+                      locked &&
+                        'bg-[var(--color-neutral-100)] text-[var(--color-text-muted)]',
+                      completed &&
+                        'bg-[var(--color-brand-success-bg)] text-[var(--color-brand-success)]',
+                      !locked && !completed && 'bg-[var(--color-brand-primary)] text-white'
+                    )}
+                  >
+                    {locked ? (
+                      <Lock className="h-4 w-4" />
+                    ) : completed ? (
+                      <Check className="h-5 w-5" />
+                    ) : (
+                      currentNodeNumber
+                    )}
+                  </div>
+                  <div
+                    className={cn(
+                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-full [&_svg]:h-5 [&_svg]:w-5',
+                      ACCENT_PILL[state.meta.accent]
+                    )}
+                  >
+                    {state.meta.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold">{state.meta.title}</p>
+                    <p
+                      className={cn(
+                        'text-xs font-bold',
+                        locked
+                          ? 'text-[var(--color-text-muted)]'
+                          : ACCENT_TEXT[state.meta.accent]
+                      )}
+                    >
+                      {state.progress}%
+                    </p>
+                  </div>
+                </button>
+              </Fragment>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Tus módulos ─────────────────────────────────────────────────── */}
+      <section data-testid="section-modules" aria-label="Tus módulos" className="mt-6">
+        <h2 className="text-base font-bold">Tus módulos</h2>
+        <div className="mt-3 space-y-3">
+          {moduleStates.map((state) => (
+            <div
+              key={state.meta.config.moduleId}
+              onClick={() => nav(MODULE_OVERVIEW[state.meta.config.moduleId])}
+              className="cursor-pointer rounded-2xl border border-[var(--color-neutral-200)] bg-white p-4 shadow-[var(--shadow-soft)] transition-colors hover:border-[var(--color-brand-primary)]"
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-full [&_svg]:h-5 [&_svg]:w-5',
+                    ACCENT_PILL[state.meta.accent]
+                  )}
+                >
+                  {state.meta.icon}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold">{state.meta.title}</p>
+                  <p className="truncate text-xs text-[var(--color-text-secondary)]">
+                    {state.meta.subtitle}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => nav(MODULE_OVERVIEW[state.meta.config.moduleId])}
+                  className={cn(
+                    'min-h-9 shrink-0 rounded-full px-4 text-sm font-bold text-white',
+                    ACCENT_BUTTON[state.meta.accent]
+                  )}
+                >
+                  Ir
+                </button>
+              </div>
+              <div className="mt-3">
+                <Progress
+                  value={state.progress}
+                  barClassName={ACCENT_BAR[state.meta.accent]}
+                />
+                <p className="mt-1 text-xs font-medium text-[var(--color-text-secondary)]">
+                  {state.progress}% completado
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       <DailyGoalDialog />
