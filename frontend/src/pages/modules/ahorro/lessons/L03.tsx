@@ -4,6 +4,7 @@ import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
 import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import { MX, fmtFecha } from '@/lib/datos-mx';
 
 type Q1 = 'a' | 'b' | 'c' | null;
 type Q2 = 'a' | 'b' | 'c' | null;
@@ -15,7 +16,7 @@ const errorBg = 'var(--color-brand-error-bg)';
 
 const BENEFICIOS = [
   { title: 'Rendimientos', example: '$5,000 al 3% = $150 anuales sin hacer nada', detail: 'El banco te paga por dejarle usar tu dinero temporalmente. Es tu derecho, no un regalo.' },
-  { title: 'Protección IPAB', example: 'Hasta ~3 millones de pesos garantizados por el gobierno', detail: 'Si tu banco quiebra, el IPAB te devuelve tu dinero. No pasa con tu alcancía.' },
+  { title: 'Protección IPAB', example: `Hasta ≈ $3.5 millones (${fmtFecha(MX.ipab)}) garantizados por el gobierno`, detail: 'Si tu banco quiebra, el IPAB te devuelve tu dinero. No pasa con tu alcancía.' },
   { title: 'Historial financiero', example: 'Tener cuenta activa mejora tu perfil para créditos futuros', detail: 'Los bancos y empleadores verifican tu historial. Una cuenta activa construye tu reputación.' },
   { title: 'Disciplina automática', example: '"Lo que no ves, no lo gastas"', detail: 'Separar el ahorro en cuenta diferente hace que no lo toques por impulso.' },
 ];
@@ -26,7 +27,7 @@ const AUDIO_SCRIPT = [
   '"Los intereses son el pago que el banco te hace por dejarle usar tu dinero temporalmente. No es un regalo: es tu derecho."',
   '"Si tienes $5,000 en una cuenta con 3% de rendimiento anual, al año tendrás $5,150. Sin mover un dedo."',
   '"Ahora imagina que esos $150 también generan interés el siguiente año. Eso se llama interés compuesto, y lo veremos más a fondo en la Lección 12."',
-  '"El IPAB protege tus depósitos en bancos autorizados hasta 400,000 UDIs (aproximadamente 3 millones de pesos). Si tu banco quiebra, el gobierno te regresa tu dinero."',
+  `"El IPAB protege tus depósitos en bancos autorizados hasta 400,000 UDIs (≈ $3.5 millones, ${fmtFecha(MX.ipab)}). Si tu banco quiebra, el gobierno te regresa tu dinero."`,
 ];
 
 export default function L03() {
@@ -91,6 +92,7 @@ export default function L03() {
             <FECard variant="flat" className="border" style={{ borderColor: successColor, backgroundColor: successBg }}>
               <p className="font-bold text-sm mb-1">Ejemplo rápido:</p>
               <p className="text-sm">$5,000 al 3% anual = <b>$5,150</b> al final del año. Sin hacer nada.</p>
+              <p className="text-xs text-[var(--color-text-secondary)] mt-1">Las cuentas tradicionales pagan mucho menos; este es un ejemplo optimista.</p>
             </FECard>
             <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
               Ver la explicación completa →
@@ -204,7 +206,7 @@ export default function L03() {
               <div className="space-y-2">
                 {[
                   { key: 'a', label: 'A) $500,000' },
-                  { key: 'b', label: 'B) ~3 millones de pesos' },
+                  { key: 'b', label: `B) ≈ $3.5 millones (${fmtFecha(MX.ipab)})` },
                   { key: 'c', label: 'C) Todo el saldo sin límite' },
                 ].map((o) => (
                   <button
@@ -223,7 +225,7 @@ export default function L03() {
               </div>
               {q1 && (
                 <p className="text-xs mt-2 font-semibold" style={{ color: q1 === 'b' ? successColor : errorColor }}>
-                  {q1 === 'b' ? '¡Correcto! Hasta 400,000 UDIs ≈ 3 millones.' : 'Son ~3 millones de pesos (400,000 UDIs).'}
+                  {q1 === 'b' ? `¡Correcto! Hasta 400,000 UDIs ≈ $3.5 millones (${fmtFecha(MX.ipab)}).` : `Son ≈ $3.5 millones de pesos (400,000 UDIs, ${fmtFecha(MX.ipab)}).`}
                 </p>
               )}
             </FECard>

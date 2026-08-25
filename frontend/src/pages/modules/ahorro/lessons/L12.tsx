@@ -5,12 +5,15 @@ import FinniMessage from '../../../../components/FinniMessage';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
 import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
 import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import { MX, fmtFecha, fmtTasa } from '@/lib/datos-mx';
 
 type MetaData = { nombre?: string; monto?: number; aportacionMensual?: number } | null;
 
+const CETES_TASA_PCT = Math.round(MX.cetes.tasa28d * 10000) / 100; // 6.15 — MX.cetes.tasa28d en %
+
 const TASAS = [
   { label: 'Cuenta ahorro básica', value: 3 },
-  { label: 'CETES', value: 8 },
+  { label: 'CETES', value: CETES_TASA_PCT },
   { label: 'Fondos de inversión', value: 10 },
   { label: 'Acciones (estimado)', value: 15 },
 ];
@@ -58,7 +61,7 @@ export default function L12() {
     void load();
   }, []);
 
-  const tasa = TASAS[tasaIdx]?.value ?? 8;
+  const tasa = TASAS[tasaIdx]?.value ?? CETES_TASA_PCT;
 
   const resultado1 = useMemo(() => calcCompuesto(capital, aportMensual, tasa, 1), [capital, aportMensual, tasa]);
   const resultado3 = useMemo(() => calcCompuesto(capital, aportMensual, tasa, 3), [capital, aportMensual, tasa]);
@@ -180,6 +183,9 @@ export default function L12() {
                       </button>
                     ))}
                   </div>
+                  <p className="text-[10px] text-[var(--color-text-secondary)] mt-1">
+                    Los rendimientos de fondos y acciones son estimados históricos; el de CETES es la tasa vigente ({fmtTasa(MX.cetes.tasa28d * 100)}, {fmtFecha(MX.cetes)}).
+                  </p>
                 </div>
               </div>
             </FECard>

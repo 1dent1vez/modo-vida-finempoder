@@ -4,6 +4,7 @@ import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
 import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import { MX, fmtFecha } from '@/lib/datos-mx';
 
 type Q = 'a' | 'b' | 'c' | null;
 
@@ -58,10 +59,10 @@ export default function L10() {
   const progress = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 60 : step === 3 ? 80 : 100;
 
   const quizItems = [
-    { q: q1, set: setQ1, correct: 'b', question: '1. ¿Cuánto protege el IPAB por persona por banco?', opts: [{ key: 'a', label: 'A) $500,000' }, { key: 'b', label: 'B) ~3 millones de pesos' }, { key: 'c', label: 'C) Sin límite' }], fb: { ok: '¡Correcto! 400,000 UDIs ≈ 3 millones.', fail: 'Son ~3 millones (400,000 UDIs).' } },
+    { q: q1, set: setQ1, correct: 'b', question: '1. ¿Cuánto protege el IPAB por persona por banco?', opts: [{ key: 'a', label: 'A) $500,000' }, { key: 'b', label: `B) ≈ $3.5 millones (${fmtFecha(MX.ipab)})` }, { key: 'c', label: 'C) Sin límite' }], fb: { ok: `¡Correcto! 400,000 UDIs ≈ $3.5 millones (${fmtFecha(MX.ipab)}).`, fail: `Son ≈ $3.5 millones (400,000 UDIs, ${fmtFecha(MX.ipab)}).` } },
     { q: q2, set: setQ2, correct: 'b', question: '2. ¿El IPAB cubre las inversiones en bolsa?', opts: [{ key: 'a', label: 'A) Sí' }, { key: 'b', label: 'B) No' }], fb: { ok: '¡Correcto! Solo depósitos en cuentas bancarias autorizadas.', fail: 'Las inversiones en bolsa NO están cubiertas por el IPAB.' } },
     { q: q3, set: setQ3, correct: 'b', question: '3. ¿Qué organismo supervisa los bancos en México?', opts: [{ key: 'a', label: 'A) SAT' }, { key: 'b', label: 'B) CNBV' }, { key: 'c', label: 'C) IMSS' }], fb: { ok: '¡Correcto! Comisión Nacional Bancaria y de Valores.', fail: 'Es la CNBV — Comisión Nacional Bancaria y de Valores.' } },
-    { q: q4, set: setQ4, correct: 'a', question: '4. Tienes $80,000 en cuenta de ahorro en un banco autorizado que quiebra. ¿Estarías cubierto?', opts: [{ key: 'a', label: 'A) Sí, estoy dentro del límite IPAB' }, { key: 'b', label: 'B) No, lo perdería todo' }], fb: { ok: '¡Correcto! $80,000 está muy por debajo del límite.', fail: '$80,000 está muy por debajo del límite de ~3 millones.' } },
+    { q: q4, set: setQ4, correct: 'a', question: '4. Tienes $80,000 en cuenta de ahorro en un banco autorizado que quiebra. ¿Estarías cubierto?', opts: [{ key: 'a', label: 'A) Sí, estoy dentro del límite IPAB' }, { key: 'b', label: 'B) No, lo perdería todo' }], fb: { ok: '¡Correcto! $80,000 está muy por debajo del límite.', fail: `$80,000 está muy por debajo del límite de ≈ $3.5 millones (${fmtFecha(MX.ipab)}).` } },
   ];
 
   return (
@@ -92,7 +93,7 @@ export default function L10() {
             <FECard variant="flat" className="border-2" style={{ borderColor: successColor, backgroundColor: successBg }}>
               <p className="text-base font-bold mb-2">El IPAB</p>
               <p className="text-sm">Instituto para la Protección al Ahorro Bancario — es el organismo del gobierno mexicano que garantiza tus depósitos bancarios.</p>
-              <p className="text-sm mt-2">Protege hasta <b>400,000 UDIs por persona por banco</b> (≈ 3 millones de pesos en 2024).</p>
+              <p className="text-sm mt-2">Protege hasta <b>400,000 UDIs por persona por banco</b> (≈ $3.5 millones en 2026).</p>
               <p className="text-sm mt-2" style={{ color: successColor }}>No importa si el banco quiebra mañana: si tu saldo está por debajo del límite, lo recuperas.</p>
             </FECard>
             <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>

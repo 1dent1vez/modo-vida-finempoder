@@ -4,6 +4,7 @@ import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
 import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import { MX, fmtFecha } from '@/lib/datos-mx';
 
 type Choice = 'informal' | 'formal' | null;
 
@@ -15,7 +16,7 @@ const warnColor = 'var(--color-brand-warning)';
 
 const SCENARIOS = [
   { id: 1, text: '¿Llegó la quincena de la tanda pero tu amigo no tiene el dinero?', best: 'formal' as const, feedback: 'Con ahorro informal dependes de terceros. El ahorro formal no falla.' },
-  { id: 2, text: '¿Tu banco quebró?', best: 'formal' as const, feedback: 'El IPAB protege hasta ~3 millones en bancos autorizados. El cochinito, no.' },
+  { id: 2, text: '¿Tu banco quebró?', best: 'formal' as const, feedback: `El IPAB protege hasta ≈ $3.5 millones (${fmtFecha(MX.ipab)}) en bancos autorizados. El cochinito, no.` },
   { id: 3, text: '¿Emergencia médica a medianoche?', best: 'informal' as const, feedback: 'El acceso inmediato es la ventaja del ahorro informal en casos urgentes.' },
   { id: 4, text: '¿Te robaron en casa?', best: 'formal' as const, feedback: 'El ahorro formal no está en tu casa. El robo no lo afecta.' },
   { id: 5, text: '¿Quieres ver cuánto llevas ahorrando?', best: 'formal' as const, feedback: 'El banco registra todo automáticamente. El cochinito no.' },
@@ -88,7 +89,7 @@ export default function L02() {
                 <p className="font-bold mb-2">Ahorro Formal</p>
                 <div className="space-y-1">
                   <p className="text-sm">Formas: cuenta de ahorro, CETES, nómina</p>
-                  <p className="text-sm" style={{ color: successColor }}>Rendimiento, protección IPAB (~3M), historial</p>
+                  <p className="text-sm" style={{ color: successColor }}>Rendimiento, protección IPAB (≈ $3.5M, {fmtFecha(MX.ipab)}), historial</p>
                   <p className="text-sm" style={{ color: errorColor }}>Comisiones si no es la cuenta correcta</p>
                 </div>
               </FECard>
