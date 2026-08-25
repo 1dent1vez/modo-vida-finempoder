@@ -8,6 +8,7 @@ import OfflineBanner from './components/OfflineBanner';
 import GlobalSnackbar from './components/GlobalSnackbar';
 import AdminBanner from './components/AdminBanner';
 import { AchievementModal } from './shared/components/gamification/AchievementModal';
+import { NewsletterPrompt } from './shared/components/growth/NewsletterPrompt';
 import { isAdminMode } from './lib/adminMode';
 import { LessonWrapper } from '@/features/lessons/components/LessonWrapper';
 
@@ -20,22 +21,22 @@ const Screen1 = lazy(() => import('./pages/onboarding/Screen1'));
 const Screen2 = lazy(() => import('./pages/onboarding/Screen2'));
 const Screen3 = lazy(() => import('./pages/onboarding/Screen3'));
 
-const Terms    = lazy(() => import('./pages/legal/Terms'));
-const Privacy  = lazy(() => import('./pages/legal/Privacy'));
+const Terms = lazy(() => import('./pages/legal/Terms'));
+const Privacy = lazy(() => import('./pages/legal/Privacy'));
 const AdminPage = lazy(() => import('./pages/admin/AdminPage'));
 
-const Home         = lazy(() => import('./pages/home/Home'));
-const PreTest      = lazy(() => import('./pages/research/PreTest'));
-const PostTest     = lazy(() => import('./pages/research/PostTest'));
-const Profile      = lazy(() => import('./pages/profile/Profile'));
-const Settings     = lazy(() => import('./pages/settings/Settings'));
+const Home = lazy(() => import('./pages/home/Home'));
+const PreTest = lazy(() => import('./pages/research/PreTest'));
+const PostTest = lazy(() => import('./pages/research/PostTest'));
+const Profile = lazy(() => import('./pages/profile/Profile'));
+const Settings = lazy(() => import('./pages/settings/Settings'));
 const Achievements = lazy(() => import('./pages/achievements/Achievements'));
 
 // ── Module overviews ──────────────────────────────────
 const PresupuestoOverview = lazy(() => import('./pages/modules/presupuesto/Overview'));
-const AhorroOverview      = lazy(() => import('./pages/modules/ahorro/Overview'));
-const InversionIndex      = lazy(() => import('./pages/modules/inversion/Index'));
-const InversionOverview   = lazy(() => import('./pages/modules/inversion/Overview'));
+const AhorroOverview = lazy(() => import('./pages/modules/ahorro/Overview'));
+const InversionIndex = lazy(() => import('./pages/modules/inversion/Index'));
+const InversionOverview = lazy(() => import('./pages/modules/inversion/Overview'));
 
 function PageLoader() {
   return (
@@ -70,6 +71,7 @@ export default function App() {
       {admin && <AdminBanner />}
       <GlobalSnackbar />
       <AchievementModal />
+      <NewsletterPrompt />
 
       <Suspense fallback={<PageLoader />}>
         <Routes>

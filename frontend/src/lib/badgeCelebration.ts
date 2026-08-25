@@ -36,7 +36,12 @@ export function readSeenBadges(): SeenBadges {
 export function writeSeenBadge(serieId: string, nivel: TierLevel): void {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(SEEN_BADGES_KEY, JSON.stringify({ ...readSeenBadges(), [serieId]: nivel }));
+    window.localStorage.setItem(
+      SEEN_BADGES_KEY,
+      JSON.stringify({ ...readSeenBadges(), [serieId]: nivel }),
+    );
+    // F3-CRECIMIENTO: permite que NewsletterPrompt reaccione al sumar tiers.
+    window.dispatchEvent(new CustomEvent('fe:badges-state-updated'));
   } catch {
     // localStorage no disponible (modo privado/SR): la celebración no
     // persiste, pero nunca bloquea la app.

@@ -4,16 +4,16 @@ import Dexie, { type Table } from 'dexie';
 // TIPOS EXPORTADOS
 export interface LessonProgress {
   id?: number;
-  userId: string;         // usuario dueño del progreso
-  moduleId: string;       // 'presupuesto' | 'ahorro' | 'inversion' | etc.
-  lessonId: string;       // 'L01', 'L02', ...
+  userId: string; // usuario dueño del progreso
+  moduleId: string; // 'presupuesto' | 'ahorro' | 'inversion' | etc.
+  lessonId: string; // 'L01', 'L02', ...
   completed: boolean;
-  completedAt?: string;   // ISO string
+  completedAt?: string; // ISO string
 }
 
 export interface Streak {
   id?: number;
-  date: string;           // 'YYYY-MM-DD'
+  date: string; // 'YYYY-MM-DD'
   count: number;
 }
 
@@ -29,12 +29,12 @@ export interface UserLessonData {
 export interface PendingAction {
   id?: number;
   userId: string;
-  type: string;           // e.g. 'lessonCompleted'
-  resource: string;       // e.g. '/api/progress/lesson-completed'
+  type: string; // e.g. 'lessonCompleted'
+  resource: string; // e.g. '/api/progress/lesson-completed'
   payload: unknown;
-  createdAt: string;      // ISO
+  createdAt: string; // ISO
   retryCount?: number;
-  lastTriedAt?: string;   // ISO
+  lastTriedAt?: string; // ISO
 }
 
 export type SyncType = 'lesson_progress' | 'xp_update' | 'streak_update';
@@ -44,10 +44,18 @@ export interface SyncQueueItem {
   userId: string;
   type: SyncType;
   payload: Record<string, unknown>;
-  createdAt: string;      // ISO
+  createdAt: string; // ISO
   retries: number;
   status: 'pending' | 'failed';
-  lastTriedAt?: string;   // ISO
+  lastTriedAt?: string; // ISO
+}
+
+export interface NewsletterSubscription {
+  id?: number;
+  email: string;
+  source: string; // 'app' por ahora; futuras fuentes pueden llegar
+  createdAt: string; // ISO
+  synced: boolean; // false hasta que exista backend de newsletter
 }
 
 // BASE DE DATOS DEXIE
@@ -57,6 +65,7 @@ export class FinempoderDB extends Dexie {
   pendingActions!: Table<PendingAction, number>;
   userLessonData!: Table<UserLessonData, number>;
   syncQueue!: Table<SyncQueueItem, number>;
+  newsletterSubscriptions!: Table<NewsletterSubscription, number>;
 
   constructor() {
     super('FinempoderDB');
@@ -65,7 +74,7 @@ export class FinempoderDB extends Dexie {
     this.version(1).stores({
       lessonProgress: '++id, moduleId, lessonId, completed',
       streaks: '++id, date',
-      pendingActions: '++id, type, resource'
+      pendingActions: '++id, type, resource',
     });
 
     // v2: aislamos progreso por usuario y agregamos índices
@@ -73,7 +82,7 @@ export class FinempoderDB extends Dexie {
       .stores({
         lessonProgress: '++id, userId, moduleId, lessonId, completed, completedAt',
         streaks: '++id, date',
-        pendingActions: '++id, type, resource'
+        pendingActions: '++id, type, resource',
       })
       .upgrade(async (tx) => {
         const table = tx.table<LessonProgress, number>('lessonProgress');
@@ -89,7 +98,7 @@ export class FinempoderDB extends Dexie {
       .stores({
         lessonProgress: '++id, userId, moduleId, lessonId, completed, completedAt',
         streaks: '++id, date',
-        pendingActions: '++id, userId, type, resource, createdAt'
+        pendingActions: '++id, userId, type, resource, createdAt',
       })
       .upgrade(async (tx) => {
         const table = tx.table<PendingAction, number>('pendingActions');
@@ -105,7 +114,7 @@ export class FinempoderDB extends Dexie {
       .stores({
         lessonProgress: '++id, userId, moduleId, lessonId, completed, completedAt',
         streaks: '++id, date',
-        pendingActions: '++id, userId, type, resource, createdAt, retryCount, lastTriedAt'
+        pendingActions: '++id, userId, type, resource, createdAt, retryCount, lastTriedAt',
       })
       .upgrade(async (tx) => {
         const table = tx.table<PendingAction, number>('pendingActions');
@@ -134,6 +143,17 @@ export class FinempoderDB extends Dexie {
       pendingActions: '++id, userId, type, resource, createdAt, retryCount, lastTriedAt',
       userLessonData: '++id, userId, moduleId, key',
       syncQueue: '++id, userId, type, status, createdAt',
+    });
+
+    // v7 (F3-CRECIMIENTO): captura local de email para newsletter. Aditiva:
+    // conserva todas las tablas v6 con la misma definición + la nueva.
+    this.version(7).stores({
+      lessonProgress: '++id, userId, moduleId, lessonId, completed, completedAt',
+      streaks: '++id, date',
+      pendingActions: '++id, userId, type, resource, createdAt, retryCount, lastTriedAt',
+      userLessonData: '++id, userId, moduleId, key',
+      syncQueue: '++id, userId, type, status, createdAt',
+      newsletterSubscriptions: '++id, email, source, createdAt, synced',
     });
   }
 }
