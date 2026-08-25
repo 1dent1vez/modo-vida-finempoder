@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
-import { BADGES, serieTitulo } from '../../../data/badges';
+import { BADGES, buildBadgeStats, serieTitulo } from '../../../data/badges';
 import { useBadgeCelebration } from '../../../hooks/gamification/useBadgeCelebration';
 import { fraseParaSerie } from '../../../lib/finniFrases';
+import { useProgress } from '../../../store/progress';
 import { Button } from '../ui/button';
 import FinniMessage from '../FinniMessage';
+import { AchievementShareButton } from '../growth/AchievementShareButton';
 
 /**
  * Modal global de celebración de logros (F2-GAMIFICACION).
@@ -12,9 +14,19 @@ import FinniMessage from '../FinniMessage';
  */
 export function AchievementModal() {
   const { current, acknowledge } = useBadgeCelebration();
-  const frase = useMemo(
-    () => (current ? fraseParaSerie(current.serieId) : ''),
-    [current]
+  const modules = useProgress((s) => s.modules);
+  const streak = useProgress((s) => s.streak);
+  const frase = useMemo(() => (current ? fraseParaSerie(current.serieId) : ''), [current]);
+  const stats = useMemo(
+    () =>
+      buildBadgeStats({
+        presupuestoProgress: modules.presupuesto?.progress ?? 0,
+        ahorroProgress: modules.ahorro?.progress ?? 0,
+        inversionProgress: modules.inversion?.progress ?? 0,
+        streakBest: streak.best ?? 0,
+        streakCurrent: streak.current ?? 0,
+      }),
+    [modules, streak],
   );
 
   if (!current) return null;
@@ -42,6 +54,16 @@ export function AchievementModal() {
           <Button className="min-h-11 w-full" onClick={acknowledge}>
             ¡Seguir!
           </Button>
+
+          <AchievementShareButton
+            serie={serie}
+            nivel={current.nivel}
+            stats={stats}
+            frase={frase}
+            labeled
+            align="center"
+            className="w-full"
+          />
         </div>
       </div>
     </div>

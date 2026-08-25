@@ -10,6 +10,7 @@ import { Progress } from '../../shared/components/ui/progress';
 import { useGamification } from '../../hooks/gamification/useGamification';
 import { useProgress } from '../../store/progress';
 import { BADGES, buildBadgeStats, maxTier } from '../../data/badges';
+import { AchievementShareButton } from '../../shared/components/growth/AchievementShareButton';
 
 const MODULE_LABELS: Record<string, string> = {
   presupuesto: 'Presupuestación',
@@ -67,8 +68,18 @@ export default function Achievements() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <StatCard icon={<Trophy />} label="Nivel" value={level} color="warning" />
           <StatCard icon={<Zap />} label="XP total" value={xp} color="primary" />
-          <StatCard icon={<Flame />} label="Racha actual" value={`${streakCurrent}d`} color="info" />
-          <StatCard icon={<Rocket />} label="Mejor racha" value={`${streakBest}d`} color="success" />
+          <StatCard
+            icon={<Flame />}
+            label="Racha actual"
+            value={`${streakCurrent}d`}
+            color="info"
+          />
+          <StatCard
+            icon={<Rocket />}
+            label="Mejor racha"
+            value={`${streakBest}d`}
+            color="success"
+          />
         </div>
 
         {/* Progreso por módulo */}
@@ -98,9 +109,23 @@ export default function Achievements() {
         <div>
           <h2 className="text-base font-bold mb-3">Mis logros</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {BADGES.map((serie) => (
-              <BadgeCard key={serie.id} serie={serie} nivel={maxTier(serie, badgeStats)} />
-            ))}
+            {BADGES.map((serie) => {
+              const nivel = maxTier(serie, badgeStats);
+              return (
+                <div key={serie.id} className="relative">
+                  <BadgeCard serie={serie} nivel={nivel} />
+                  {nivel !== 0 ? (
+                    <AchievementShareButton
+                      serie={serie}
+                      nivel={nivel}
+                      stats={badgeStats}
+                      align="right"
+                      className="absolute right-1.5 top-1.5 z-10"
+                    />
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
