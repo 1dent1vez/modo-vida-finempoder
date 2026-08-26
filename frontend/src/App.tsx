@@ -32,6 +32,7 @@ const PostTest = lazy(() => import('./pages/research/PostTest'));
 const Profile = lazy(() => import('./pages/profile/Profile'));
 const Settings = lazy(() => import('./pages/settings/Settings'));
 const Achievements = lazy(() => import('./pages/achievements/Achievements'));
+const LigasPage = lazy(() => import('./pages/ligas/LigasPage'));
 
 // ── Module overviews ──────────────────────────────────
 const PresupuestoOverview = lazy(() => import('./pages/modules/presupuesto/Overview'));
@@ -101,6 +102,7 @@ export default function App() {
           <Route element={<PrivateRoute />}>
             <Route path="/app" element={<Home />} />
             <Route path="/app/achievements" element={<Achievements />} />
+            <Route path="/app/ligas" element={<LigasPage />} />
             <Route path="/app/profile" element={<Profile />} />
             <Route path="/app/settings" element={<Settings />} />
 

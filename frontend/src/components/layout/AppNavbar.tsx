@@ -1,4 +1,4 @@
-import { Home, Trophy, User } from 'lucide-react';
+import { Home, Trophy, User, Users } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -9,6 +9,7 @@ const items: NavItem[] = [
   { label: 'Inicio',  icon: <Home size={22} />,    path: '/app' },
   { label: 'Logros',  icon: <Trophy size={22} />,  path: '/app/achievements' },
   { label: 'Yo',  icon: <User size={22} />,    path: '/app/profile' },
+  { label: 'Ligas', icon: <Users size={22} />, path: '/app/ligas' },
 ];
 
 export function AppNavbar() {
