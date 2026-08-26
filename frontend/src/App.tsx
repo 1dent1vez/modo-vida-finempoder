@@ -9,6 +9,7 @@ import GlobalSnackbar from './components/GlobalSnackbar';
 import AdminBanner from './components/AdminBanner';
 import { AchievementModal } from './shared/components/gamification/AchievementModal';
 import { NewsletterPrompt } from './shared/components/growth/NewsletterPrompt';
+import { NamePromptDialog } from './shared/components/auth/NamePromptDialog';
 import { isAdminMode } from './lib/adminMode';
 import { LessonWrapper } from '@/features/lessons/components/LessonWrapper';
 
@@ -72,6 +73,7 @@ export default function App() {
       <GlobalSnackbar />
       <AchievementModal />
       <NewsletterPrompt />
+      <NamePromptDialog />
 
       <Suspense fallback={<PageLoader />}>
         <Routes>
