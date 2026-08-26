@@ -34,8 +34,10 @@ PWA gratuita de finanzas personales para México (45 lecciones interactivas en 3
 | F3 — Crecimiento | Tarjeta de logro compartible (PNG 1080×1080), captura de email (3er logro → newsletter local), kit de lanzamiento (Mark) | `f3-crecimiento` (8e421f3) | FAIL → retest PASS (PNG transparente) |
 | F4 — Ligas | Multijugador real: schema 003 (+RLS+RPCs), tab Ligas, sync semanal, ranking | `f4-ligas` (bc1e23e) | FAIL → retest PASS (31/31 backend real) |
 | F5 — Promesas rotas | L15 señal honesta, micro-reto con días reales, tutorial verificable | `f5-promesas-rotas` (30254a0) | FAIL (suite inestable) → retest PASS 3/3 |
+| F6 — Analytics | Wrapper tipado (11 eventos), PostHog opcional (no-op sin clave), identify con dedupe por id, H3 (Depósito sin promesa falsa) | `f6-analytics` (hasta b5b068c) | 2 retests (identify cableado + dedupe) → PASS |
+| F7 — Onboarding | 3 pantallas con valor (chips de confianza → meta diaria → primera lección), guest-compatible, skip siempre, tildes corregidas, analytics cableado | `f7-onboarding` (e6a2304) | PASS_WITH_WARNINGS (H1 menor → fix directo; H2/H3 cola) |
 
-Estado de UI actual en QA: Home réplica del mockup + camino + gamificación + ligas + share + newsletter. Suite ~322 tests. Bundle principal +~3.6% desde F0.
+Estado de UI actual en QA: Home réplica del mockup + camino + gamificación + ligas + share + newsletter + onboarding con valor. Suite 365 tests. Bundle principal +~3.6% desde F0.
 ## 4. Deuda abierta (priorizada)
 
 | # | Deuda | Tipo | Estado / acción |
@@ -44,7 +46,7 @@ Estado de UI actual en QA: Home réplica del mockup + camino + gamificación + l
 | D2 | Producción sin desplegar (app.finempoder.com.mx sigue pre-F0) | Decisión | Autorización del dueño → deploy + site_url en Supabase (hoy localhost:3000) |
 | D3 | Newsletter sin proveedor (captura local `synced:false`) | Negocio | Elegir Resend/Buttondown y conectar; incluye confirmación y envío |
 | D4 | Analytics sin clave PostHog (wrapper listo en f6) | Humano | Crear cuenta PostHog free → `VITE_POSTHOG_KEY` en .env → build |
-| D5 | Onboarding de 3 pantallas (plan F1.5) | Producto | Pendiente; hoy hay diálogos sueltos (meta + nombre) |
+| D5 | ~~Onboarding de 3 pantallas~~ | Producto | ✅ CERRADO en F7 (e6a2304); pendiente: validar en tu celular el flujo completo desde cero |
 | D6 | Refactor al `module-kit` (pulido único propagado) | Técnica | Pendiente; las lecciones reimplementan controles |
 | D7 | Kit de lanzamiento: placeholders `[LINK_APP]`, `[FECHA]`, `[ENLACE_NEWSLETTER]` | Negocio | Decidir fecha y resolver links (`KIT_LANZAMIENTO_FINEMPODER.md`) |
 | D8 | Sonidos/hápticos (opcional, con toggle) | Opcional | Plan F2.3 |
