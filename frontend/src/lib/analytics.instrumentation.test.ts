@@ -1,5 +1,5 @@
 // @vitest-environment node
-// Test estático de gobernanza F6-ANALYTICS: verifica que los 13 eventos del
+// Test estático de gobernanza F6-ANALYTICS: verifica que los 16 eventos del
 // producto están instrumentados en los archivos esperados (patrón de
 // gobernanza por fs, sin necesidad de montar la UI completa).
 import { readFileSync } from 'node:fs';
@@ -27,9 +27,14 @@ const CASOS: Array<{ evento: string; archivo: string }> = [
   { evento: 'LEAGUE_RANKING_VIEWED', archivo: 'src/pages/ligas/LigasPage.tsx' },
   { evento: 'SIGNIN_MAGIC_LINK', archivo: 'src/pages/auth/AuthScreen.tsx' },
   { evento: 'SIGNIN_GOOGLE', archivo: 'src/pages/auth/AuthScreen.tsx' },
+  { evento: 'ONBOARDING_STARTED', archivo: 'src/pages/onboarding/Screen1.tsx' },
+  { evento: 'ONBOARDING_STEP', archivo: 'src/pages/onboarding/Screen1.tsx' },
+  { evento: 'ONBOARDING_STEP', archivo: 'src/pages/onboarding/Screen2.tsx' },
+  { evento: 'ONBOARDING_STEP', archivo: 'src/pages/onboarding/Screen3.tsx' },
+  { evento: 'ONBOARDING_COMPLETED', archivo: 'src/pages/onboarding/Screen3.tsx' },
 ];
 
-describe('gobernanza de instrumentación (13 eventos en sus puntos esperados)', () => {
+describe('gobernanza de instrumentación (16 eventos en sus puntos esperados)', () => {
   it.each(CASOS)('$evento instrumentado en $archivo', ({ evento, archivo }) => {
     const content = read(archivo);
     expect(content).toContain(`EVENTOS.${evento}`);

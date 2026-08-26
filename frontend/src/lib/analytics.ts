@@ -17,6 +17,9 @@ export const EVENTOS = {
   LEAGUE_RANKING_VIEWED: 'league_ranking_viewed',
   SIGNIN_MAGIC_LINK: 'signin_magic_link',
   SIGNIN_GOOGLE: 'signin_google',
+  ONBOARDING_STARTED: 'onboarding_started',
+  ONBOARDING_STEP: 'onboarding_step',
+  ONBOARDING_COMPLETED: 'onboarding_completed',
 } as const;
 
 /** Evento de producto (valores de EVENTOS, p.ej. 'lesson_started'). */
@@ -37,6 +40,9 @@ export type AnalyticsProps = {
   league_ranking_viewed: undefined;
   signin_magic_link: undefined;
   signin_google: undefined;
+  onboarding_started: undefined;
+  onboarding_step: { step: 1 | 2 | 3 };
+  onboarding_completed: undefined;
 };
 
 const ANALYTICS_KEY = import.meta.env.VITE_POSTHOG_KEY as string | undefined;

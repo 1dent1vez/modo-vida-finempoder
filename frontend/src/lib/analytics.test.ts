@@ -47,6 +47,9 @@ const EVENTOS_ESPERADOS = [
   'LEAGUE_RANKING_VIEWED',
   'SIGNIN_MAGIC_LINK',
   'SIGNIN_GOOGLE',
+  'ONBOARDING_STARTED',
+  'ONBOARDING_STEP',
+  'ONBOARDING_COMPLETED',
 ];
 
 afterEach(() => {
@@ -64,7 +67,7 @@ describe('sin clave (VITE_POSTHOG_KEY undefined)', () => {
     vi.stubEnv('VITE_ANALYTICS_DEBUG', undefined);
   });
 
-  it('expone los 13 eventos del producto', () => {
+  it('expone los 16 eventos del producto', () => {
     expect(Object.keys(EVENTOS).sort()).toEqual([...EVENTOS_ESPERADOS].sort());
   });
 
@@ -88,6 +91,11 @@ describe('sin clave (VITE_POSTHOG_KEY undefined)', () => {
       track(EVENTOS.SIGNIN_MAGIC_LINK);
       track(EVENTOS.SIGNIN_GOOGLE);
       track(EVENTOS.SIGNIN_GOOGLE);
+      track(EVENTOS.ONBOARDING_STARTED);
+      track(EVENTOS.ONBOARDING_STEP, { step: 1 });
+      track(EVENTOS.ONBOARDING_STEP, { step: 2 });
+      track(EVENTOS.ONBOARDING_STEP, { step: 3 });
+      track(EVENTOS.ONBOARDING_COMPLETED);
     }).not.toThrow();
   });
 

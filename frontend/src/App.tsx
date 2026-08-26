@@ -11,6 +11,7 @@ import { AchievementModal } from './shared/components/gamification/AchievementMo
 import { NewsletterPrompt } from './shared/components/growth/NewsletterPrompt';
 import { NamePromptDialog } from './shared/components/auth/NamePromptDialog';
 import { isAdminMode } from './lib/adminMode';
+import { isOnboarded } from '@/shared/utils/onboarding';
 import { LessonWrapper } from '@/features/lessons/components/LessonWrapper';
 
 // ── Auth (static — needed at first load) ──────────────
@@ -48,9 +49,15 @@ function PageLoader() {
   );
 }
 
-function RootGate() {
-  // Guest mode (Fase 0): la raíz siempre entra a /app. Sin sesión = invitado
-  // (PrivateRoute + ResearchGate ya lo permiten); con sesión = usuario normal.
+export function RootGate() {
+  // F7-ONBOARDING: puerta de entrada al primer uso (guest y sesión). Es el
+  // punto real donde se decide entrar a /app desde la raíz: si aún no hizo
+  // onboarding (userId 'local' sin sesión) va al flujo, si ya lo hizo entra.
+  const user = useAuth((s) => s.user);
+  const userId = user?.id ?? 'local';
+  if (!isOnboarded(userId, user?.email)) {
+    return <Navigate to="/onboarding/1" replace />;
+  }
   return <Navigate to="/app" replace />;
 }
 
