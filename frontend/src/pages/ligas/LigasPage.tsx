@@ -23,6 +23,7 @@ import {
   weekStartISO,
 } from '@/lib/leagueCode';
 import { waMeUrl } from '@/lib/shareAchievement';
+import { syncWeeklyProgress } from '@/lib/leagueSync';
 
 export type RankingRow = {
   user_id: string;
@@ -312,6 +313,7 @@ export default function LigasPage() {
   const syncAll = useCallback(
     async (uid: string) => {
       const current = useLeagues.getState().leagues;
+      await syncWeeklyProgress(uid, current);
       const weekStart = weekStartISO(new Date());
       await Promise.all(current.map((league) => fetchRanking(uid, league.id, weekStart)));
     },
@@ -362,6 +364,7 @@ export default function LigasPage() {
     setCreateOpen(false);
     enqueue('Liga creada', 'success');
     await refresh();
+    await syncWeeklyProgress(uid, [league]);
     await fetchRanking(uid, league.id, weekStartISO(new Date()));
   };
 
@@ -376,6 +379,7 @@ export default function LigasPage() {
     const joined = useLeagues.getState().leagues.find((l) => l.id === leagueId);
     if (joined) {
       setExpandedId(joined.id);
+      await syncWeeklyProgress(uid, [joined]);
       await fetchRanking(uid, joined.id, weekStartISO(new Date()));
     }
     return null;
