@@ -1,33 +1,40 @@
 // FinEmpoder — Hook de compartir logros (F3-CRECIMIENTO).
 // Genera el PNG de la tarjeta con html-to-image (import dinámico, solo cuando
-// se comparte) y sigue el flujo: share nativo (móvil) → fallback de descarga
-// automática + acciones WhatsApp/Copiar en la UI.
+// se comparte) y sigue el flujo: share nativo (móvil) → opciones visibles de
+// inmediato (Descargar imagen / WhatsApp / Copiar mensaje). En desktop nunca
+// se queda sin camino al PNG: "Descargar imagen" existe siempre.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import type { BadgeSeries, BadgeStats, TierLevel } from '../../data/badges';
 import { serieTitulo } from '../../data/badges';
-import { buildAchievementShareMessage, serieDatoReal } from '../../lib/shareAchievement';
+import {
+  buildAchievementShareMessage,
+  captureCardPng,
+  serieDatoReal,
+} from '../../lib/shareAchievement';
 
 export type ShareStatus = 'shared' | 'fallback' | 'error';
+export type DownloadStatus = 'downloaded' | 'error';
 
 export interface UseShareableAchievementResult {
   /** Ref para el nodo 1080x1080 de la tarjeta (ShareableAchievementCard). */
   cardRef: RefObject<HTMLDivElement | null>;
   /** true mientras html-to-image genera el PNG. */
   generating: boolean;
-  /** Blob URL del PNG generado cuando el share nativo no aplica (fallback). */
+  /** Blob URL del PNG generado (lo crea "Descargar imagen"; se reusa). */
   pngUrl: string | null;
   /** Mensaje de invitación para WhatsApp / copiar. */
   message: string;
   /** Dato real del usuario para la serie (se muestra en la tarjeta). */
   dato: string;
-  /** Genera el PNG y comparte: 'shared' | 'fallback' | 'error'. */
+  /** Genera el PNG y comparte: 'shared' | 'fallback' | 'error'. Sin share
+   *  nativo (o si falla) devuelve 'fallback': las opciones quedan visibles. */
   share: () => Promise<ShareStatus>;
+  /** Genera el PNG (o reusa el último) y dispara la descarga directa. */
+  download: () => Promise<DownloadStatus>;
   /** Limpia el fallback (pngUrl). */
   reset: () => void;
 }
-
-const CARD_SIZE = { width: 1080, height: 1080, pixelRatio: 1 } as const;
 
 export function useShareableAchievement(
   serie: BadgeSeries,
@@ -42,6 +49,7 @@ export function useShareableAchievement(
     [serie, nivel],
   );
   const dato = useMemo(() => serieDatoReal(serie.id, stats), [serie.id, stats]);
+  const fileName = `finempoder-logro-${serie.id}.png`;
 
   // Revoca el blob URL anterior al generar otro (y el último al desmontar).
   useEffect(
@@ -62,42 +70,58 @@ export function useShareableAchievement(
     if (!node) return 'error';
     setGenerating(true);
     try {
-      const { toPng } = await import('html-to-image');
-      const dataUrl = await toPng(node, CARD_SIZE);
-      const blob = await (await fetch(dataUrl)).blob();
-      const file = new File([blob], `finempoder-logro-${serie.id}.png`, { type: 'image/png' });
+      const blob = await captureCardPng(node);
+      const file = new File([blob], fileName, { type: 'image/png' });
 
-      const supportsNativeShare =
+      const canNativeShare =
         typeof navigator !== 'undefined' &&
         'share' in navigator &&
         !!navigator.canShare?.({ files: [file] });
 
-      if (supportsNativeShare) {
+      if (canNativeShare) {
         try {
           await navigator.share({ files: [file], title: message, text: message });
           return 'shared';
         } catch {
-          // AbortError (usuario canceló) o PermissionDenied: se va al fallback.
+          // AbortError (usuario canceló) o PermissionDenied: 'fallback' y las
+          // opciones de la UI quedan visibles.
+          return 'fallback';
         }
       }
-
-      const url = URL.createObjectURL(blob);
-      setPngUrl(url);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = file.name;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
       return 'fallback';
     } catch {
       return 'error';
     } finally {
       setGenerating(false);
     }
-  }, [serie.id, message]);
+  }, [fileName, message]);
+
+  const download = useCallback(async (): Promise<DownloadStatus> => {
+    const node = cardRef.current;
+    if (!node) return 'error';
+    setGenerating(true);
+    try {
+      let url = pngUrl;
+      if (!url) {
+        const blob = await captureCardPng(node);
+        url = URL.createObjectURL(blob);
+        setPngUrl(url);
+      }
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      return 'downloaded';
+    } catch {
+      return 'error';
+    } finally {
+      setGenerating(false);
+    }
+  }, [fileName, pngUrl]);
 
   const reset = useCallback(() => setPngUrl(null), []);
 
-  return { cardRef, generating, pngUrl, message, dato, share, reset };
+  return { cardRef, generating, pngUrl, message, dato, share, download, reset };
 }

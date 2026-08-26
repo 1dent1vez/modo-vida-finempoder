@@ -1,11 +1,13 @@
 // FinEmpoder — Botón "Compartir logro" (F3-CRECIMIENTO).
-// Reutiliza la tarjeta compartible + el hook de share: si el dispositivo
-// soporta share nativo muestra "Compartir"; siempre ofrece "Más opciones"
-// (WhatsApp + Copiar mensaje). Al no poder compartir nativo, descarga el PNG
-// automáticamente y deja las acciones visibles.
+// Reutiliza la tarjeta compartible + el hook de share. El botón/acción
+// "Compartir logro" SIEMPRE se renderiza, haya o no navigator.share. Con
+// share nativo disponible muestra el botón primario "Compartir"; en cualquier
+// otro caso las opciones quedan visibles de inmediato: "Descargar imagen"
+// (a[download] con blob URL, sin esperar share), WhatsApp y Copiar mensaje.
+// Así desktop nunca se queda sin camino al PNG (F3-02).
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Copy, MessageCircle, Share2 } from 'lucide-react';
+import { Copy, Download, MessageCircle, Share2 } from 'lucide-react';
 import type { BadgeSeries, BadgeStats, TierLevel } from '../../../data/badges';
 import { fraseParaSerie } from '../../../lib/finniFrases';
 import { waMeUrl } from '../../../lib/shareAchievement';
@@ -36,14 +38,19 @@ export function AchievementShareButton({
   align = 'left',
   className,
 }: AchievementShareButtonProps) {
-  const { cardRef, generating, message, share } = useShareableAchievement(serie, nivel, stats);
+  const { cardRef, generating, message, share, download } = useShareableAchievement(
+    serie,
+    nivel,
+    stats,
+  );
   const fraseFinal = useMemo(() => frase ?? fraseParaSerie(serie.id), [frase, serie.id]);
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [outcome, setOutcome] = useState<'idle' | 'downloaded' | 'error'>('idle');
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const supportsNativeShare = typeof navigator !== 'undefined' && 'share' in navigator;
+  const supportsNativeShare =
+    typeof navigator !== 'undefined' && 'share' in navigator && 'canShare' in navigator;
 
   // Cierra el popover con click fuera o Escape.
   useEffect(() => {
@@ -68,9 +75,15 @@ export function AchievementShareButton({
 
   const handleNativeShare = async () => {
     const status = await share();
-    if (status === 'fallback') setOutcome('downloaded');
+    // 'shared' → la hoja nativa ya mostró el resultado.
+    // 'fallback' → las opciones ya están visibles; el usuario elige
+    // descargar / WhatsApp / copiar. 'error' → mensaje en el popover.
     if (status === 'error') setOutcome('error');
-    if (status === 'fallback' || status === 'error') setOpen(true);
+  };
+
+  const handleDownload = async () => {
+    const status = await download();
+    setOutcome(status === 'downloaded' ? 'downloaded' : 'error');
   };
 
   const handleWhatsApp = () => {
@@ -139,6 +152,17 @@ export function AchievementShareButton({
           <p className="px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
             Más opciones
           </p>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start"
+            disabled={generating}
+            onClick={handleDownload}
+          >
+            <Download className="h-4 w-4" aria-hidden="true" />
+            {generating ? 'Generando imagen...' : 'Descargar imagen'}
+          </Button>
 
           <Button
             variant="ghost"

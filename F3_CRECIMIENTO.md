@@ -80,15 +80,26 @@ Sin envío a ningún servicio.
 
 ## Flujo de share
 
-1. `share()` (hook `useShareableAchievement`) genera el PNG con
-   `toPng(node, { width: 1080, height: 1080, pixelRatio: 1 })` → Blob → File.
-2. **Nativo (móvil)**: si `navigator.canShare({ files })`, llama a
-   `navigator.share({ files, title, text })`; `AbortError`/`PermissionDenied`
-   caen al fallback con try/catch silencioso.
-3. **Fallback**: descarga automática (`a[download]` con blob URL) y el popover
-   deja visibles `Enviar por WhatsApp` (`https://wa.me/?text=...` con
-   `encodeURIComponent`) y `Copiar mensaje` (`navigator.clipboard.writeText`,
-   guardado con try/catch).
+1. La tarjeta vive en `position:fixed; left:-9999` (invisible, sin parpadeo) y
+   la captura (`captureCardPng` en `lib/shareAchievement.ts`) usa la opción
+   `style` de html-to-image: el override se aplica AL CLON que serializa
+   (`position:fixed; left:0; top:0; right:auto; bottom:auto`). El detalle
+   crítico (F3-01): el clon hereda el `inset` COMPUTADO del nodo real
+   (`right:10199px/bottom:-360px` por el `left:-9999` + viewport) y en el SVG
+   rasterizado eso re-posiciona el clon fuera del canvas → PNG transparente;
+   por eso el override fija `right/bottom` a `auto` además de `left/top` a 0.
+2. El botón/acción `Compartir logro` SIEMPRE se renderiza, haya o no
+   `navigator.share` (F3-02). Con share nativo disponible (share + canShare)
+   el popover muestra el botón primario `Compartir` (try/catch; si falla, las
+   opciones quedan visibles). En cualquier otro caso las opciones están
+   visibles de inmediato:
+   - `Descargar imagen`: captura el PNG y dispara `a[download]` con blob URL
+     (nombre `finempoder-logro-<serie>.png`, MIME `image/png`); reusa el blob
+     si ya se generó.
+   - `Enviar por WhatsApp`: `https://wa.me/?text=...` con `encodeURIComponent`.
+   - `Copiar mensaje`: `navigator.clipboard.writeText` con try/catch silencioso.
+   En desktop nunca se queda sin camino al PNG: la descarga directa siempre
+   existe.
 
 Integrado en `AchievementModal` (botón `Compartir logro`, modal no se cierra)
 y en cada serie desbloqueada de `Logros` (icono `Share2` discreto).
@@ -103,8 +114,14 @@ y en cada serie desbloqueada de `Logros` (icono `Share2` discreto).
 
 ## Cómo probar
 
-- `cd frontend && npm test` (241 tests: 215 base + 26 nuevos).
+- `cd frontend && npm test` (251 tests: 215 base + 36 nuevos).
 - `npm run type-check`, `npm run lint`, `npm run build` verdes.
+- `npx playwright test` (8 e2e: smoke + F3). El spec `e2e/share-achievement`
+  valida en Chromium real: (a) el PNG descargado es 1080x1080 con alpha > 0 y
+  contenido no uniforme (analizado con sharp sobre el blob real), (b) el clon
+  con `CAPTURE_CLONE_STYLE` queda 1080x1080 en left:0 mientras el original
+  sigue en left:-9999, y (c) sin `navigator.share` el popover ofrece
+  Descargar/WhatsApp/Copiar de inmediato.
 - Manual en https://qa.finempoder.com.mx: completar 3 logros → aparece el
   newsletter; compartir desde el modal de logro y desde Logros; en móvil
   probar share nativo; en escritorio probar descarga + WhatsApp + Copiar.

@@ -4,7 +4,13 @@
 
 import { describe, expect, it } from 'vitest';
 import type { BadgeStats } from '../data/badges';
-import { buildAchievementShareMessage, serieDatoReal, waMeUrl } from './shareAchievement';
+import {
+  buildAchievementShareMessage,
+  CAPTURE_CLONE_STYLE,
+  CARD_SIZE,
+  serieDatoReal,
+  waMeUrl,
+} from './shareAchievement';
 
 const STATS: BadgeStats = {
   totalCompleted: 12,
@@ -63,5 +69,23 @@ describe('serieDatoReal', () => {
 
   it('muestra los 3 módulos completos para la corona', () => {
     expect(serieDatoReal('finempoder_pro', STATS)).toBe('3 módulos completos');
+  });
+});
+
+describe('captureCardPng (constantes de captura)', () => {
+  it('expone el tamaño fijo 1080x1080 con pixelRatio 1', () => {
+    expect(CARD_SIZE).toEqual({ width: 1080, height: 1080, pixelRatio: 1 });
+  });
+
+  it('el override del clon corrige la posición offscreen del nodo real', () => {
+    // Regresión F3-01: html-to-image clonaba left:-9999 y el contenido caía
+    // fuera del canvas. El override fuerza left:0/top:0 SOLO en el clon.
+    expect(CAPTURE_CLONE_STYLE).toMatchObject({
+      position: 'fixed',
+      left: '0',
+      top: '0',
+      margin: '0',
+      opacity: '1',
+    });
   });
 });

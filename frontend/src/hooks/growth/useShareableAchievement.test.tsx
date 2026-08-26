@@ -1,15 +1,17 @@
 // @vitest-environment jsdom
 /** Hook de compartir logros con html-to-image mockeado (F3-CRECIMIENTO):
- *  flujo nativo → fallback de descarga + mensaje limpio para wa.me. */
+ *  flujo nativo → fallback de opciones visibles + descarga directa (F3-02),
+ *  y captura del PNG con el override de estilo del clon (F3-01). */
 import '@testing-library/jest-dom/vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { toPng } from 'html-to-image';
+import { toBlob } from 'html-to-image';
 import { BADGES } from '../../data/badges';
+import { CARD_SIZE } from '../../lib/shareAchievement';
 import { useShareableAchievement } from './useShareableAchievement';
 
 vi.mock('html-to-image', () => ({
-  toPng: vi.fn(async () => 'data:image/png;base64,AAAA'),
+  toBlob: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
 }));
 
 const STATS = {
@@ -26,11 +28,7 @@ const LONG_DASH_RE = /[—–]/;
 
 describe('useShareableAchievement', () => {
   beforeEach(() => {
-    vi.mocked(toPng).mockClear();
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => ({ blob: async () => new Blob(['png'], { type: 'image/png' }) })),
-    );
+    vi.mocked(toBlob).mockClear();
     Object.defineProperty(URL, 'createObjectURL', {
       configurable: true,
       value: vi.fn(() => 'blob:mock'),
@@ -48,7 +46,7 @@ describe('useShareableAchievement', () => {
     vi.restoreAllMocks();
   });
 
-  it('genera el PNG y cae al fallback cuando no hay share nativo', async () => {
+  it('genera el PNG y queda en fallback cuando no hay share nativo (sin descarga automática)', async () => {
     const serie = BADGES.find((s) => s.id === 'lecciones')!;
     const { result } = renderHook(() => useShareableAchievement(serie, 1, STATS));
     result.current.cardRef.current = document.createElement('div');
@@ -59,12 +57,21 @@ describe('useShareableAchievement', () => {
     });
 
     expect(status!).toBe('fallback');
-    expect(vi.mocked(toPng)).toHaveBeenCalledWith(result.current.cardRef.current, {
-      width: 1080,
-      height: 1080,
-      pixelRatio: 1,
+    expect(vi.mocked(toBlob)).toHaveBeenCalledWith(result.current.cardRef.current, {
+      width: CARD_SIZE.width,
+      height: CARD_SIZE.height,
+      pixelRatio: CARD_SIZE.pixelRatio,
+      style: expect.objectContaining({
+        position: 'fixed',
+        left: '0',
+        top: '0',
+        right: 'auto',
+        bottom: 'auto',
+        opacity: '1',
+      }),
     });
-    expect(result.current.pngUrl).toBe('blob:mock');
+    expect(result.current.pngUrl).toBeNull();
+    expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
     expect(result.current.message).toContain('Lecciones completadas · Bronce');
     expect(result.current.message).not.toMatch(EMOJI_RE);
     expect(result.current.message).not.toMatch(LONG_DASH_RE);
@@ -92,10 +99,16 @@ describe('useShareableAchievement', () => {
         text: result.current.message,
       }),
     );
+    const calls = shareSpy.mock.calls as unknown as Array<
+      [{ files: File[]; title: string; text: string }]
+    >;
+    const file = calls[0][0].files[0];
+    expect(file.name).toBe('finempoder-logro-racha.png');
+    expect(file.type).toBe('image/png');
     expect(result.current.pngUrl).toBeNull();
   });
 
-  it('si el share nativo falla, cae al fallback de descarga', async () => {
+  it('si el share nativo falla, queda en fallback sin descarga automática', async () => {
     Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
     Object.defineProperty(navigator, 'share', {
       configurable: true,
@@ -114,6 +127,43 @@ describe('useShareableAchievement', () => {
     });
 
     expect(status!).toBe('fallback');
+    expect(result.current.pngUrl).toBeNull();
+    expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
+  });
+
+  it('descarga directa: genera el PNG, crea blob URL y dispara a[download]', async () => {
+    const serie = BADGES.find((s) => s.id === 'presupuesto')!;
+    const { result } = renderHook(() => useShareableAchievement(serie, 1, STATS));
+    result.current.cardRef.current = document.createElement('div');
+
+    let status: string;
+    await act(async () => {
+      status = await result.current.download();
+    });
+
+    expect(status!).toBe('downloaded');
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
     expect(result.current.pngUrl).toBe('blob:mock');
+    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1);
+    const anchor = vi.mocked(HTMLAnchorElement.prototype.click).mock.instances[0] as HTMLAnchorElement;
+    expect(anchor.download).toBe('finempoder-logro-presupuesto.png');
+    expect(anchor.href).toBe('blob:mock');
+  });
+
+  it('descarga reutiliza el blob URL ya generado (no captura dos veces)', async () => {
+    const serie = BADGES.find((s) => s.id === 'ahorro')!;
+    const { result } = renderHook(() => useShareableAchievement(serie, 2, STATS));
+    result.current.cardRef.current = document.createElement('div');
+
+    await act(async () => {
+      await result.current.download();
+    });
+    await act(async () => {
+      await result.current.download();
+    });
+
+    expect(vi.mocked(toBlob)).toHaveBeenCalledTimes(1);
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
+    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(2);
   });
 });
