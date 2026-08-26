@@ -20,6 +20,7 @@ const CONCEPTOS_CLAVE = [
 ];
 
 type BudgetData = { totalIngresos?: number; totalGastos?: number; balance?: number } | null;
+type SenalSemanal = { dia: string; hora: string; updatedAt?: string } | null;
 
 export default function L15() {
   const [step, setStep] = useState(0);
@@ -34,6 +35,8 @@ export default function L15() {
   const [compromisos, setCompromisos] = useState(['', '', '']);
   const [notifDay, setNotifDay] = useState('');
   const [notifHour, setNotifHour] = useState('');
+  const [senalGuardada, setSenalGuardada] = useState<SenalSemanal>(null);
+  const [saveError, setSaveError] = useState('');
   const [badgeUnlocked, setBadgeUnlocked] = useState(false);
 
   useEffect(() => {
@@ -44,23 +47,62 @@ export default function L15() {
     void load();
   }, []);
 
+  const loadSenal = async () => {
+    const data = await lessonDataRepository.load<SenalSemanal>('presupuesto', 'l15_senal_semanal');
+    setSenalGuardada(data);
+    if (data?.dia) setNotifDay(data.dia);
+    if (data?.hora) setNotifHour(data.hora);
+  };
+
+  useEffect(() => {
+    void loadSenal();
+  }, []);
+
   const compromisosFull = compromisos.every((c) => c.trim().length >= 5);
   const presupuestoConfirmado = !!budgetData?.totalIngresos;
-  const canComplete = compromisosFull && presupuestoConfirmado;
+  const canComplete = compromisosFull && presupuestoConfirmado && !!senalGuardada;
 
   const updateCompromiso = (i: number, val: string) => {
     setCompromisos((prev) => prev.map((c, idx) => (idx === i ? val : c)));
   };
 
   const handleUnlock = async () => {
-    await lessonDataRepository.save('presupuesto', 'l15_compromisos', {
-      compromisos,
-      notifDay,
-      notifHour,
-      unlockedAt: new Date().toISOString(),
-    });
-    setBadgeUnlocked(true);
-    setStep(5);
+    setSaveError('');
+    try {
+      const dia = notifDay || senalGuardada?.dia || '';
+      const hora = notifHour || senalGuardada?.hora || '';
+      if (!dia || !hora) return;
+      await lessonDataRepository.save('presupuesto', 'l15_senal_semanal', {
+        dia,
+        hora,
+        updatedAt: new Date().toISOString(),
+      });
+      await lessonDataRepository.save('presupuesto', 'l15_compromisos', {
+        compromisos,
+        notifDay: dia,
+        notifHour: hora,
+        unlockedAt: new Date().toISOString(),
+      });
+      setBadgeUnlocked(true);
+      setStep(5);
+    } catch {
+      setSaveError('No pudimos guardar tu señal. Intenta de nuevo.');
+    }
+  };
+
+  const handleGuardarSenal = async () => {
+    setSaveError('');
+    try {
+      await lessonDataRepository.save('presupuesto', 'l15_senal_semanal', {
+        dia: notifDay,
+        hora: notifHour,
+        updatedAt: new Date().toISOString(),
+      });
+      await loadSenal();
+      setStep(4);
+    } catch {
+      setSaveError('No pudimos guardar tu señal. Intenta de nuevo.');
+    }
   };
 
   const progressValue = step === 0 ? 0 : step === 1 ? 15 : step === 2 ? 40 : step === 3 ? 65 : step === 4 ? 85 : 100;
@@ -109,7 +151,7 @@ export default function L15() {
               {[
                 'Parte 1: Confirma tu presupuesto de L12',
                 'Parte 2: Establece 3 compromisos concretos',
-                'Parte 3: Activa notificaciones de seguimiento',
+                'Parte 3: Elige tu señal de revisión semanal',
               ].map((p) => (
                 <p key={p} className="text-sm py-1">{p}</p>
               ))}
@@ -197,7 +239,7 @@ export default function L15() {
                 className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
                 onClick={() => setStep(3)}
               >
-                Parte 3: Notificaciones →
+                Parte 3: Tu señal semanal →
               </button>
             )}
           </div>
@@ -205,15 +247,16 @@ export default function L15() {
 
         {step === 3 && (
           <div className="space-y-3">
-            <p className="font-bold text-base">Parte 3: Recordatorio semanal</p>
+            <p className="font-bold text-base">Parte 3: Tu señal de revisión semanal</p>
             <FinniMessage
               variant="coach"
-              title="El seguimiento es clave"
-              message="Un presupuesto sin revisión semanal es como un GPS que nunca recalcula. ¿Cuándo quieres que Finni te recuerde revisar?"
+              title="Es tu señal, no la nuestra"
+              message="Elige cuándo revisarás tu presupuesto esta semana. Es tu señal, no la nuestra: si quieres que te avise, pon una alarma en tu teléfono. FinEmpoder no envía notificaciones todavía."
             />
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-[var(--color-text-secondary)]">Día de la semana</label>
+              <label htmlFor="l15-dia" className="text-xs text-[var(--color-text-secondary)]">Día de la semana</label>
               <select
+                id="l15-dia"
                 value={notifDay}
                 onChange={(e) => setNotifDay(e.target.value)}
                 className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm"
@@ -225,8 +268,9 @@ export default function L15() {
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-[var(--color-text-secondary)]">Hora</label>
+              <label htmlFor="l15-hora" className="text-xs text-[var(--color-text-secondary)]">Hora</label>
               <select
+                id="l15-hora"
                 value={notifHour}
                 onChange={(e) => setNotifHour(e.target.value)}
                 className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm"
@@ -240,15 +284,23 @@ export default function L15() {
             {notifDay && notifHour && (
               <FECard variant="flat" className="bg-[var(--color-brand-info)]/10 border border-[var(--color-brand-info)]">
                 <p className="text-sm">
-                  Recordatorio: cada <b>{notifDay}</b> a las <b>{notifHour}</b> — "¿Cómo vas con tu presupuesto esta semana?"
+                  Tu señal: <b>{notifDay} {notifHour}</b> · Revisarás tu presupuesto
                 </p>
               </FECard>
             )}
+            {saveError && (
+              <FinniMessage
+                variant="error"
+                title="No pudimos guardar"
+                message={saveError}
+              />
+            )}
             <button
-              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-              onClick={() => setStep(4)}
+              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => void handleGuardarSenal()}
+              disabled={!notifDay || !notifHour}
             >
-              ¡Listo! Desbloquear badge →
+              Guardar y ver resumen →
             </button>
           </div>
         )}
@@ -260,8 +312,34 @@ export default function L15() {
               <p className="font-bold text-sm mb-2">Partes completadas:</p>
               <p className="text-sm">1. Presupuesto real confirmado</p>
               <p className="text-sm">2. 3 compromisos específicos establecidos</p>
-              <p className="text-sm">3. Recordatorio semanal configurado{notifDay ? `: ${notifDay} ${notifHour}` : ''}</p>
+              {senalGuardada ? (
+                <p className="text-sm">3. Tu señal: {senalGuardada.dia} {senalGuardada.hora} · Revisarás tu presupuesto</p>
+              ) : (
+                <p className="text-sm">3. Tu señal de revisión semanal: pendiente de guardar</p>
+              )}
             </FECard>
+            {!senalGuardada && (
+              <FinniMessage
+                variant="coach"
+                title="Falta guardar tu señal"
+                message="Elige tu día y hora de revisión semanal para completar el reto."
+              />
+            )}
+            {saveError && (
+              <FinniMessage
+                variant="error"
+                title="No pudimos guardar"
+                message={saveError}
+              />
+            )}
+            {!senalGuardada && (
+              <button
+                className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
+                onClick={() => setStep(3)}
+              >
+                Configurar mi señal →
+              </button>
+            )}
             <FinniMessage
               variant="coach"
               title="¿Todo listo?"
