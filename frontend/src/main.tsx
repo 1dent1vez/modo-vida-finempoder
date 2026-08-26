@@ -12,6 +12,7 @@ import { useProgress } from './store/progress';
 import { useLessons } from './store/lessons';
 import { supabase } from './lib/supabase';
 import { shouldResetOnAuthEvent } from './lib/sessionReset';
+import { identify } from './lib/analytics';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { initSentry } from './lib/sentry';
@@ -35,8 +36,11 @@ supabase.auth.onAuthStateChange((event, session) => {
       email: session.user.email ?? '',
       name: meta.name?.trim() || undefined,
     });
+    // F6-1: correlación usuario→eventos de analytics (idempotente en el wrapper).
+    identify(session.user.id);
   } else {
     clearAuth();
+    identify(undefined);
     if (shouldResetOnAuthEvent(event)) {
       useProgress.getState().reset();
       useLessons.getState().reset();
