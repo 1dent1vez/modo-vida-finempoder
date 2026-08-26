@@ -104,7 +104,7 @@ export default function AhorroIndex() {
             className="w-full border border-[var(--color-neutral-200)] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-info)] bg-white"
           >
             <option value="transfer">Transferencia programada</option>
-            <option value="efectivo">Deposito en efectivo con recordatorio</option>
+            <option value="efectivo">Depósito en efectivo</option>
           </select>
           <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2">
             <div
