@@ -401,3 +401,11 @@ $$;
 
 REVOKE ALL ON FUNCTION public.get_league_ranking(uuid, date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_league_ranking(uuid, date) TO authenticated;
+
+## Hardening futuro (sugerencias QA — gate Lupa 2026-08-25, NO bloqueantes)
+
+- H3: el CHECK del servidor para invite_code es `^[A-Z0-9]{6}$` y acepta caracteres ambiguos
+  (O/0/I/1); la exclusión de ambiguos vive solo en el cliente (`leagueCode.ts`). Si se quiere
+  coherencia estricta server-side: `CHECK (invite_code ~ '^[A-HJ-NP-Z2-9]{6}$')`.
+- H4: `league_entries.metric_value` no tiene CHECK `>= 0`; upsert con -5 fue aceptado (204).
+  Añadir constraint si el modelo de negocio exige valores no negativos.
