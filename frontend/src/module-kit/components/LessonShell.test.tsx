@@ -10,8 +10,46 @@ import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 
+// F5-PROMESAS: compuerta para pausar persistCompletion en el await de
+// setCompleted y poder desmontar ANTES de que termine (escenario de Lupa).
+const persistGate = vi.hoisted(() => {
+  let resolveFn: (() => void) | null = null;
+  return {
+    hold(): Promise<void> {
+      return new Promise<void>((resolve) => {
+        resolveFn = resolve;
+      });
+    },
+    open(): void {
+      resolveFn?.();
+      resolveFn = null;
+    },
+    reset(): void {
+      resolveFn = null;
+    },
+  };
+});
+
+vi.mock('../../db/lessonProgress.repository', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../db/lessonProgress.repository')>();
+  const realRepo = actual.lessonProgressRepository;
+  const realSetCompleted = realRepo.setCompleted.bind(realRepo);
+  return {
+    ...actual,
+    lessonProgressRepository: {
+      ...realRepo,
+      // Por defecto delega en la implementación real; la prueba H1 la
+      // reemplaza puntualmente con la compuerta vía mockImplementationOnce.
+      setCompleted: vi.fn((...args: Parameters<typeof realSetCompleted>) =>
+        realSetCompleted(...args)
+      ),
+    },
+  };
+});
+
 import confetti from 'canvas-confetti';
 import { db } from '../../db/finempoderDb';
+import { lessonProgressRepository } from '../../db/lessonProgress.repository';
 import { useAuth } from '../../store/auth';
 import { useLessons } from '../../store/lessons';
 import { useProgress } from '../../store/progress';
@@ -67,6 +105,7 @@ function renderShell(props: Partial<LessonShellProps> = {}) {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  persistGate.reset();
   // El flujo de completar lección emite console.info al final de una cadena
   // async que puede resolverse DESPUÉS del afterEach; en suites paralelas eso
   // llega al teardown del worker como "onUserConsoleLog pending" (race de
@@ -119,5 +158,43 @@ describe('LessonShell — celebración al completar', () => {
     const message = status.querySelector('p')?.textContent ?? '';
     expect(COMPLETION_MESSAGES).toContain(message);
     expect(screen.getByText(/Desbloqueaste L02/)).toBeInTheDocument();
+  });
+
+  it('H1: sin unhandled rejection ni setState tras unmount si persistCompletion termina después', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => {
+      unhandled.push(reason);
+    };
+    process.on('unhandledRejection', onUnhandled);
+    const setCompletedMock = vi.mocked(lessonProgressRepository.setCompleted);
+    setCompletedMock.mockImplementationOnce(() => persistGate.hold());
+
+    try {
+      mockMatchMedia(true);
+      const { unmount } = renderShell();
+
+      // Espera a que persistCompletion arranque y quede detenido en el await
+      // de setCompleted (compuerta), antes de desmontar.
+      await waitFor(() => expect(setCompletedMock).toHaveBeenCalled());
+
+      unmount(); // desmontar ANTES de que termine persistCompletion
+      persistGate.open(); // deja continuar la cadena async restante
+
+      // Flush: resuelve toda la cadena pendiente (Dexie real + finally).
+      for (let i = 0; i < 5; i++) {
+        await Promise.resolve();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(unhandled).toHaveLength(0);
+      // Ni la cadena de persistencia ni React deben haber reportado nada por
+      // console.error (p.ej. setState sobre componente desmontado / act).
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    } finally {
+      process.removeListener('unhandledRejection', onUnhandled);
+      consoleErrorSpy.mockRestore();
+    }
   });
 });

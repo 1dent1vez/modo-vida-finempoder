@@ -97,10 +97,20 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
   const [persisting, setPersisting] = useState(false);
   const once = useRef(false);
   const confettiFired = useRef(false);
+  // F5-PROMESAS: guard de unmount. persistCompletion es async y puede terminar
+  // después de desmontar (p.ej. al navegar antes de que Dexie resuelva); ningún
+  // setState debe correr sobre un componente desmontado.
+  const mounted = useRef(true);
   const reducedMotion = useReducedMotion();
   const [xp, setXp] = useState(0);
   const [showDayGreeting, setShowDayGreeting] = useState(false);
   const [dayGreeting] = useState(() => fraseAleatoria(FRASES_SALUDO_DIA));
+
+  useEffect(() => {
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   // F2-GAMIFICACION: saludo de Finni en la primera lección del día cuando aún
   // no hay actividad hoy (streak.lastActiveISO !== hoy). Una vez por día
@@ -136,6 +146,7 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
 
   const hydrateFromRepository = useCallback(async () => {
     const rows = await lessonProgressRepository.getModuleProgress(moduleId);
+    if (!mounted.current) return;
     const completedMap = toCompletionMap(rows);
     const moduleProgress = buildModuleProgress(config, completedMap);
     const requiredId = getRequiredLessonId(config, props.id, completedMap);
@@ -200,10 +211,12 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
         }
       } catch (err) {
         console.error(`[${moduleId}-progress] error persisting lesson completion`, err);
-        setCompleted(false);
-        once.current = false;
+        if (mounted.current) {
+          setCompleted(false);
+          once.current = false;
+        }
       } finally {
-        setPersisting(false);
+        if (mounted.current) setPersisting(false);
       }
     };
 
