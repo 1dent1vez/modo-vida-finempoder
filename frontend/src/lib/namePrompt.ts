@@ -6,11 +6,13 @@
 export const NAME_ASKED_KEY = 'fe_name_asked';
 
 /** Patrón de emojis del repo (misma regla de la réplica del mockup:
- *  pictogramas extendidos, flags, tonos de piel, ZWJ y variación). */
+ *  pictogramas extendidos y símbolos misceláneos; las flags U+1F1E6-1F1FF
+ *  quedan cubiertas por NAME_RE, que las rechaza por no ser letras). */
 export const EMOJI_RE = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u;
 
-/** Letras (incluye acentos y ñ), marcas, espacios, guiones y apóstrofos. */
-export const NAME_RE = /^[\p{L}\p{M}'\-\s]+$/u;
+/** Letras (incluye acentos y ñ), marcas, espacios, guiones y apóstrofos
+ *  rectos y tipográficos (U+2018/U+2019, comunes en teclados móviles). */
+export const NAME_RE = /^[\p{L}\p{M}'\u2018\u2019\-\s]+$/u;
 
 /** true si el nombre (tras trim) es válido: no vacío, sin emojis y solo
  *  caracteres permitidos. Sirve para apellidos compuestos en México. */
@@ -22,7 +24,12 @@ export function isValidName(raw: string): boolean {
 /** true si ya se preguntó el nombre (omitido o guardado); nunca reaparece. */
 export function nameAsked(): boolean {
   if (typeof window === 'undefined') return true;
-  return window.localStorage.getItem(NAME_ASKED_KEY) === '1';
+  try {
+    return window.localStorage.getItem(NAME_ASKED_KEY) === '1';
+  } catch {
+    // localStorage no disponible: tratar como ya preguntado para no romper el render.
+    return true;
+  }
 }
 
 /** Marca que ya se preguntó el nombre; persiste entre sesiones. */

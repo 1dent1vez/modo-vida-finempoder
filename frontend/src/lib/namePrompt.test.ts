@@ -28,6 +28,7 @@ describe('isValidName', () => {
     expect(isValidName('María José')).toBe(true);
     expect(isValidName('José María López-García')).toBe(true);
     expect(isValidName("L'Ana del Carmen")).toBe(true);
+    expect(isValidName('O\u2019Brien')).toBe(true);
     expect(isValidName('  Ana García  ')).toBe(true);
   });
 
