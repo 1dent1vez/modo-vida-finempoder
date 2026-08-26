@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { BADGES, buildBadgeStats, serieTitulo } from '../../../data/badges';
 import { useBadgeCelebration } from '../../../hooks/gamification/useBadgeCelebration';
 import { fraseParaSerie } from '../../../lib/finniFrases';
+import { track, EVENTOS } from '../../../lib/analytics';
 import { useProgress } from '../../../store/progress';
 import { Button } from '../ui/button';
 import FinniMessage from '../FinniMessage';
@@ -28,6 +29,11 @@ export function AchievementModal() {
       }),
     [modules, streak],
   );
+
+  useEffect(() => {
+    if (!current) return;
+    track(EVENTOS.ACHIEVEMENT_UNLOCKED, { serie: current.serieId, tier: current.nivel });
+  }, [current]);
 
   if (!current) return null;
   const serie = BADGES.find((s) => s.id === current.serieId);

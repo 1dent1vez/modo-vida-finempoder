@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, KeyRound } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { track, EVENTOS } from '../../lib/analytics';
 import { useAuth } from '../../store/auth';
 import AuthLayout from './AuthLayout';
 import { Input } from '../../shared/components/ui/input';
@@ -71,6 +72,7 @@ export default function AuthScreen() {
   }, [view]);
 
   const handleGoogle = async () => {
+    track(EVENTOS.SIGNIN_GOOGLE);
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -124,6 +126,8 @@ export default function AuthScreen() {
     if (error) {
       console.error('[auth] verifyOtp error:', error);
       setError('El código no es válido o ya expiró. Revisa el correo o reenvía el código.');
+    } else {
+      track(EVENTOS.SIGNIN_MAGIC_LINK);
     }
     // Éxito: supabase-js dispara onAuthStateChange y main.tsx hidrata el store;
     // el efecto de arriba navega a /app cuando token + hydrated estén listos.

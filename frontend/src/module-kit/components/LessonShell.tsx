@@ -7,6 +7,7 @@ import FinniMessage from '../../shared/components/FinniMessage';
 import { PageHeader } from '../../shared/components/PageHeader';
 import { Button } from '../../shared/components/ui/button';
 import { cn } from '@/lib/utils';
+import { track, EVENTOS } from '@/lib/analytics';
 import { localDayKey } from '@/lib/localDate';
 import { lessonProgressRepository } from '../../db/lessonProgress.repository';
 import { lessonResumeRepository } from '../../db/lessonResume.repository';
@@ -165,6 +166,7 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
     const init = async () => {
       try {
         await hydrateFromRepository();
+        track(EVENTOS.LESSON_STARTED, { moduleId, lessonId: props.id });
       } catch (err) {
         console.error(`[${moduleId}-progress] error hydrating lesson state`, err);
       } finally {
@@ -173,7 +175,7 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
     };
     void init();
     return () => { cancelled = true; };
-  }, [hydrateFromRepository, moduleId]);
+  }, [hydrateFromRepository, moduleId, props.id]);
 
   useEffect(() => {
     if (checkingAccess || !completion.ready || completed || isLocked || once.current) return;
@@ -205,6 +207,7 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
             detail: { moduleId, lessonId: props.id, completedAt: Date.now() },
           })
         );
+        track(EVENTOS.LESSON_COMPLETED, { moduleId, lessonId: props.id, xp: completion.score ?? 100 });
 
         if (import.meta.env.DEV) {
           console.info(`[${moduleId}-progress] lesson completed`, { moduleId, lessonId: props.id });

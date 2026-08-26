@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { track, EVENTOS } from '../../lib/analytics';
 import { useProgress } from '../../store/progress';
 import { useAuth } from '../../store/auth';
 import { useDailyXp } from '../../hooks/gamification/useDailyXp';
@@ -209,6 +210,11 @@ export default function Home() {
     if (celebratedDay !== today) {
       markCelebrated(today);
       setMetaCelebradaEnSesion(true);
+      const nivel = useDailyGoal.getState().level;
+      track(EVENTOS.META_DAILY_COMPLETED, {
+        goal: nivel ? DAILY_GOAL_META[nivel].label : DAILY_GOAL_META.regular.label,
+        xp: resolveDailyXpTarget(nivel),
+      });
     }
   }, [celebratedDay, goalReached, markCelebrated]);
 

@@ -120,6 +120,7 @@ export default function Achievements() {
                       nivel={nivel}
                       stats={badgeStats}
                       align="right"
+                      target="list"
                       className="absolute right-1.5 top-1.5 z-10"
                     />
                   ) : null}

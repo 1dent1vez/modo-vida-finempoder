@@ -12,6 +12,7 @@ import type { BadgeSeries, BadgeStats, TierLevel } from '../../../data/badges';
 import { fraseParaSerie } from '../../../lib/finniFrases';
 import { waMeUrl } from '../../../lib/shareAchievement';
 import { useShareableAchievement } from '../../../hooks/growth/useShareableAchievement';
+import { track, EVENTOS } from '../../../lib/analytics';
 import { cn } from '../../../lib/utils';
 import { Button } from '../ui/button';
 import { ShareableAchievementCard } from './ShareableAchievementCard';
@@ -26,6 +27,8 @@ export interface AchievementShareButtonProps {
   labeled?: boolean;
   /** Anclaje del popover dentro del contenedor relativo. */
   align?: 'left' | 'right' | 'center';
+  /** Contexto de origen del botón: modal (card) o grid de logros (list). */
+  target?: 'card' | 'list';
   className?: string;
 }
 
@@ -36,6 +39,7 @@ export function AchievementShareButton({
   frase,
   labeled = false,
   align = 'left',
+  target = 'card',
   className,
 }: AchievementShareButtonProps) {
   const { cardRef, generating, message, share, download } = useShareableAchievement(
@@ -121,7 +125,10 @@ export function AchievementShareButton({
         size={labeled ? 'sm' : 'icon'}
         className={cn(labeled ? 'min-h-10 w-full' : 'h-8 w-8 text-[var(--color-text-secondary)]')}
         aria-label={`Compartir logro ${serie.tituloBase}`}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          track(EVENTOS.SHARE_CLICKED, { target });
+          setOpen((v) => !v);
+        }}
       >
         <Share2 className="h-4 w-4" aria-hidden="true" />
         {labeled ? 'Compartir logro' : null}

@@ -13,6 +13,7 @@ import {
   NEWSLETTER_TRIGGER_TIERS,
   sumaTiersExplorados,
 } from '../../../lib/newsletter';
+import { track, EVENTOS } from '../../../lib/analytics';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 
@@ -51,6 +52,7 @@ export function NewsletterPrompt() {
     setError(null);
     try {
       await newsletterRepository.subscribe(email.trim().toLowerCase());
+      track(EVENTOS.NEWSLETTER_SUBSCRIBED, { source: 'app' });
       markNewsletterAsked();
       setStatus('done');
     } catch {

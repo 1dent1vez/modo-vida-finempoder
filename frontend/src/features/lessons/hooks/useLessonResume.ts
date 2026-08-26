@@ -7,6 +7,7 @@ import {
   lessonResumeRepository,
   type LessonResumeState,
 } from '../../../db/lessonResume.repository';
+import { track, EVENTOS } from '../../../lib/analytics';
 
 export type LessonResume = {
   hasSaved: boolean;
@@ -57,6 +58,9 @@ export function useLessonResume(moduleId: string, lessonId: string): LessonResum
     setHasSaved(false);
     setSavedStep(undefined);
     void lessonResumeRepository.clear(moduleIdRef.current, lessonIdRef.current);
+    // Punto único de "lección reanudada": todos los banners de las 45
+    // lecciones pasan por accept() (F6-ANALYTICS).
+    track(EVENTOS.LESSON_RESUMED, { moduleId: moduleIdRef.current, lessonId: lessonIdRef.current });
     return { step: snapshot.step };
   }, []);
 

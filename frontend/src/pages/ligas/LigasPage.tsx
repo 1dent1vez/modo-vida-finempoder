@@ -11,6 +11,7 @@ import { Input } from '@/shared/components/ui/input';
 import { Card } from '@/shared/components/ui/card';
 import { Spinner } from '@/shared/components/Spinner';
 import { cn } from '@/lib/utils';
+import { track, EVENTOS } from '@/lib/analytics';
 import { useAuth } from '@/store/auth';
 import { useLeagues, type League, type LeagueMetric } from '@/store/leagues';
 import { useNotifications } from '@/store/notifications';
@@ -299,6 +300,7 @@ export default function LigasPage() {
         const rows = (data ?? []) as RankingRow[];
         setRankings((s) => ({ ...s, [leagueId]: rows }));
         await writeCachedRanking(uid, leagueId, weekStart, rows);
+        track(EVENTOS.LEAGUE_RANKING_VIEWED);
       } catch {
         // Red caída: mostramos la caché Dexie si existe; sin bloquear la UI.
         const cached = await readCachedRanking(uid, leagueId, weekStart);
@@ -348,6 +350,7 @@ export default function LigasPage() {
       metric,
     });
     if (insertError) throw insertError;
+    track(EVENTOS.LEAGUE_CREATED, { metric });
     // El dueño se inscribe vía join_league (inserta su league_members) para
     // que las políticas RLS le permitan leer su propia liga.
     const { data: leagueId, error: joinError } = await supabase.rpc('join_league', {
@@ -373,6 +376,7 @@ export default function LigasPage() {
     if (!isValidInviteCode(code)) return 'Ese código no es válido';
     const { data: leagueId, error } = await supabase.rpc('join_league', { p_invite_code: code });
     if (error || !leagueId) return 'Ese código no es válido';
+    track(EVENTOS.LEAGUE_JOINED, { via: 'code' });
     setJoinOpen(false);
     enqueue('Te uniste a la liga', 'success');
     await refresh();
