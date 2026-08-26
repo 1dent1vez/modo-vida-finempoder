@@ -101,13 +101,18 @@ export function track<E extends AnalyticsEvent>(
 /**
  * Identifica al usuario (PostHog). identify() sin userId hace reset si había
  * un usuario identificado (cierre de sesión); si nunca se identificó, no-op.
+ * Con userId: deduplica por id (el mismo id repetido no re-identifica —
+ * Supabase dispara TOKEN_REFRESHED con la misma sesión cada hora).
  */
+let identifiedId: string | null = null;
+
 export function identify(userId?: string): void {
   try {
     if (!analyticsEnabled) return;
     if (!userId) {
       if (!identified) return;
       identified = false;
+      identifiedId = null;
       void ensurePostHog()
         .then(() => posthogRef?.reset())
         .catch(() => {
@@ -115,7 +120,9 @@ export function identify(userId?: string): void {
         });
       return;
     }
+    if (identified && identifiedId === userId) return; // mismo id ya identificado
     identified = true;
+    identifiedId = userId;
     void ensurePostHog()
       .then(() => posthogRef?.identify(userId))
       .catch(() => {

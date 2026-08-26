@@ -163,13 +163,20 @@ describe('con clave (VITE_POSTHOG_KEY phc_x)', () => {
     });
   });
 
-  it('identify con userId identifica; identify() sin userId hace reset una vez', async () => {
+  it('identify con userId identifica; el mismo id no re-identifica; reset al cerrar', async () => {
     const analytics = await import('./analytics');
     analytics.identify('user-abc');
     await vi.waitFor(() => expect(posthogSpy.identify).toHaveBeenCalledWith('user-abc'));
 
+    // F6-1 (dedupe): el mismo id repetido (TOKEN_REFRESHED) no re-identifica.
     analytics.identify('user-abc');
+    await Promise.resolve();
+    expect(posthogSpy.identify).toHaveBeenCalledTimes(1);
+
+    // Otro id sí vuelve a identificar.
+    analytics.identify('user-def');
     await vi.waitFor(() => expect(posthogSpy.identify).toHaveBeenCalledTimes(2));
+    expect(posthogSpy.identify).toHaveBeenLastCalledWith('user-def');
 
     analytics.identify();
     await vi.waitFor(() => expect(posthogSpy.reset).toHaveBeenCalledTimes(1));
