@@ -31,10 +31,10 @@ const LEAGUE: League = {
 };
 
 const RANKING = [
-  { user_id: 'u9', name: 'Ana', metric_value: 5, position: 1 },
-  { user_id: 'u1', name: 'Tú', metric_value: 3, position: 2 },
-  { user_id: 'u8', name: '', metric_value: 2, position: 3 },
-  { user_id: 'u7', name: 'Pepe', metric_value: 1, position: 4 },
+  { user_id: 'u9', name: 'Ana', metric_value: 5, pos: 1 },
+  { user_id: 'u1', name: 'Tú', metric_value: 3, pos: 2 },
+  { user_id: 'u8', name: '', metric_value: 2, pos: 3 },
+  { user_id: 'u7', name: 'Pepe', metric_value: 1, pos: 4 },
 ];
 
 function setupSupabase(opts: {

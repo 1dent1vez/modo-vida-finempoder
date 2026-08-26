@@ -29,7 +29,7 @@ export type RankingRow = {
   user_id: string;
   name: string;
   metric_value: number;
-  position: number;
+  pos: number;
 };
 
 const METRIC_LABELS: Record<LeagueMetric, string> = {
@@ -197,7 +197,7 @@ function LeagueCard({
             Reto de la semana: {METRIC_LABELS[league.metric]}
           </p>
           <span className="mt-1.5 inline-block text-xs text-[var(--color-text-muted)]">
-            Tu posición: {myRow ? formatPosition(myRow.position) : 'Sin datos esta semana'}
+            Tu posición: {myRow ? formatPosition(myRow.pos) : 'Sin datos esta semana'}
           </span>
         </button>
         <div className="flex shrink-0 items-center gap-2">
@@ -241,7 +241,7 @@ function LeagueCard({
               <tbody>
                 {rows.map((row) => {
                   const isMe = row.user_id === userId;
-                  const medal = row.position >= 1 && row.position <= 3;
+                  const medal = row.pos >= 1 && row.pos <= 3;
                   return (
                     <tr
                       key={row.user_id}
@@ -250,8 +250,8 @@ function LeagueCard({
                         isMe && 'bg-[var(--color-brand-secondary)] font-bold text-[var(--color-brand-text-on-secondary)]'
                       )}
                     >
-                      <td className={cn('py-2 pr-2', medal && 'font-extrabold', medal && MEDAL_CLASS[row.position])}>
-                        {formatPosition(row.position)}
+                      <td className={cn('py-2 pr-2', medal && 'font-extrabold', medal && MEDAL_CLASS[row.pos])}>
+                        {formatPosition(row.pos)}
                       </td>
                       <td className="py-2 pr-2">{row.name?.trim() || 'Usuario'}</td>
                       <td className="py-2 text-right">

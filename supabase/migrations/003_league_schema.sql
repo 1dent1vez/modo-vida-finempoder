@@ -255,7 +255,7 @@ RETURNS TABLE (
   user_id      uuid,
   name         text,
   metric_value int,
-  position     bigint
+  pos          bigint
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -274,7 +274,7 @@ BEGIN
     e.user_id,
     COALESCE(NULLIF(trim(u.raw_user_meta_data->>'name'), ''), 'Usuario') AS name,
     e.metric_value,
-    row_number() OVER (ORDER BY e.metric_value DESC, e.user_id) AS position
+    row_number() OVER (ORDER BY e.metric_value DESC, e.user_id) AS pos
   FROM public.league_entries e
   LEFT JOIN auth.users u ON u.id = e.user_id
   WHERE e.league_id = p_league_id AND e.week_start = p_week_start
