@@ -44,7 +44,7 @@ Estado de UI actual en QA: Home réplica del mockup + camino + gamificación + l
 |---|---|---|---|
 | D1 | Google OAuth sin activar (código listo) | Humano | Crear OAuth Client en Google Cloud → Supabase Providers + redirect URLs (`F0_CAMBIOS.md` §4) |
 | D2 | Producción sin desplegar (app.finempoder.com.mx sigue pre-F0) | Decisión | Autorización del dueño → deploy + site_url en Supabase (hoy localhost:3000) |
-| D3 | Newsletter sin proveedor (captura local `synced:false`) | Negocio | Elegir Resend/Buttondown y conectar; incluye confirmación y envío |
+| D3 | Newsletter: **NO TOCAR** — se desarrolla aparte (decisión dueño 2026-08-26). La captura local ya está lista (`synced:false`); integración orgánica futura vía nueva sección de tips, todo vinculado a redes + marca FinEMPODER | Negocio | Bloqueado por diseño hasta que el dueño lo desarrolle |
 | D4 | Analytics sin clave PostHog (wrapper listo en f6) | Humano | Crear cuenta PostHog free → `VITE_POSTHOG_KEY` en .env → build |
 | D5 | ~~Onboarding de 3 pantallas~~ | Producto | ✅ CERRADO en F7 (e6a2304); pendiente: validar en tu celular el flujo completo desde cero |
 | D6 | Refactor al `module-kit` (pulido único propagado) | Técnica | Pendiente; las lecciones reimplementan controles |
