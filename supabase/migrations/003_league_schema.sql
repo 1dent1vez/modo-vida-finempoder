@@ -264,7 +264,7 @@ AS $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM public.league_members
-    WHERE league_id = p_league_id AND user_id = auth.uid()
+    WHERE league_id = p_league_id AND public.league_members.user_id = auth.uid()
   ) THEN
     RETURN;
   END IF;

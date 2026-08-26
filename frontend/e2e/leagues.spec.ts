@@ -140,8 +140,8 @@ async function routeSupabase(page: Page, state: { createdLeague: LeagueRow | nul
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify([
-          { user_id: 'u-otp-123', name: 'Ana', metric_value: 3, position: 1 },
-          { user_id: 'u-9', name: 'Luis', metric_value: 1, position: 2 },
+          { user_id: 'u-otp-123', name: 'Ana', metric_value: 3, pos: 1 },
+          { user_id: 'u-9', name: 'Luis', metric_value: 1, pos: 2 },
         ]),
       });
     }
