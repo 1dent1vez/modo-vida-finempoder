@@ -97,6 +97,12 @@ export default function L11() {
         setBadgeUnlocked(true);
         setStep(3);
       }
+      // F5-PROMESAS: payload nuevo con days 3/3 también restaura el badge en
+      // re-entrada (además del camino legacy de migración).
+      if (p?.days && p.days.length >= MAX_DAYS) {
+        setBadgeUnlocked(true);
+        setStep(3);
+      }
       setLoaded(true);
     };
     void load();

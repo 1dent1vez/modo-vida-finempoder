@@ -115,6 +115,20 @@ describe('L11 ahorro — micro-reto con días reales', () => {
     expect(screen.queryByRole('button', { name: /Acepto el reto/ })).not.toBeInTheDocument();
   });
 
+  it('F5: re-entrada con payload nuevo de 3/3 restaura el badge y el paso 3', async () => {
+    await lessonDataRepository.save('ahorro', 'l11_reto', {
+      days: [daysAgoLocalKey(2), daysAgoLocalKey(1), daysAgoLocalKey(0)],
+      dayAmounts: [100, 50, 25],
+      totalAcumulado: 175,
+      completedAt: new Date().toISOString(),
+    });
+    renderL11();
+
+    await waitFor(() => expect(screen.getByText('Constancia de 3')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: /Acepto el reto/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/Total ahorrado: \$175/)).toBeInTheDocument();
+  });
+
   it('migra 1-2 casillas viejas como días con fecha estimada hacia atrás y permite completar hoy', async () => {
     await lessonDataRepository.save('ahorro', 'l11_reto', {
       dayAmounts: [100],
