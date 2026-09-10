@@ -32,19 +32,19 @@ PWA gratuita de finanzas personales para México (45 lecciones interactivas en 3
 | F1 — Experiencia | Celebración (confetti/XP/Finni), autoguardado, meta diaria, streak freeze, camino de nodos, Home réplica del mockup del dueño | `f1-home-mockup-v2` (hasta 6c38df1) | 2 gates + retest F2-01 |
 | F2 — Datos + gamificación | `datos-mx.ts` (cifras 2026 con fecha+fuente), tiers Bronce/Plata/Oro, celebración de logros, Finni, investigación eliminada como logro | `f2-datos-mx`, `f2-gamificacion` (e3d619c, 6c38df1) | 2 retests (F2-01 modal) |
 | F3 — Crecimiento | Tarjeta de logro compartible (PNG 1080×1080), captura de email (3er logro → newsletter local), kit de lanzamiento (Mark) | `f3-crecimiento` (8e421f3) | FAIL → retest PASS (PNG transparente) |
-| F4 — Ligas | Multijugador real: schema 003 (+RLS+RPCs), tab Ligas, sync semanal, ranking | `f4-ligas` (bc1e23e) | FAIL → retest PASS (31/31 backend real) |
+| F4 — Ligas | Congelada y excluida del primer release; código preservado en rama dedicada | `feature/ligas-congeladas-2026-09` | Fuera de alcance |
 | F5 — Promesas rotas | L15 señal honesta, micro-reto con días reales, tutorial verificable | `f5-promesas-rotas` (30254a0) | FAIL (suite inestable) → retest PASS 3/3 |
 | F6 — Analytics | Wrapper tipado (11 eventos), PostHog opcional (no-op sin clave), identify con dedupe por id, H3 (Depósito sin promesa falsa) | `f6-analytics` (hasta b5b068c) | 2 retests (identify cableado + dedupe) → PASS |
 | F7 — Onboarding | 3 pantallas con valor (chips de confianza → meta diaria → primera lección), guest-compatible, skip siempre, tildes corregidas, analytics cableado | `f7-onboarding` (e6a2304) | PASS_WITH_WARNINGS (H1 menor → fix directo; H2/H3 cola) |
 
-Estado de UI actual en QA: Home réplica del mockup + camino + gamificación + ligas + share + newsletter + onboarding con valor. Suite 365 tests. Bundle principal +~3.6% desde F0.
+Estado de UI actual en QA: Home réplica del mockup + camino + gamificación + share + newsletter + onboarding con valor. Ligas queda fuera del primer release.
 ## 4. Deuda abierta (priorizada)
 
 | # | Deuda | Tipo | Estado / acción |
 |---|---|---|---|
 | D1 | Google OAuth sin activar (código listo) | Humano | Crear OAuth Client en Google Cloud → Supabase Providers + redirect URLs (`F0_CAMBIOS.md` §4) |
 | D2 | Producción sin desplegar (app.finempoder.com.mx sigue pre-F0) | Decisión | Autorización del dueño → deploy + site_url en Supabase (hoy localhost:3000) |
-| D3 | Newsletter: **NO TOCAR** — se desarrolla aparte (decisión dueño 2026-08-26). La captura local ya está lista (`synced:false`); integración orgánica futura vía nueva sección de tips, todo vinculado a redes + marca FinEMPODER | Negocio | Bloqueado por diseño hasta que el dueño lo desarrolle |
+| D3 | Newsletter integrado al primer release | Producto/negocio | Implementado; pendiente validación externa de Stripe, Resend, cron, términos y compra de prueba |
 | D4 | Analytics sin clave PostHog (wrapper listo en f6) | Humano | Crear cuenta PostHog free → `VITE_POSTHOG_KEY` en .env → build |
 | D5 | ~~Onboarding de 3 pantallas~~ | Producto | ✅ CERRADO en F7 (e6a2304); pendiente: validar en tu celular el flujo completo desde cero |
 | D6 | Refactor al `module-kit` (pulido único propagado) | Técnica | Pendiente; las lecciones reimplementan controles |
@@ -52,7 +52,7 @@ Estado de UI actual en QA: Home réplica del mockup + camino + gamificación + l
 | D8 | Sonidos/hápticos (opcional, con toggle) | Opcional | Plan F2.3 |
 | D9 | Módulo nuevo (Deudas o Crédito y buró) | Futuro | Decidir con datos de uso (requiere D4 activo) |
 | D10 | Retos 1-a-1 / votación comunidad | Futuro | Requiere masa crítica |
-| D11 | Hardening ligas H3/H4 (CHECK código sin ambiguos, metric_value ≥0) | Técnica | Documentado en `F4_LIGAS.md` |
+| D11 | Ligas congeladas fuera del primer release | Futuro | Preservadas en `feature/ligas-congeladas-2026-09`; reactivar mediante revisión independiente |
 | D12 | Limpieza: 3 usuarios de prueba en auth.users (sin service role) | Cosmética | Opcional |
 
 ## 5. Decisiones de producto registradas
@@ -82,7 +82,7 @@ vercel alias set <URL> qa.finempoder.com.mx --scope ghaels-projects
 (El detalle completo vive en `QA_RAMA.md`; la URL de preview se actualiza en ese doc.)
 
 ### Supabase (proyecto pxjxktpdxnqiulfyskuk)
-- Migraciones: `supabase/migrations/*.sql` (001, 002 aplicadas hace tiempo; 003 ligas aplicada 2026-08-25 vía MCP).
+- Migraciones del release: 001, 002 y 004. La migración 003 de Ligas está fuera de esta rama y no debe aplicarse para este release.
 - El MCP de Supabase está conectado en el perfil skere (OAuth) — aplicar SQL/verificar estado sin dashboard.
 - OTP: `mailer_otp_length=6` (ajustado); template "Magic link or OTP" con `{{ .Token }}` (editado manualmente por el dueño).
 - Límite free: ~2 correos/hora → para producción conecta Resend (D3).
@@ -102,7 +102,7 @@ vercel alias set <URL> qa.finempoder.com.mx --scope ghaels-projects
 | Fase 2 datos (datos-mx) | `F2_DATOS_MX.md` |
 | Fase 2 gamificación | `F2_GAMIFICACION.md` |
 | Fase 3 crecimiento | `F3_CRECIMIENTO.md` |
-| Fase 4 ligas (incluye hardening H3/H4) | `F4_LIGAS.md` |
+| Fase 4 ligas | Rama congelada `feature/ligas-congeladas-2026-09` |
 | Fase 5 promesas rotas | `F5_PROMESAS.md` |
 | Rama QA + modo admin | `QA_RAMA.md` |
 | Kit de lanzamiento (Mark) | `loop-f3-crecimiento/KIT_LANZAMIENTO_FINEMPODER.md` |

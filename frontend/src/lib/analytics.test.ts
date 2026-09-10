@@ -42,9 +42,6 @@ const EVENTOS_ESPERADOS = [
   'ACHIEVEMENT_UNLOCKED',
   'SHARE_CLICKED',
   'NEWSLETTER_SUBSCRIBED',
-  'LEAGUE_CREATED',
-  'LEAGUE_JOINED',
-  'LEAGUE_RANKING_VIEWED',
   'SIGNIN_MAGIC_LINK',
   'SIGNIN_GOOGLE',
   'ONBOARDING_STARTED',
@@ -67,7 +64,7 @@ describe('sin clave (VITE_POSTHOG_KEY undefined)', () => {
     vi.stubEnv('VITE_ANALYTICS_DEBUG', undefined);
   });
 
-  it('expone los 16 eventos del producto', () => {
+  it('expone los 13 eventos del producto incluidos en el release', () => {
     expect(Object.keys(EVENTOS).sort()).toEqual([...EVENTOS_ESPERADOS].sort());
   });
 
@@ -85,9 +82,6 @@ describe('sin clave (VITE_POSTHOG_KEY undefined)', () => {
       track(EVENTOS.ACHIEVEMENT_UNLOCKED, { serie: 'primeros-pasos', tier: 1 });
       track(EVENTOS.SHARE_CLICKED, { target: 'card' });
       track(EVENTOS.NEWSLETTER_SUBSCRIBED, { source: 'app' });
-      track(EVENTOS.LEAGUE_CREATED, { metric: 'xp' });
-      track(EVENTOS.LEAGUE_JOINED, { via: 'code' });
-      track(EVENTOS.LEAGUE_RANKING_VIEWED);
       track(EVENTOS.SIGNIN_MAGIC_LINK);
       track(EVENTOS.SIGNIN_GOOGLE);
       track(EVENTOS.SIGNIN_GOOGLE);
@@ -157,7 +151,7 @@ describe('con clave (VITE_POSTHOG_KEY phc_x)', () => {
       lessonId: 'L05',
       xp: 120,
     });
-    analytics.track(analytics.EVENTOS.LEAGUE_JOINED, { via: 'code' });
+    analytics.track(analytics.EVENTOS.NEWSLETTER_SUBSCRIBED, { source: 'app' });
     analytics.track(analytics.EVENTOS.SIGNIN_MAGIC_LINK);
 
     await vi.waitFor(() => {
@@ -166,7 +160,7 @@ describe('con clave (VITE_POSTHOG_KEY phc_x)', () => {
         lessonId: 'L05',
         xp: 120,
       });
-      expect(posthogSpy.capture).toHaveBeenCalledWith('league_joined', { via: 'code' });
+      expect(posthogSpy.capture).toHaveBeenCalledWith('newsletter_subscribed', { source: 'app' });
       expect(posthogSpy.capture).toHaveBeenCalledWith('signin_magic_link', {});
     });
   });

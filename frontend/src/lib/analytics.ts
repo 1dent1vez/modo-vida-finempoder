@@ -12,9 +12,6 @@ export const EVENTOS = {
   ACHIEVEMENT_UNLOCKED: 'achievement_unlocked',
   SHARE_CLICKED: 'share_clicked',
   NEWSLETTER_SUBSCRIBED: 'newsletter_subscribed',
-  LEAGUE_CREATED: 'league_created',
-  LEAGUE_JOINED: 'league_joined',
-  LEAGUE_RANKING_VIEWED: 'league_ranking_viewed',
   SIGNIN_MAGIC_LINK: 'signin_magic_link',
   SIGNIN_GOOGLE: 'signin_google',
   ONBOARDING_STARTED: 'onboarding_started',
@@ -35,9 +32,6 @@ export type AnalyticsProps = {
   achievement_unlocked: { serie: string; tier: number };
   share_clicked: { target: 'card' | 'list' };
   newsletter_subscribed: { source: 'app' };
-  league_created: { metric: string };
-  league_joined: { via: 'code' };
-  league_ranking_viewed: undefined;
   signin_magic_link: undefined;
   signin_google: undefined;
   onboarding_started: undefined;
