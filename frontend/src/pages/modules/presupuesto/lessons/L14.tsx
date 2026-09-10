@@ -1,10 +1,9 @@
-import { cn } from '@/lib/utils';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
-import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
-import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import ActivityFrame, { ActivityLoading } from '../../../../module-kit/activities/ActivityFrame';
+import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/emotional-spending.css';
 
 type Pregunta = {
   texto: string;
@@ -15,7 +14,8 @@ type Pregunta = {
   leccion: string;
 };
 
-const PREGUNTAS: Pregunta[] = [
+// eslint-disable-next-line react-refresh/only-export-components -- questions exported for lesson contract tests
+export const PREGUNTAS: Pregunta[] = [
   {
     texto: '¿Qué es el gasto hormiga?',
     tipo: 'multiple',
@@ -25,7 +25,8 @@ const PREGUNTAS: Pregunta[] = [
       'El ahorro mínimo mensual',
     ],
     correcta: 1,
-    explicacion: 'El gasto hormiga es pequeño, recurrente y automático. Solo, no parece gran cosa; sumado al mes puede ser $500-$1,500.',
+    explicacion:
+      'El gasto hormiga suele ser pequeño, recurrente y poco consciente. Al acumularse puede ocupar una parte relevante del presupuesto.',
     leccion: 'Lección 3',
   },
   {
@@ -33,7 +34,8 @@ const PREGUNTAS: Pregunta[] = [
     tipo: 'verdadero_falso',
     opciones: ['Verdadero', 'Falso'],
     correcta: 1,
-    explicacion: 'Falso. Ambos son igualmente válidos. La diferencia está en cómo los planeas, no en su valor.',
+    explicacion:
+      'Falso. Ambos son igualmente válidos. La diferencia está en cómo los planeas, no en su valor.',
     leccion: 'Lección 2',
   },
   {
@@ -53,7 +55,8 @@ const PREGUNTAS: Pregunta[] = [
       'Renovar tu suscripción de streaming',
     ],
     correcta: 1,
-    explicacion: 'El transporte es una necesidad básica para llegar al trabajo o la escuela. Se prioriza sobre deseos o entretenimiento.',
+    explicacion:
+      'El transporte es una necesidad básica para llegar al trabajo o la escuela. Se prioriza sobre deseos o entretenimiento.',
     leccion: 'Lección 7',
   },
   {
@@ -61,7 +64,8 @@ const PREGUNTAS: Pregunta[] = [
     tipo: 'completar',
     opciones: ['+ (más)', '- (menos)', '× (por)'],
     correcta: 1,
-    explicacion: 'Balance = Ingresos MENOS Gastos. Si da positivo es superávit; si da negativo, es déficit.',
+    explicacion:
+      'Balance = Ingresos MENOS Gastos. Si da positivo es superávit; si da negativo, es déficit.',
     leccion: 'Lección 6',
   },
   {
@@ -73,7 +77,8 @@ const PREGUNTAS: Pregunta[] = [
       '"¿Está en oferta?"',
     ],
     correcta: 1,
-    explicacion: 'Preguntarse si lo comprarías sin el estado emocional ayuda a separar la necesidad real del impulso.',
+    explicacion:
+      'Preguntarse si lo comprarías sin el estado emocional ayuda a separar la necesidad real del impulso.',
     leccion: 'Lección 8',
   },
   {
@@ -81,7 +86,8 @@ const PREGUNTAS: Pregunta[] = [
     tipo: 'verdadero_falso',
     opciones: ['Verdadero', 'Falso'],
     correcta: 0,
-    explicacion: 'Verdadero. Empezar con un presupuesto aproximado y mejorarlo es mejor que no tener ninguno.',
+    explicacion:
+      'Verdadero. Empezar con un presupuesto aproximado y mejorarlo es mejor que no tener ninguno.',
     leccion: 'Lección 12',
   },
   {
@@ -101,197 +107,194 @@ const PREGUNTAS: Pregunta[] = [
       'Llamar a sus papás para que le mandaran dinero',
     ],
     correcta: 1,
-    explicacion: 'Revisar el presupuesto primero es la decisión más inteligente: te da claridad antes de actuar.',
+    explicacion:
+      'Revisar el presupuesto primero es la decisión más inteligente: te da claridad antes de actuar.',
     leccion: 'Lección 10',
   },
   {
     texto: '¿Cuál herramienta es oficial de CONDUSEF?',
     tipo: 'multiple',
-    opciones: [
-      'Fintonic',
-      'Google Sheets',
-      'App Presupuesto Familiar',
-    ],
+    opciones: ['Fintonic', 'Google Sheets', 'App Presupuesto Familiar'],
     correcta: 2,
-    explicacion: 'La App Presupuesto Familiar es oficial de CONDUSEF: gratuita, sin publicidad y sin pedir datos bancarios.',
+    explicacion:
+      'La App Presupuesto Familiar es oficial de CONDUSEF: gratuita, sin publicidad y sin pedir datos bancarios.',
     leccion: 'Lección 11',
   },
 ];
 
 export default function L14() {
-  const [step, setStep] = useState(0);
-
-  const resume = useLessonResume('presupuesto', 'L14');
-  const [resumeHandled, setResumeHandled] = useState(false);
-
-  useEffect(() => {
-    if (step > 0) resume.save({ step });
-  }, [step, resume]);
+  const [index, setIndex] = useState(0);
+  const [pending, setPending] = useState<number | null>(null);
   const [answers, setAnswers] = useState<Record<number, number>>({});
-
-  const quizDone = Object.keys(answers).length === PREGUNTAS.length;
+  const [stage, setStage] = useState<'quiz' | 'review' | 'complete'>('quiz');
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    void lessonDataRepository
+      .load<{
+        index?: number;
+        answers?: Record<number, number>;
+        stage?: 'quiz' | 'review' | 'complete';
+      }>('presupuesto', 'l14_quiz:v1')
+      .then((saved) => {
+        if (saved) {
+          setIndex(Math.min(9, saved.index ?? 0));
+          setAnswers(saved.answers ?? {});
+          setStage(saved.stage ?? 'quiz');
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const correctCount = PREGUNTAS.filter((q, i) => answers[i] === q.correcta).length;
   const score = Math.round((correctCount / PREGUNTAS.length) * 100);
-
-  const answer = (qi: number, oi: number) => {
-    if (answers[qi] !== undefined) return;
-    setAnswers((prev) => ({ ...prev, [qi]: oi }));
+  const q = PREGUNTAS[index];
+  const feedback = pending === null ? null : pending === q.correcta;
+  const save = async (
+    nextIndex: number,
+    nextAnswers: Record<number, number>,
+    nextStage: 'quiz' | 'review' | 'complete',
+  ) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await lessonDataRepository.save('presupuesto', 'l14_quiz:v1', {
+        index: nextIndex,
+        answers: nextAnswers,
+        stage: nextStage,
+      });
+      if (mounted.current) {
+        setIndex(nextIndex);
+        setAnswers(nextAnswers);
+        setStage(nextStage);
+        setPending(null);
+      }
+    } catch {
+      if (mounted.current) setError('No pudimos guardar. Tu respuesta sigue en pantalla.');
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
   };
-
-  const progressValue = step === 0 ? 0 : step === 1 ? (Object.keys(answers).length / PREGUNTAS.length) * 90 : 100;
-
+  const confirm = () => {
+    if (pending === null) return;
+    const next = { ...answers, [index]: pending };
+    const last = index === PREGUNTAS.length - 1;
+    void save(last ? index : index + 1, next, last ? 'review' : 'quiz');
+  };
+  if (loading)
+    return (
+      <LessonShell id="L14" title="Comprueba lo aprendido" completion={{ ready: false }}>
+        <ActivityLoading />
+      </LessonShell>
+    );
   return (
     <LessonShell
       id="L14"
-      title="¿Tú controlas tu dinero o él te controla a ti?"
-      completion={{ ready: quizDone, score }}
+      title="Comprueba lo aprendido"
+      showGreeting={false}
+      completion={{ ready: stage === 'complete', score }}
     >
-      <div className="p-1">
-        {resume.hasSaved && !resumeHandled && (
-          <LessonResumeBanner
-            step={resume.savedStep ?? 0}
-            onContinue={() => {
-              const snapshot = resume.accept();
-              if (snapshot) setStep(snapshot.step);
-              setResumeHandled(true);
-            }}
-            onRestart={() => {
-              resume.ignore();
-              setResumeHandled(true);
-            }}
-          />
-        )}
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
-        </div>
-
-        {step === 0 && (
-          <div className="space-y-3">
-            <FinniMessage
-              variant="coach"
-              title="¡Llegaste a la penúltima lección!"
-              message="Antes del reto final, vamos a ver qué tanto absorbiste. No es examen: es una radiografía de tu aprendizaje."
-            />
-            <FECard variant="flat" className="border border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10">
-              <p className="font-bold">10 preguntas</p>
-              <p className="text-sm text-[var(--color-text-secondary)]">
-                Mezcla de conceptos, situaciones y aplicaciones prácticas. Por cada respuesta recibirás retroalimentación inmediata.
-              </p>
-            </FECard>
-            <FinniMessage
-              variant="coach"
-              title="Tranquilo"
-              message="Si algo no quedó claro, cada explicación te dirá en qué lección puedes reforzarlo."
-            />
-            <button
-              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-              onClick={() => setStep(1)}
-            >
-              ¡Comenzar! →
-            </button>
-          </div>
-        )}
-
-        {step === 1 && (
-          <div className="space-y-3">
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              {Object.keys(answers).length}/{PREGUNTAS.length} respondidas
-            </p>
-            {PREGUNTAS.map((q, qi) => {
-              const answered = answers[qi] !== undefined;
-              const isCorrect = answered && answers[qi] === q.correcta;
-              return (
-                <FECard
-                  key={qi}
-                  variant="flat"
-                  className={cn(
-                    'border-2',
-                    answered
-                      ? isCorrect ? 'border-[var(--color-brand-success)] bg-[var(--color-brand-success)]/10' : 'border-[var(--color-brand-error)] bg-[var(--color-brand-error)]/10'
-                      : 'border-[var(--color-neutral-200)]'
-                  )}
-                >
-                  <p className="font-bold text-sm mb-2">
-                    {qi + 1}. {q.texto}
-                  </p>
-                  {!answered && (
-                    <div className="space-y-1">
-                      {q.opciones?.map((op, oi) => (
-                        <button
-                          key={oi}
-                          onClick={() => answer(qi, oi)}
-                          className="w-full text-left text-sm border border-[var(--color-brand-warning)] text-[var(--color-brand-warning)] rounded-xl px-3 py-2"
-                        >
-                          {q.tipo === 'verdadero_falso' ? '' : `${['a', 'b', 'c'][oi]}) `}{op}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {answered && (
-                    <div className="space-y-1">
-                      <p className="font-bold text-sm">
-                        {isCorrect ? 'Correcto' : 'Incorrecto'} — Tu respuesta: {q.opciones?.[answers[qi]]}
-                      </p>
-                      {!isCorrect && (
-                        <p className="text-sm">
-                          Respuesta correcta: <b>{q.opciones?.[q.correcta]}</b>
-                        </p>
-                      )}
-                      <p className="text-xs text-[var(--color-text-secondary)] italic">
-                        {q.explicacion} (Ref: {q.leccion})
-                      </p>
-                    </div>
-                  )}
-                </FECard>
-              );
-            })}
-            {quizDone && (
+      <ActivityFrame
+        label="Evaluación del módulo"
+        className="emotional-spending"
+        busy={busy}
+        title={stage === 'quiz' ? 'Resuelve una pregunta a la vez.' : 'Revisa tu resultado.'}
+        description="Puedes cambiar tu elección después de leer la explicación de Finni y antes de confirmarla."
+        progressLabel="Preguntas respondidas"
+        progressValue={Object.keys(answers).length}
+        progressMax={PREGUNTAS.length}
+        stepLabel={
+          stage === 'quiz'
+            ? `Pregunta ${index + 1} de ${PREGUNTAS.length} · ${q.leccion}`
+            : 'Resultado y cierre'
+        }
+        focusKey={`${stage}-${index}`}
+        advice={{
+          title:
+            feedback === null
+              ? 'Piensa antes de confirmar'
+              : feedback
+                ? 'Concepto claro'
+                : 'Aquí tienes la pista',
+          text:
+            feedback === null ? 'Elige una opción para recibir una explicación.' : q.explicacion,
+          tone: feedback === null ? 'info' : feedback ? 'success' : 'review',
+        }}
+        adviceCue={pending === null ? null : `${index}-${pending}`}
+        error={error}
+        status={
+          busy
+            ? 'Guardando…'
+            : stage === 'quiz' && pending !== null
+              ? 'Elección sin confirmar.'
+              : 'Tu avance está guardado.'
+        }
+        actions={
+          <div className="es-actions">
+            {stage === 'quiz' && (
+              <button className="ca-primary" disabled={busy || pending === null} onClick={confirm}>
+                {index === 9 ? 'Confirmar y revisar' : 'Confirmar respuesta'}
+              </button>
+            )}
+            {stage === 'review' && (
               <button
-                className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-                onClick={() => setStep(2)}
+                className="ca-primary"
+                disabled={busy}
+                onClick={() => void save(index, answers, 'complete')}
               >
-                Ver resultado final →
+                Guardar y terminar
               </button>
             )}
           </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-3">
-            <FECard
-              variant="flat"
-              className={cn(
-                'border-2 text-center py-4',
-                score >= 80 ? 'bg-[var(--color-brand-success)]/10 border-[var(--color-brand-success)]'
-                  : score >= 60 ? 'bg-[var(--color-brand-warning)]/10 border-[var(--color-brand-warning)]'
-                  : 'bg-[var(--color-brand-error)]/10 border-[var(--color-brand-error)]'
-              )}
-            >
-              <p className="text-4xl">{correctCount}/10</p>
-              <p className="font-bold">{score}% de aciertos</p>
-            </FECard>
-            <FinniMessage
-              variant={score >= 80 ? 'success' : 'coach'}
-              title={score >= 80 ? '¡Excelente dominio!' : score >= 60 ? '¡Buen trabajo!' : 'Sigue practicando'}
-              message={
-                score >= 80
-                  ? 'Dominas los conceptos del módulo. ¡Estás listo para el reto final!'
-                  : score >= 60
-                  ? 'Buen nivel. Revisa las preguntas marcadas en rojo antes del reto final.'
-                  : 'Algunos conceptos necesitan refuerzo. Repasa las lecciones señaladas.'
-              }
-            />
-            {score < 80 && (
-              <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
-                <p className="font-bold text-sm mb-2">Lecciones a reforzar:</p>
-                {PREGUNTAS.filter((q, i) => answers[i] !== q.correcta).map((q, i) => (
-                  <p key={i} className="text-sm">• {q.leccion}: {q.texto.slice(0, 50)}...</p>
-                ))}
-              </FECard>
+        }
+      >
+        {stage === 'quiz' ? (
+          <article className="es-card">
+            <h3>{q.texto}</h3>
+            <div className="es-options">
+              {q.opciones?.map((option, optionIndex) => (
+                <button
+                  key={option}
+                  className="es-option"
+                  aria-pressed={pending === optionIndex}
+                  onClick={() => setPending(optionIndex)}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </article>
+        ) : (
+          <section className="es-card">
+            <h3>
+              {correctCount} de {PREGUNTAS.length} respuestas correctas
+            </h3>
+            <p>
+              {score}% de aciertos. Las explicaciones forman parte de la práctica; el resultado
+              sirve para decidir qué repasar.
+            </p>
+            {score < 100 && (
+              <p>
+                Revisa:{' '}
+                {[
+                  ...new Set(
+                    PREGUNTAS.filter((item, i) => answers[i] !== item.correcta).map(
+                      (item) => item.leccion,
+                    ),
+                  ),
+                ].join(', ')}
+                .
+              </p>
             )}
-          </div>
+          </section>
         )}
-      </div>
+      </ActivityFrame>
     </LessonShell>
   );
 }

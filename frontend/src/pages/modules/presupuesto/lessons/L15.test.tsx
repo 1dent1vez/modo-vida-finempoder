@@ -40,7 +40,7 @@ function renderL15() {
   return render(
     <MemoryRouter>
       <L15 />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -50,11 +50,12 @@ async function irAParte3() {
   const textareas = await screen.findAllByRole('textbox');
   COMPROMISOS.forEach((c, i) => fireEvent.change(textareas[i], { target: { value: c } }));
   fireEvent.click(await screen.findByRole('button', { name: /Parte 3: Tu señal semanal/ }));
+  await screen.findByLabelText('Día de la semana');
 }
 
 async function elegirSenal(dia: string, hora: string) {
-  fireEvent.change(screen.getByLabelText('Día de la semana'), { target: { value: dia } });
-  fireEvent.change(screen.getByLabelText('Hora'), { target: { value: hora } });
+  fireEvent.change(await screen.findByLabelText('Día de la semana'), { target: { value: dia } });
+  fireEvent.change(await screen.findByLabelText('Hora'), { target: { value: hora } });
 }
 
 beforeEach(async () => {
@@ -87,7 +88,9 @@ describe('L15 — señal de revisión semanal honesta', () => {
     fireEvent.click(screen.getByRole('button', { name: /Guardar y ver resumen/ }));
 
     await waitFor(() =>
-      expect(screen.getByText(/Tu señal: Sábado 8:00 PM · Revisarás tu presupuesto/)).toBeInTheDocument()
+      expect(
+        screen.getByText(/Tu señal: Sábado 8:00 PM · Revisarás tu presupuesto/),
+      ).toBeInTheDocument(),
     );
 
     const row = await db.userLessonData.where('key').equals('l15_senal_semanal').first();
@@ -114,20 +117,24 @@ describe('L15 — señal de revisión semanal honesta', () => {
     fireEvent.click(screen.getByRole('button', { name: /Guardar y ver resumen/ }));
 
     await waitFor(() =>
-      expect(screen.getByText(/Tu señal: Lunes 10:00 AM · Revisarás tu presupuesto/)).toBeInTheDocument()
+      expect(
+        screen.getByText(/Tu señal: Lunes 10:00 AM · Revisarás tu presupuesto/),
+      ).toBeInTheDocument(),
     );
   });
 
   it('si el guardado falla, no completa y muestra mensaje', async () => {
     await seedPresupuesto();
-    vi.spyOn(lessonDataRepository, 'save').mockRejectedValue(new Error('db fail'));
     renderL15();
     await irAParte3();
     await elegirSenal('Sábado', '8:00 PM');
+    vi.spyOn(lessonDataRepository, 'save').mockRejectedValue(new Error('db fail'));
 
     fireEvent.click(screen.getByRole('button', { name: /Guardar y ver resumen/ }));
 
-    await waitFor(() => expect(screen.getByText(/No pudimos guardar tu señal/)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText(/No pudimos guardar tu señal/)).toBeInTheDocument(),
+    );
     expect(screen.queryByText(/Resumen del reto/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Presupuesto Pro/)).not.toBeInTheDocument();
   });
@@ -139,9 +146,7 @@ describe('L15 — señal de revisión semanal honesta', () => {
     await elegirSenal('Domingo', '12:00 PM');
     fireEvent.click(screen.getByRole('button', { name: /Guardar y ver resumen/ }));
 
-    await waitFor(() =>
-      expect(screen.getByText(/Tu señal: Domingo 12:00 PM/)).toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.getByText(/Tu señal: Domingo 12:00 PM/)).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /Desbloquear Presupuesto Pro/ }));
 
     await waitFor(() => expect(screen.getByText('Presupuesto Pro')).toBeInTheDocument());

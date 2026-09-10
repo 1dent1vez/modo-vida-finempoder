@@ -1,279 +1,278 @@
-import { cn } from '@/lib/utils';
-import { useState, useEffect } from 'react';
-import { TrendingDown, Wallet } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
+import {
+  initialMicroExpense,
+  parseMicroExpense,
+  type MicroExpenseDraft,
+} from '../../../../module-kit/activities/microExpenseModel';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
-import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
-import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import { useAuth } from '../../../../store/auth';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/micro-expense.css';
 
-const GASTOS_HORMIGA = [
-  { id: 'cafe', label: 'Café matutino', amount: 45 },
-  { id: 'musica', label: 'App de música', amount: 29 },
-  { id: 'propina', label: 'Propina en taquería', amount: 20 },
-  { id: 'papas', label: 'Papas en máquina', amount: 22 },
-  { id: 'parking', label: 'Estacionamiento extra', amount: 30 },
-  { id: 'agua', label: 'Agua embotellada', amount: 18 },
-  { id: 'juego', label: 'Videojuego en oferta', amount: 99 },
-  { id: 'snack', label: 'Snack convenience store', amount: 35 },
-  { id: 'saldo', label: 'Recarga de saldo', amount: 50 },
-  { id: 'impresiones', label: 'Impresiones extra', amount: 25 },
+const KEY = 'l3_gastos_hormiga:v1';
+const EXAMPLES = [
+  { id: 'cafe', label: 'Café fuera de casa', detail: '$45 · 3 veces por semana', weekly: 135 },
+  { id: 'snack', label: 'Snack por impulso', detail: '$35 · 4 veces por semana', weekly: 140 },
+  { id: 'delivery', label: 'Costo de envío', detail: '$49 · 2 veces por semana', weekly: 98 },
+  { id: 'app', label: 'Suscripción poco usada', detail: '$99 · una vez al mes', weekly: 25 },
+  { id: 'agua', label: 'Agua embotellada', detail: '$18 · 5 veces por semana', weekly: 90 },
+  { id: 'comision', label: 'Comisión evitable', detail: '$30 · 2 veces por semana', weekly: 60 },
 ];
-
-type PersonalGasto = { nombre: string; monto: string };
+const VALID_IDS = new Set(EXAMPLES.map((item) => item.id));
+const money = (value: number) =>
+  value.toLocaleString('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
 
 export default function L03() {
-  const [step, setStep] = useState(0);
+  const userId = useAuth((state) => state.user?.id ?? 'local');
+  return <MicroExpenseSession key={userId} />;
+}
 
-  const resume = useLessonResume('presupuesto', 'L03');
-  const [resumeHandled, setResumeHandled] = useState(false);
-
-  useEffect(() => {
-    if (step > 0) resume.save({ step });
-  }, [step, resume]);
-  const [found, setFound] = useState<Set<string>>(new Set());
-  const [personalGastos, setPersonalGastos] = useState<PersonalGasto[]>([
-    { nombre: '', monto: '' },
-    { nombre: '', monto: '' },
-    { nombre: '', monto: '' },
-  ]);
-
-  const totalFound = GASTOS_HORMIGA.filter((g) => found.has(g.id)).reduce((a, g) => a + g.amount, 0);
-  const allFound = found.size === GASTOS_HORMIGA.length;
-
-  const personalTotal = personalGastos.reduce((a, g) => a + (parseFloat(g.monto) || 0), 0);
-  const personalValid = personalGastos.every((g) => g.nombre.trim().length > 0 && parseFloat(g.monto) > 0);
-
-  const grandTotal = totalFound + personalTotal;
-  const monthly = grandTotal * 4;
-  const yearly = grandTotal * 52;
-
-  const toggleFound = (id: string) => {
-    setFound((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+function MicroExpenseSession() {
+  const [draft, setDraft] = useState<MicroExpenseDraft>(initialMicroExpense);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
+  const lock = useRef(false);
 
   useEffect(() => {
-    if (personalValid) {
-      void lessonDataRepository.save('presupuesto', 'l3_gastos_hormiga', {
-        gameGastos: GASTOS_HORMIGA.filter((g) => found.has(g.id)),
-        personalGastos,
-        totalWeekly: grandTotal,
-        totalMonthly: monthly,
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setLoadError(false);
+    void lessonDataRepository
+      .load('presupuesto', KEY)
+      .then((raw) => {
+        if (!active) return;
+        setDraft(parseMicroExpense(raw, VALID_IDS) ?? initialMicroExpense());
+        setLoading(false);
+      })
+      .catch(() => {
+        if (active) {
+          setLoadError(true);
+          setLoading(false);
+        }
       });
-    }
-  }, [personalValid, found, personalGastos, grandTotal, monthly]);
+    return () => {
+      active = false;
+    };
+  }, [retry]);
 
-  const progressValue = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 60 : step === 3 ? 80 : 100;
+  const chosen = EXAMPLES.filter((item) => draft.selected.includes(item.id));
+  const weekly = chosen.reduce((sum, item) => sum + item.weekly, 0);
+  const ready = draft.selected.length >= 3;
+  const toggle = (id: string) => {
+    if (draft.stage !== 'observe') return;
+    setDraft((current) => ({
+      ...current,
+      selected: current.selected.includes(id)
+        ? current.selected.filter((value) => value !== id)
+        : [...current.selected, id],
+    }));
+    setDirty(true);
+    setCue(null);
+  };
+  const persist = async (stage: MicroExpenseDraft['stage']) => {
+    if (lock.current || (stage !== 'observe' && !ready)) return;
+    lock.current = true;
+    setBusy(true);
+    setError(null);
+    const next = { ...draft, stage };
+    try {
+      if (stage === 'complete') {
+        await lessonDataRepository.saveBatch('presupuesto', [
+          {
+            key: 'l3_gastos_hormiga',
+            data: {
+              gameGastos: chosen,
+              personalGastos: [],
+              totalWeekly: weekly,
+              totalMonthly: weekly * 4,
+            },
+          },
+          { key: KEY, data: next },
+        ]);
+      } else {
+        await lessonDataRepository.save('presupuesto', KEY, next);
+      }
+      if (mounted.current) {
+        setDraft(next);
+        setDirty(false);
+        setCue(stage === 'review' ? 'review' : null);
+      }
+    } catch {
+      if (mounted.current) setError('No pudimos guardar tu selección. Intenta de nuevo.');
+    } finally {
+      lock.current = false;
+      if (mounted.current) setBusy(false);
+    }
+  };
+  const reviewing = draft.stage !== 'observe';
+  const advice = reviewing
+    ? {
+        title: 'Decidir vale más que prohibir',
+        text: 'Elige cuáles gastos sí disfrutas y cuáles prefieres redirigir a una meta.',
+        tone: 'success' as const,
+      }
+    : ready
+      ? {
+          title: 'Ya encontraste un patrón',
+          text: 'Ahora mira el efecto acumulado. No necesitas eliminar todo para recuperar margen.',
+          tone: 'success' as const,
+        }
+      : {
+          title: 'Busca repetición y piloto automático',
+          text: 'El monto pequeño no basta: observa qué se repite y qué compras sin decidirlo.',
+          tone: 'info' as const,
+        };
 
   return (
     <LessonShell
       id="L03"
-      title="El gasto hormiga: el ladrón silencioso"
-      completion={{ ready: allFound && personalValid }}
+      title="Gastos fijos, variables y hormiga"
+      showGreeting={false}
+      completion={{ ready: draft.stage === 'complete', score: 100 }}
     >
-      <div className="p-1">
-        {resume.hasSaved && !resumeHandled && (
-          <LessonResumeBanner
-            step={resume.savedStep ?? 0}
-            onContinue={() => {
-              const snapshot = resume.accept();
-              if (snapshot) setStep(snapshot.step);
-              setResumeHandled(true);
-            }}
-            onRestart={() => {
-              resume.ignore();
-              setResumeHandled(true);
-            }}
-          />
-        )}
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
-        </div>
-
-        {step === 0 && (
-          <div className="space-y-3">
-            <FECard variant="flat" className="text-center py-6 bg-[var(--color-brand-warning)]/10">
-              <span className="inline-flex items-center justify-center gap-2"><Wallet className="h-8 w-8 text-[var(--color-brand-warning)]" aria-hidden="true" /><span className="text-4xl font-bold">→</span><TrendingDown className="h-8 w-8 text-[var(--color-brand-error)]" aria-hidden="true" /></span>
-              <p className="font-bold mt-2">
-                Cartera llena el lunes → vacía el viernes
-              </p>
-            </FECard>
-            <FinniMessage
-              variant="coach"
-              title="¿Tienes un ladrón en tu rutina?"
-              message="No te roba de golpe. Te roba de a poquito. Todos los días. Se llama gasto hormiga."
-            />
-            <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
-              <p className="text-sm">
-                El gasto hormiga es cualquier compra <b>pequeña, recurrente y casi automática</b> que hacemos sin pensarlo.
-                Un café de $45, una descarga de $19, un antojito de $35…
-              </p>
-              <p className="text-sm mt-2">
-                Solos no parecen gran cosa. Pero sumados al mes, pueden comerse entre{' '}
-                <b>$500 y $1,500 pesos</b> de tu presupuesto.
-              </p>
-            </FECard>
-            <FinniMessage
-              variant="coach"
-              title="La clave"
-              message="El problema no es el café. El problema es que no lo tienes en tu presupuesto."
-            />
-            <button
-              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-              onClick={() => setStep(1)}
-            >
-              ¡A encontrar los gastos hormiga! →
-            </button>
-          </div>
-        )}
-
-        {step === 1 && (
-          <div className="space-y-3">
-            <p className="text-sm">
-              Toca todos los gastos hormiga que encuentres en tu semana. ¡Hay 10!
-            </p>
-            <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2">
-              <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${(found.size / GASTOS_HORMIGA.length) * 100}%` }} />
-            </div>
-            <p className="text-xs text-[var(--color-text-secondary)] text-center">
-              {found.size}/10 gastos identificados
-            </p>
-            <div className="flex flex-wrap gap-3">
-              {GASTOS_HORMIGA.map((g) => (
+      {loading ? (
+        <ActivityLoading message="Recuperando tu observación…" />
+      ) : loadError ? (
+        <ActivityLoadError
+          message="No pudimos recuperar tu actividad."
+          onRetry={() => setRetry((value) => value + 1)}
+        />
+      ) : (
+        <ActivityFrame
+          label="Laboratorio de gastos hormiga"
+          className="micro-expense"
+          busy={busy}
+          title={
+            reviewing
+              ? 'Mira el impacto antes de decidir.'
+              : '¿Cuáles podrían pasar desapercibidos?'
+          }
+          description="Elige al menos tres ejemplos que podrían repetirse en una semana. No tienes que compartir gastos personales."
+          progressLabel="Ejemplos observados"
+          progressValue={Math.min(draft.selected.length, 3)}
+          progressMax={3}
+          stepLabel={reviewing ? 'Paso 2 de 2 · Decidir' : 'Paso 1 de 2 · Observar'}
+          focusKey={draft.stage}
+          advice={advice}
+          adviceCue={cue}
+          error={error}
+          status={
+            busy
+              ? 'Guardando…'
+              : dirty
+                ? 'Cambios sin guardar.'
+                : draft.stage === 'complete'
+                  ? 'Actividad guardada.'
+                  : 'Tu selección se guarda en este dispositivo.'
+          }
+          actions={
+            <div className="me-actions">
+              {draft.stage === 'observe' && (
                 <button
-                  key={g.id}
-                  onClick={() => toggleFound(g.id)}
-                  className={cn(
-                    'px-3 py-2 rounded-full text-sm font-semibold border transition-colors min-h-10',
-                    found.has(g.id)
-                      ? 'bg-[var(--color-brand-warning)] text-white border-[var(--color-brand-warning)]'
-                      : 'border-[var(--color-neutral-200)] text-[var(--color-text-secondary)]'
-                  )}
+                  className="me-secondary"
+                  disabled={busy || !ready}
+                  onClick={() => void persist('observe')}
                 >
-                  {g.label} ${g.amount}
+                  Guardar borrador
+                </button>
+              )}
+              {draft.stage === 'observe' && (
+                <button
+                  className="ca-primary"
+                  disabled={busy || !ready}
+                  onClick={() => void persist('review')}
+                >
+                  Ver impacto
+                </button>
+              )}
+              {draft.stage === 'review' && (
+                <button
+                  className="me-secondary"
+                  disabled={busy}
+                  onClick={() => {
+                    setDraft((current) => ({ ...current, stage: 'observe' }));
+                    setDirty(true);
+                  }}
+                >
+                  Ajustar selección
+                </button>
+              )}
+              {draft.stage === 'review' && (
+                <button
+                  className="ca-primary"
+                  disabled={busy}
+                  onClick={() => void persist('complete')}
+                >
+                  Guardar y terminar
+                </button>
+              )}
+            </div>
+          }
+        >
+          {!reviewing ? (
+            <div className="me-grid">
+              {EXAMPLES.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="me-option"
+                  aria-pressed={draft.selected.includes(item.id)}
+                  onClick={() => toggle(item.id)}
+                >
+                  <strong>{item.label}</strong>
+                  <span>{item.detail}</span>
                 </button>
               ))}
             </div>
-            {found.size > 0 && (
-              <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10">
-                <p className="font-bold text-sm">
-                  Total encontrado esta semana: <b>${totalFound}</b>
-                </p>
-              </FECard>
-            )}
-            {allFound && (
-              <button
-                className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-                onClick={() => setStep(2)}
-              >
-                Ver cuánto suma al mes →
-              </button>
-            )}
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-3">
-            <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 text-center">
-              <p className="font-bold text-base mb-2">Cálculo automático</p>
-              <p className="text-sm">Total gastos hormiga/semana: <b>${totalFound}</b></p>
-              <p className="text-sm">Al mes (x4): <b>${totalFound * 4}</b></p>
-              <p className="text-sm">Al año (x52): <b>${totalFound * 52}</b></p>
-            </FECard>
-            <FinniMessage
-              variant="coach"
-              title="Ahora los tuyos"
-              message="Ingresa tus 3 gastos hormiga reales (los que haces casi automáticamente)."
-            />
-            <div className="space-y-2">
-              {personalGastos.map((g, i) => (
-                <FECard key={i} variant="flat" className="border border-[var(--color-neutral-200)]">
-                  <p className="font-bold text-sm mb-2">Gasto hormiga #{i + 1}</p>
-                  <div className="flex gap-2">
-                    <div className="flex flex-col gap-1 flex-[2]">
-                      <label className="text-xs text-[var(--color-text-secondary)]">¿Cuál es?</label>
-                      <input
-                        value={g.nombre}
-                        onChange={(e) => {
-                          const next = [...personalGastos];
-                          next[i] = { ...next[i], nombre: e.target.value };
-                          setPersonalGastos(next);
-                        }}
-                        className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1 flex-1">
-                      <label className="text-xs text-[var(--color-text-secondary)]">$monto</label>
-                      <input
-                        type="number"
-                        value={g.monto}
-                        onChange={(e) => {
-                          const next = [...personalGastos];
-                          next[i] = { ...next[i], monto: e.target.value };
-                          setPersonalGastos(next);
-                        }}
-                        min={0}
-                        className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm"
-                      />
-                    </div>
-                  </div>
-                </FECard>
-              ))}
-            </div>
-            {personalTotal > 0 && (
-              <FECard variant="flat" className="bg-[var(--color-brand-error)]/10">
-                <p className="font-bold text-sm">
-                  Tus gastos hormiga/semana: <b>${personalTotal}</b>
-                </p>
-                <p className="text-sm">
-                  Total combinado/semana: <b>${grandTotal}</b> | Mes: <b>${monthly}</b> | Año: <b>${yearly}</b>
-                </p>
-              </FECard>
-            )}
-            {personalValid && (
-              <button
-                className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-                onClick={() => setStep(3)}
-              >
-                Reflexión final →
-              </button>
-            )}
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-3">
-            <FinniMessage
-              variant="success"
-              title="¡Ladrón identificado!"
-              message={`Identificaste $${grandTotal} en gastos hormiga por semana. Eso es $${monthly} al mes que podrías redirigir.`}
-            />
-            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="font-bold text-sm mb-2">
-                ¿Cuáles eliminarías sin extrañarlos?
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {[...GASTOS_HORMIGA.filter((g) => found.has(g.id)), ...personalGastos.filter((g) => g.nombre).map((g) => ({ id: g.nombre, label: g.nombre, amount: parseFloat(g.monto) || 0 }))].map((g) => (
-                  <span key={g.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs border border-[var(--color-neutral-200)] font-semibold">
-                    {g.label}
-                  </span>
+          ) : (
+            <div className="me-review">
+              <h3>Tu selección de ejemplo</h3>
+              <ul>
+                {chosen.map((item) => (
+                  <li key={item.id}>
+                    {item.label}: {money(item.weekly)} por semana
+                  </li>
                 ))}
-              </div>
-            </FECard>
-            <FinniMessage
-              variant="coach"
-              title="Recuerda"
-              message="No se trata de eliminar todo. Se trata de hacerlos conscientes y decidir cuáles valen la pena."
-            />
+              </ul>
+            </div>
+          )}
+          <div className="me-impact" aria-live="polite">
+            <div>
+              <span>Semana</span>
+              <strong>{money(weekly)}</strong>
+            </div>
+            <div>
+              <span>Mes aproximado</span>
+              <strong>{money(weekly * 4)}</strong>
+            </div>
+            <div>
+              <span>Año aproximado</span>
+              <strong>{money(weekly * 52)}</strong>
+            </div>
           </div>
-        )}
-      </div>
+          <p className="me-note">
+            Son ejemplos para practicar. El cálculo usa cuatro semanas por mes y no representa tus
+            gastos reales.
+          </p>
+        </ActivityFrame>
+      )}
     </LessonShell>
   );
 }

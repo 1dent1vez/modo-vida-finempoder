@@ -3,11 +3,13 @@ import { useEffect, useState } from 'react';
 import { CheckCircle } from 'lucide-react';
 import { BarChart3, Circle, GraduationCap, Landmark, Link } from 'lucide-react';
 import LessonShell from '../LessonShell';
+import ActivityFrame from '../../../../module-kit/activities/ActivityFrame';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
 import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
 import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import '../../../../module-kit/activities/classification.css';
 
 const HERRAMIENTAS = [
   {
@@ -45,9 +47,21 @@ const HERRAMIENTAS = [
 ];
 
 const PASOS_TUTORIAL = [
-  { id: 'herramientas', desc: 'Elige al menos una herramienta para registrar tus gastos', finni: '¡Bien! Con esa herramienta tendrás tu registro a la mano.' },
-  { id: 'metodo', desc: 'Elige tu método: ¿qué app usarás primero?', finni: 'Perfecto. Ese será tu punto de partida para registrar.' },
-  { id: 'senal', desc: 'Define tu señal de registro diario', finni: '¡Listo! Tu señal queda guardada.' },
+  {
+    id: 'herramientas',
+    desc: 'Elige al menos una herramienta para registrar tus gastos',
+    finni: '¡Bien! Con esa herramienta tendrás tu registro a la mano.',
+  },
+  {
+    id: 'metodo',
+    desc: 'Elige tu método: ¿qué app usarás primero?',
+    finni: 'Perfecto. Ese será tu punto de partida para registrar.',
+  },
+  {
+    id: 'senal',
+    desc: 'Define tu señal de registro diario',
+    finni: '¡Listo! Tu señal queda guardada.',
+  },
 ];
 
 const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -76,10 +90,14 @@ export default function L11() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [loaded, setLoaded] = useState(false);
+  const [finniCue, setFinniCue] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
-      const data = await lessonDataRepository.load<Opciones & { updatedAt?: string }>('presupuesto', 'l11_opciones');
+      const data = await lessonDataRepository.load<Opciones & { updatedAt?: string }>(
+        'presupuesto',
+        'l11_opciones',
+      );
       if (data) {
         setOpciones({
           herramientas: Array.isArray(data.herramientas) ? data.herramientas : [],
@@ -87,7 +105,8 @@ export default function L11() {
           senal: data.senal?.dia && data.senal?.hora ? data.senal : null,
         });
         const done = new Set<string>();
-        if (Array.isArray(data.herramientas) && data.herramientas.length > 0) done.add('herramientas');
+        if (Array.isArray(data.herramientas) && data.herramientas.length > 0)
+          done.add('herramientas');
         if (typeof data.metodo === 'string' && data.metodo.trim().length > 0) done.add('metodo');
         if (data.senal?.dia && data.senal?.hora) done.add('senal');
         setCompletedSteps(done);
@@ -129,6 +148,7 @@ export default function L11() {
       const next = new Set(completedSteps);
       next.add(paso.id);
       setCompletedSteps(next);
+      setFinniCue(paso.id);
       if (tutorialStep < PASOS_TUTORIAL.length - 1) {
         setTutorialStep((i) => i + 1);
       } else {
@@ -142,10 +162,32 @@ export default function L11() {
   };
 
   const progressValue = step === 0 ? 0 : step === 1 ? 55 : 100;
+  const finish = async () => {
+    setSaving(true);
+    setSaveError('');
+    try {
+      await lessonDataRepository.save('presupuesto', 'l11_opciones', {
+        ...opciones,
+        metodo: opciones.metodo.trim(),
+        completed: true,
+        updatedAt: new Date().toISOString(),
+      });
+      setStep(3);
+      setFinniCue('complete');
+    } catch {
+      setSaveError('No pudimos guardar el cierre. Tus opciones siguen en pantalla.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (!loaded) {
     return (
-      <LessonShell id="L11" title="Tu presupuesto en la palma de la mano" completion={{ ready: false }}>
+      <LessonShell
+        id="L11"
+        title="Tu presupuesto en la palma de la mano"
+        completion={{ ready: false }}
+      >
         <p className="text-sm text-[var(--color-text-secondary)]">Cargando tus opciones...</p>
       </LessonShell>
     );
@@ -155,9 +197,45 @@ export default function L11() {
     <LessonShell
       id="L11"
       title="Tu presupuesto en la palma de la mano"
-      completion={{ ready: allTutorialDone }}
+      completion={{ ready: allTutorialDone && step === 3 }}
     >
-      <div className="p-1">
+      <ActivityFrame
+        label="Tutorial para elegir una herramienta de registro"
+        busy={saving}
+        title={
+          step < 2 ? 'Prepara un registro que puedas sostener.' : 'Revisa tu plan de registro.'
+        }
+        description="Elige una herramienta, un método y una señal. FinEmpoder no activará recordatorios en tu teléfono."
+        progressLabel="Pasos del tutorial completados"
+        progressValue={completedSteps.size}
+        progressMax={PASOS_TUTORIAL.length}
+        stepLabel={`${Math.min(completedSteps.size + 1, 3)} de 3 pasos`}
+        focusKey={`${step}-${tutorialStep}`}
+        advice={{
+          title: step >= 2 ? 'Tu señal debe ser concreta' : 'Elige lo que sí usarás',
+          text:
+            step >= 2
+              ? 'Asocia el registro con un momento de tu rutina y configura una alarma si la necesitas.'
+              : (PASOS_TUTORIAL[tutorialStep]?.finni ?? 'Completa un paso a la vez.'),
+          tone: step >= 2 ? 'success' : 'info',
+        }}
+        adviceCue={finniCue}
+        error={saveError}
+        status={
+          saving
+            ? 'Guardando…'
+            : step === 3
+              ? 'Plan de registro guardado.'
+              : 'Cada paso se guarda antes de avanzar.'
+        }
+        actions={
+          step === 2 ? (
+            <button className="ca-primary" disabled={saving} onClick={() => void finish()}>
+              Guardar y terminar
+            </button>
+          ) : undefined
+        }
+      >
         {resume.hasSaved && !resumeHandled && (
           <LessonResumeBanner
             step={resume.savedStep ?? 0}
@@ -172,17 +250,14 @@ export default function L11() {
             }}
           />
         )}
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
-        </div>
+        <span className="sr-only">Avance general: {progressValue}%</span>
 
         {step === 0 && (
           <div className="space-y-3">
-            <FinniMessage
-              variant="coach"
-              title="Tu smartphone, tu mejor aliado"
-              message="Registrar gastos en papel está bien. Pero si tienes un smartphone, puedes hacer algo más poderoso: que tu dinero se registre y analice casi solo."
-            />
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              No existe una herramienta universal. Empieza con la que requiera menos esfuerzo en tu
+              rutina.
+            </p>
             <button
               className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
               onClick={() => setStep(1)}
@@ -194,14 +269,15 @@ export default function L11() {
 
         {step === 1 && (
           <div className="space-y-3">
-            <p className="font-bold">
-              Tutorial: tu registro en 3 pasos
-            </p>
+            <p className="font-bold">Tutorial: tu registro en 3 pasos</p>
             <p className="text-sm text-[var(--color-text-secondary)]">
               Completa los 3 pasos para desbloquear la lección.
             </p>
             <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2">
-              <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${(completedSteps.size / PASOS_TUTORIAL.length) * 100}%` }} />
+              <div
+                className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all"
+                style={{ width: `${(completedSteps.size / PASOS_TUTORIAL.length) * 100}%` }}
+              />
             </div>
             <div className="space-y-3">
               {PASOS_TUTORIAL.map((p, i) => {
@@ -213,18 +289,30 @@ export default function L11() {
                     variant="flat"
                     className={cn(
                       'border-2 transition-colors',
-                      done ? 'border-[var(--color-brand-success)] bg-[var(--color-brand-success)]/10'
-                        : isCurrent ? 'border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10'
-                        : 'border-[var(--color-neutral-200)] opacity-50'
+                      done
+                        ? 'border-[var(--color-brand-success)] bg-[var(--color-brand-success)]/10'
+                        : isCurrent
+                          ? 'border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10'
+                          : 'border-[var(--color-neutral-200)] opacity-50',
                     )}
                   >
                     <div className="flex items-center gap-3">
                       <p className="text-sm font-bold min-w-6">
-                        {done ? <CheckCircle className="h-4 w-4 text-[var(--color-brand-success)]" aria-hidden="true" /> : isCurrent ? <Circle className="h-4 w-4 text-[var(--color-brand-warning)]" aria-hidden="true" /> : `${i + 1}.`}
+                        {done ? (
+                          <CheckCircle
+                            className="h-4 w-4 text-[var(--color-brand-success)]"
+                            aria-hidden="true"
+                          />
+                        ) : isCurrent ? (
+                          <Circle
+                            className="h-4 w-4 text-[var(--color-brand-warning)]"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          `${i + 1}.`
+                        )}
                       </p>
-                      <p className={cn('text-sm', isCurrent ? 'font-bold' : '')}>
-                        {p.desc}
-                      </p>
+                      <p className={cn('text-sm', isCurrent ? 'font-bold' : '')}>{p.desc}</p>
                     </div>
                     {isCurrent && (
                       <div className="space-y-3 mt-3">
@@ -242,26 +330,39 @@ export default function L11() {
                                     'border-2 cursor-pointer transition-all',
                                     opciones.herramientas.includes(h.id)
                                       ? 'border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10'
-                                      : 'border-[var(--color-neutral-200)]'
+                                      : 'border-[var(--color-neutral-200)]',
                                   )}
                                   onClick={() => toggleHerramienta(h.id)}
                                   role="button"
                                   tabIndex={0}
                                 >
                                   <div className="flex items-start gap-3">
-                                    <h.icon className="h-9 w-9 mx-auto text-[var(--color-brand-primary)]" aria-hidden="true" />
+                                    <h.icon
+                                      className="h-9 w-9 mx-auto text-[var(--color-brand-primary)]"
+                                      aria-hidden="true"
+                                    />
                                     <div className="flex-1">
                                       <div className="flex justify-between items-center">
                                         <p className="font-bold">{h.nombre}</p>
-                                        {opciones.herramientas.includes(h.id) && <CheckCircle className="text-[var(--color-brand-warning)]" size={18} />}
+                                        {opciones.herramientas.includes(h.id) && (
+                                          <CheckCircle
+                                            className="text-[var(--color-brand-warning)]"
+                                            size={18}
+                                          />
+                                        )}
                                       </div>
                                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-[var(--color-neutral-200)] font-semibold mt-1 mb-1">
                                         {h.tipo}
                                       </span>
-                                      <p className="text-sm text-[var(--color-text-secondary)]">{h.descripcion}</p>
+                                      <p className="text-sm text-[var(--color-text-secondary)]">
+                                        {h.descripcion}
+                                      </p>
                                       <div className="flex flex-wrap gap-1 mt-1">
                                         {h.pros.map((pro) => (
-                                          <span key={pro} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs border border-[var(--color-neutral-200)] font-semibold">
+                                          <span
+                                            key={pro}
+                                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs border border-[var(--color-neutral-200)] font-semibold"
+                                          >
                                             {pro}
                                           </span>
                                         ))}
@@ -275,14 +376,19 @@ export default function L11() {
                         )}
                         {p.id === 'metodo' && (
                           <div className="flex flex-col gap-1">
-                            <label htmlFor="l11-metodo" className="text-xs text-[var(--color-text-secondary)]">
+                            <label
+                              htmlFor="l11-metodo"
+                              className="text-xs text-[var(--color-text-secondary)]"
+                            >
                               ¿Qué app usarás primero?
                             </label>
                             <input
                               id="l11-metodo"
                               value={opciones.metodo}
                               maxLength={80}
-                              onChange={(e) => setOpciones((prev) => ({ ...prev, metodo: e.target.value }))}
+                              onChange={(e) =>
+                                setOpciones((prev) => ({ ...prev, metodo: e.target.value }))
+                              }
                               placeholder="Ej: Google Sheets"
                               className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-warning)]"
                             />
@@ -296,47 +402,62 @@ export default function L11() {
                               message="Elige cuándo registrarás tus gastos. Es tu señal, no la nuestra: si quieres que te avise, pon una alarma en tu teléfono. FinEmpoder no envía notificaciones todavía."
                             />
                             <div className="flex flex-col gap-1">
-                              <label htmlFor="l11-senal-dia" className="text-xs text-[var(--color-text-secondary)]">Día de la semana</label>
+                              <label
+                                htmlFor="l11-senal-dia"
+                                className="text-xs text-[var(--color-text-secondary)]"
+                              >
+                                Día de la semana
+                              </label>
                               <select
                                 id="l11-senal-dia"
                                 value={opciones.senal?.dia ?? ''}
-                                onChange={(e) => setOpciones((prev) => ({ ...prev, senal: { dia: e.target.value, hora: prev.senal?.hora ?? '' } }))}
+                                onChange={(e) =>
+                                  setOpciones((prev) => ({
+                                    ...prev,
+                                    senal: { dia: e.target.value, hora: prev.senal?.hora ?? '' },
+                                  }))
+                                }
                                 className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm"
                               >
                                 <option value="">Seleccionar...</option>
                                 {DIAS_SEMANA.map((d) => (
-                                  <option key={d} value={d}>{d}</option>
+                                  <option key={d} value={d}>
+                                    {d}
+                                  </option>
                                 ))}
                               </select>
                             </div>
                             <div className="flex flex-col gap-1">
-                              <label htmlFor="l11-senal-hora" className="text-xs text-[var(--color-text-secondary)]">Hora</label>
+                              <label
+                                htmlFor="l11-senal-hora"
+                                className="text-xs text-[var(--color-text-secondary)]"
+                              >
+                                Hora
+                              </label>
                               <select
                                 id="l11-senal-hora"
                                 value={opciones.senal?.hora ?? ''}
-                                onChange={(e) => setOpciones((prev) => ({ ...prev, senal: { dia: prev.senal?.dia ?? '', hora: e.target.value } }))}
+                                onChange={(e) =>
+                                  setOpciones((prev) => ({
+                                    ...prev,
+                                    senal: { dia: prev.senal?.dia ?? '', hora: e.target.value },
+                                  }))
+                                }
                                 className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm"
                               >
                                 <option value="">Seleccionar...</option>
                                 {HORAS.map((h) => (
-                                  <option key={h} value={h}>{h}</option>
+                                  <option key={h} value={h}>
+                                    {h}
+                                  </option>
                                 ))}
                               </select>
                             </div>
                           </>
                         )}
                         <FECard variant="flat" className="bg-[var(--color-brand-info)]/10">
-                          <p className="text-xs">
-                            Finni: "{p.finni}"
-                          </p>
+                          <p className="text-xs">Finni: "{p.finni}"</p>
                         </FECard>
-                        {saveError && (
-                          <FinniMessage
-                            variant="error"
-                            title="No pudimos guardar"
-                            message={saveError}
-                          />
-                        )}
                         <button
                           className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                           onClick={() => void avanzarPaso()}
@@ -355,21 +476,22 @@ export default function L11() {
 
         {step === 2 && (
           <div className="space-y-3">
-            <FinniMessage
-              variant="success"
-              title="¡3/3 pasos completados!"
-              message="Ya elegiste tus herramientas, tu método y tu señal de registro. El hábito empieza con tu primer registro real."
-            />
+            <p className="font-bold">3/3 pasos preparados</p>
             <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
               <p className="font-bold mb-2">Mini-reto:</p>
               <p className="text-sm">
-                Registra <b>todos tus gastos de mañana</b> usando tu herramienta favorita.
-                Vuelve a FinEmpoder al final del día y compara.
+                Registra <b>todos tus gastos de mañana</b> usando tu herramienta favorita. Vuelve a
+                FinEmpoder al final del día y compara.
               </p>
             </FECard>
           </div>
         )}
-      </div>
+        {step === 3 && (
+          <p className="rounded-xl bg-[var(--color-brand-success)]/10 p-4 font-semibold">
+            Tu plan quedó guardado. Ya puedes completar la lección y continuar.
+          </p>
+        )}
+      </ActivityFrame>
     </LessonShell>
   );
 }

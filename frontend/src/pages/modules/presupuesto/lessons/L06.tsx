@@ -1,224 +1,278 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
-import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
-import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
+import {
+  balanceOf,
+  initialBalance,
+  parseBalance,
+  type BalanceDraft,
+} from '../../../../module-kit/activities/balanceCalculatorModel';
+import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { useAuth } from '../../../../store/auth';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/balance-calculator.css';
 
-const INGRESOS_ROBERTO = [
-  { label: 'Beca PRONABES', monto: 1800 },
-  { label: 'Mesada de papás', monto: 800 },
-  { label: 'Tutorías (este mes)', monto: 400 },
-];
-
-const GASTOS_ROBERTO = [
-  { label: 'Comida', monto: 850 },
-  { label: 'Transporte', monto: 320 },
-  { label: 'Materiales', monto: 180 },
-  { label: 'Entretenimiento', monto: 650 },
-  { label: 'Otros', monto: 280 },
-];
-
-const TOTAL_INGRESOS = INGRESOS_ROBERTO.reduce((a, i) => a + i.monto, 0);
-const TOTAL_GASTOS = GASTOS_ROBERTO.reduce((a, g) => a + g.monto, 0);
-const BALANCE = TOTAL_INGRESOS - TOTAL_GASTOS;
-
+const KEY = 'l6_balance:v1';
+const money = (value: number) =>
+  value.toLocaleString('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
 export default function L06() {
-  const [step, setStep] = useState(0);
+  const userId = useAuth((state) => state.user?.id ?? 'local');
+  return <BalanceSession key={userId} />;
+}
 
-  const resume = useLessonResume('presupuesto', 'L06');
-  const [resumeHandled, setResumeHandled] = useState(false);
-
+function BalanceSession() {
+  const [draft, setDraft] = useState<BalanceDraft>(initialBalance);
+  const [incomeText, setIncomeText] = useState('3000');
+  const [expensesText, setExpensesText] = useState('2280');
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
+  const lock = useRef(false);
   useEffect(() => {
-    if (step > 0) resume.save({ step });
-  }, [step, resume]);
-  const [pasoRoberto, setPasoRoberto] = useState(0);
-
-  const allStepsDone = pasoRoberto >= 3;
-  const progressValue = step === 0 ? 0 : step === 1 ? 40 : 100;
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setLoadError(false);
+    void lessonDataRepository
+      .load('presupuesto', KEY)
+      .then((raw) => {
+        if (!active) return;
+        const saved = parseBalance(raw) ?? initialBalance();
+        setDraft(saved);
+        setIncomeText(String(saved.income));
+        setExpensesText(String(saved.expenses));
+        setLoading(false);
+      })
+      .catch(() => {
+        if (active) {
+          setLoadError(true);
+          setLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [retry]);
+  const income = Number(incomeText);
+  const expenses = Number(expensesText);
+  const valid =
+    [incomeText, expensesText].every((value) => value.trim() !== '') &&
+    [income, expenses].every((value) => Number.isFinite(value) && value >= 0 && value <= 10000000);
+  const live = { ...draft, income: valid ? income : 0, expenses: valid ? expenses : 0 };
+  const balance = balanceOf(live);
+  const state = balance > 0 ? 'surplus' : balance < 0 ? 'deficit' : 'balanced';
+  const update = (field: 'income' | 'expenses', value: string) => {
+    if (field === 'income') setIncomeText(value);
+    else setExpensesText(value);
+    setDraft((current) => ({ ...current, interacted: true }));
+    setDirty(true);
+    setCue(null);
+  };
+  const persist = async (stage: BalanceDraft['stage']) => {
+    if (lock.current || !valid || !draft.interacted) return;
+    lock.current = true;
+    setBusy(true);
+    setError(null);
+    const next = { ...draft, income, expenses, stage };
+    try {
+      if (stage === 'complete') {
+        await lessonDataRepository.saveBatch('presupuesto', [
+          {
+            key: 'l6_balance_result',
+            data: {
+              income,
+              expenses,
+              balance,
+            },
+          },
+          { key: KEY, data: next },
+        ]);
+      } else {
+        await lessonDataRepository.save('presupuesto', KEY, next);
+      }
+      if (mounted.current) {
+        setDraft(next);
+        setDirty(false);
+        setCue(stage);
+      }
+    } catch {
+      if (mounted.current)
+        setError('No pudimos guardar el cálculo. Tus cantidades siguen en pantalla.');
+    } finally {
+      lock.current = false;
+      if (mounted.current) setBusy(false);
+    }
+  };
+  const reviewing = draft.stage !== 'calculate';
+  const advice =
+    state === 'deficit'
+      ? {
+          title: 'El déficit es una señal',
+          text: `En este ejemplo faltan ${money(Math.abs(balance))}. Revisa primero gastos ajustables y evita cubrir una diferencia recurrente con deuda.`,
+          tone: 'review' as const,
+        }
+      : state === 'surplus'
+        ? {
+            title: 'Dale trabajo al excedente',
+            text: `Quedan ${money(balance)}. Decide cuánto irá a ahorro, deuda o una meta antes de que se diluya.`,
+            tone: 'success' as const,
+          }
+        : {
+            title: 'Sin margen para imprevistos',
+            text: 'El balance está en cero. Considera crear una pequeña reserva dentro del presupuesto.',
+            tone: 'info' as const,
+          };
 
   return (
     <LessonShell
       id="L06"
-      title="¿Quedaste en números rojos? Calcula tu balance mensual"
-      completion={{ ready: allStepsDone }}
+      title="Calcula tu balance mensual"
+      showGreeting={false}
+      completion={{ ready: draft.stage === 'complete', score: 100 }}
     >
-      <div className="p-1">
-        {resume.hasSaved && !resumeHandled && (
-          <LessonResumeBanner
-            step={resume.savedStep ?? 0}
-            onContinue={() => {
-              const snapshot = resume.accept();
-              if (snapshot) setStep(snapshot.step);
-              setResumeHandled(true);
-            }}
-            onRestart={() => {
-              resume.ignore();
-              setResumeHandled(true);
-            }}
-          />
-        )}
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
-        </div>
-
-        {step === 0 && (
-          <div className="space-y-3">
-            <FinniMessage
-              variant="coach"
-              title="Finni con calculadora"
-              message="¿Sabes si este mes gastaste más de lo que ganaste? No asumir, calcular. Esa es la diferencia entre saber y creer que sabes."
-            />
-            <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
-              <p className="font-bold mb-2">Conceptos clave:</p>
-              <div className="space-y-2">
-                <p className="text-sm">
-                  <b>Balance mensual</b> = Ingresos totales − Gastos totales
-                </p>
-                <p className="text-sm font-semibold text-[var(--color-brand-success)]">
-                  Superávit: sobra dinero → ¿lo estás ahorrando o gastando después?
-                </p>
-                <p className="text-sm font-semibold text-[var(--color-brand-error)]">
-                  Déficit: gastaste más de lo que entraste → ¿es temporal o tu patrón normal?
-                </p>
-              </div>
-            </FECard>
-            <FinniMessage
-              variant="coach"
-              title="Clave"
-              message="Ninguno de los dos es bueno o malo por sí solo. Lo importante es saberlo y actuar."
-            />
-            <button
-              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-              onClick={() => setStep(1)}
-            >
-              ¡Calcular con Roberto! →
-            </button>
-          </div>
-        )}
-
-        {step === 1 && (
-          <div className="space-y-3">
-            <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 text-center py-3">
-              <p className="font-bold text-base">El mes de Roberto</p>
-              <p className="text-sm text-[var(--color-text-secondary)]">Un caso real de un usuario</p>
-            </FECard>
-
-            {pasoRoberto === 0 && (
-              <div className="space-y-2">
-                <p className="font-bold">Paso 1: Suma los ingresos de Roberto</p>
-                <div className="space-y-2">
-                  {INGRESOS_ROBERTO.map((i, idx) => (
-                    <FECard key={idx} variant="flat" className="border border-[var(--color-brand-success)]/30">
-                      <div className="flex justify-between">
-                        <p className="text-sm">{i.label}</p>
-                        <p className="font-bold text-sm text-[var(--color-brand-success)]">+${i.monto.toLocaleString()}</p>
-                      </div>
-                    </FECard>
-                  ))}
-                </div>
-                <FECard variant="flat" className="bg-[var(--color-brand-success)]/10 border-2 border-[var(--color-brand-success)]">
-                  <div className="flex justify-between">
-                    <p className="font-bold">Total ingresos</p>
-                    <p className="font-bold text-[var(--color-brand-success)]">${TOTAL_INGRESOS.toLocaleString()}</p>
-                  </div>
-                </FECard>
-                <button
-                  className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-                  onClick={() => setPasoRoberto(1)}
-                >
-                  Ver gastos →
-                </button>
-              </div>
-            )}
-
-            {pasoRoberto === 1 && (
-              <div className="space-y-2">
-                <p className="font-bold">Paso 2: Suma los gastos del mes</p>
-                <div className="space-y-2">
-                  {GASTOS_ROBERTO.map((g, idx) => (
-                    <FECard key={idx} variant="flat" className="border border-[var(--color-brand-error)]/30">
-                      <div className="flex justify-between">
-                        <p className="text-sm">{g.label}</p>
-                        <p className="font-bold text-sm text-[var(--color-brand-error)]">-${g.monto.toLocaleString()}</p>
-                      </div>
-                    </FECard>
-                  ))}
-                </div>
-                <FECard variant="flat" className="bg-[var(--color-brand-error)]/10 border-2 border-[var(--color-brand-error)]">
-                  <div className="flex justify-between">
-                    <p className="font-bold">Total gastos</p>
-                    <p className="font-bold text-[var(--color-brand-error)]">${TOTAL_GASTOS.toLocaleString()}</p>
-                  </div>
-                </FECard>
-                <button
-                  className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-                  onClick={() => setPasoRoberto(2)}
-                >
-                  Calcular balance →
-                </button>
-              </div>
-            )}
-
-            {pasoRoberto === 2 && (
-              <div className="space-y-2">
-                <p className="font-bold">Paso 3: Balance de Roberto</p>
-                <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <p className="text-sm">Ingresos</p>
-                      <p className="font-bold text-sm text-[var(--color-brand-success)]">+${TOTAL_INGRESOS.toLocaleString()}</p>
-                    </div>
-                    <div className="flex justify-between">
-                      <p className="text-sm">Gastos</p>
-                      <p className="font-bold text-sm text-[var(--color-brand-error)]">-${TOTAL_GASTOS.toLocaleString()}</p>
-                    </div>
-                  </div>
-                </FECard>
-                <FECard variant="flat" className="bg-[var(--color-brand-success)]/10 border-2 border-[var(--color-brand-success)] text-center py-4">
-                  <p className="text-2xl font-bold text-[var(--color-brand-success)]">${BALANCE.toLocaleString()}</p>
-                  <p className="font-bold text-[var(--color-brand-success)]">Superávit</p>
-                </FECard>
-                <FinniMessage
-                  variant="success"
-                  title="¡Bien Roberto!"
-                  message="Tiene $720 de superávit. Finni le recomienda destinarlo a su fondo de ahorro o meta financiera."
+      {loading ? (
+        <ActivityLoading message="Recuperando tu cálculo…" />
+      ) : loadError ? (
+        <ActivityLoadError
+          message="No pudimos recuperar tu balance."
+          onRetry={() => setRetry((value) => value + 1)}
+        />
+      ) : (
+        <ActivityFrame
+          label="Calculadora de balance mensual"
+          className="balance-calculator"
+          busy={busy}
+          title={
+            reviewing
+              ? 'Revisa qué significa el resultado.'
+              : 'Cambia el caso y observa el balance.'
+          }
+          description="Usa cantidades ficticias. Ingresos menos gastos es igual al balance del mes."
+          progressLabel="Etapas completadas"
+          progressValue={reviewing ? 1 : 0}
+          progressMax={1}
+          stepLabel={reviewing ? 'Paso 2 de 2 · Interpretar' : 'Paso 1 de 2 · Calcular'}
+          focusKey={draft.stage}
+          advice={advice}
+          adviceCue={cue}
+          error={error}
+          status={
+            busy
+              ? 'Guardando…'
+              : dirty
+                ? 'Cambios sin guardar.'
+                : draft.stage === 'complete'
+                  ? 'Balance guardado.'
+                  : 'Último cálculo guardado en este dispositivo.'
+          }
+          actions={
+            <div className="bc-actions">
+              {draft.stage === 'calculate' && (
+                <>
+                  <button
+                    className="bc-secondary"
+                    disabled={busy || !valid || !draft.interacted}
+                    onClick={() => void persist('calculate')}
+                  >
+                    Guardar borrador
+                  </button>
+                  <button
+                    className="ca-primary"
+                    disabled={busy || !valid || !draft.interacted}
+                    onClick={() => void persist('review')}
+                  >
+                    Guardar y revisar
+                  </button>
+                </>
+              )}
+              {draft.stage === 'review' && (
+                <>
+                  <button
+                    className="bc-secondary"
+                    disabled={busy}
+                    onClick={() => {
+                      setDraft((current) => ({ ...current, stage: 'calculate' }));
+                      setDirty(true);
+                    }}
+                  >
+                    Ajustar cantidades
+                  </button>
+                  <button
+                    className="ca-primary"
+                    disabled={busy}
+                    onClick={() => void persist('complete')}
+                  >
+                    Guardar y terminar
+                  </button>
+                </>
+              )}
+            </div>
+          }
+        >
+          {!reviewing && (
+            <div className="bc-form">
+              <label>
+                Ingresos mensuales del ejemplo (MXN)
+                <input
+                  inputMode="decimal"
+                  value={incomeText}
+                  onChange={(event) => update('income', event.target.value)}
                 />
-                <button
-                  className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-                  onClick={() => { setPasoRoberto(3); setStep(2); }}
-                >
-                  Ver mi propio balance →
-                </button>
-              </div>
-            )}
+              </label>
+              <label>
+                Gastos mensuales del ejemplo (MXN)
+                <input
+                  inputMode="decimal"
+                  value={expensesText}
+                  onChange={(event) => update('expenses', event.target.value)}
+                />
+              </label>
+            </div>
+          )}
+          <div className="bc-equation" aria-live="polite">
+            <div>
+              <span>Ingresos</span>
+              <strong>{valid ? money(income) : '—'}</strong>
+            </div>
+            <b>−</b>
+            <div>
+              <span>Gastos</span>
+              <strong>{valid ? money(expenses) : '—'}</strong>
+            </div>
+            <b>=</b>
+            <div className="bc-result" data-state={state}>
+              <span>Balance</span>
+              <strong>{valid ? money(balance) : '—'}</strong>
+            </div>
           </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-3">
-            <FinniMessage
-              variant="coach"
-              title="¿Y tú?"
-              message="¿Quieres calcular tu balance real de este mes? En la lección 12 construiremos tu presupuesto completo con tus datos reales."
-            />
-            <FECard variant="flat" className="border border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10 p-4">
-              <p className="font-bold">Fórmula para tu balance:</p>
-              <p className="text-sm mt-2">
-                Total de lo que recibiste este mes<br />
-                <b>menos</b><br />
-                Total de lo que gastaste este mes<br />
-                <b>=</b> Tu balance
-              </p>
-            </FECard>
-            <FinniMessage
-              variant="success"
-              title="Lección completada"
-              message="Ya sabes cómo calcular tu balance mensual. ¡Ese es el primer paso para tomar control de tu dinero!"
-            />
-          </div>
-        )}
-      </div>
+          {reviewing && (
+            <div className="bc-reading">
+              <h3>
+                {state === 'surplus'
+                  ? 'Hay superávit'
+                  : state === 'deficit'
+                    ? 'Hay déficit'
+                    : 'El balance está en cero'}
+              </h3>
+              <p>{advice.text}</p>
+              <p>Este ejercicio no modifica tu presupuesto personal.</p>
+            </div>
+          )}
+        </ActivityFrame>
+      )}
     </LessonShell>
   );
 }

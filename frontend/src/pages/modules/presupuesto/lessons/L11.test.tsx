@@ -26,7 +26,7 @@ function renderL11() {
   return render(
     <MemoryRouter>
       <L11 />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -82,13 +82,16 @@ describe('L11 presupuesto — tutorial con pasos verificables', () => {
     expect(terminar).toBeEnabled();
     fireEvent.click(terminar);
 
-    await waitFor(() => expect(screen.getByText(/¡3\/3 pasos completados!/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('3/3 pasos preparados')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar y terminar' }));
 
     // La cadena de persistencia del shell sigue escribiendo en IndexedDB tras
     // completar; esperarla aquí evita que un pendiente contamine el siguiente
     // test (que arranca limpiando la base).
     await waitFor(async () => {
-      const row = await db.lessonProgress.where({ moduleId: 'presupuesto', lessonId: 'L11' }).first();
+      const row = await db.lessonProgress
+        .where({ moduleId: 'presupuesto', lessonId: 'L11' })
+        .first();
       expect(row?.completed).toBe(true);
     });
 
@@ -134,9 +137,13 @@ describe('L11 presupuesto — tutorial con pasos verificables', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Siguiente →' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Siguiente →' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: 'Siguiente →' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Terminar tutorial →' })).toBeEnabled());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Terminar tutorial →' })).toBeEnabled(),
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Terminar tutorial →' }));
 
-    await waitFor(() => expect(screen.getByText(/¡3\/3 pasos completados!/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('3/3 pasos preparados')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar y terminar' }));
+    await waitFor(() => expect(screen.getByText(/plan quedó guardado/)).toBeInTheDocument());
   });
 });

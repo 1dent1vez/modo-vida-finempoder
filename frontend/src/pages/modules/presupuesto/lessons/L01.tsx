@@ -1,232 +1,306 @@
-import { cn } from '@/lib/utils';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
-import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
-import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
+import {
+  initialSpendingAwareness,
+  parseSpendingAwareness,
+  type SpendingAwarenessDraft,
+} from '../../../../module-kit/activities/spendingAwarenessModel';
+import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { useAuth } from '../../../../store/auth';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/spending-awareness.css';
 
-type Classification = 'planned' | 'unplanned' | null;
-
-const WEEK_EVENTS = [
-  { day: 'Lunes', desc: 'Cobro de quincena/mesada/beca', amount: 2000, isIncome: true },
-  { day: 'Martes', desc: 'Café + transporte', amount: -75 },
-  { day: 'Miércoles', desc: 'Comida rápida + streaming', amount: -309 },
-  { day: 'Jueves', desc: 'Salida con amigos', amount: -350 },
-  { day: 'Viernes', desc: 'Impresiones + snack', amount: -95 },
-  { day: 'Sábado', desc: 'Gastos varios', amount: -200 },
-  { day: 'Domingo', desc: 'Gastos varios', amount: -200 },
+const KEY = 'l1_spending_awareness:v1';
+const EXPECTATIONS = ['Menos de 3 días', 'Una semana', 'Dos semanas', 'Me sobró algo'];
+const DAYS = [
+  { day: 'Lunes', event: 'Ingreso del ejemplo', balance: 2000 },
+  { day: 'Martes', event: 'Transporte y café', balance: 1925 },
+  { day: 'Miércoles', event: 'Comida y streaming', balance: 1616 },
+  { day: 'Jueves', event: 'Salida con amistades', balance: 1266 },
+  { day: 'Viernes', event: 'Impresiones y snack', balance: 1171 },
+  { day: 'Fin de semana', event: 'Gastos sin registrar', balance: 771 },
 ];
-
-const GASTOS = [
-  { id: 'cafe', label: 'Café $45 + transporte $30' },
-  { id: 'comida', label: 'Comida rápida $120' },
-  { id: 'streaming', label: 'Suscripción de streaming (~$189/mes)' },
-  { id: 'amigos', label: 'Salida con amigos $350' },
-  { id: 'impresiones', label: 'Impresiones $60' },
-  { id: 'snack', label: 'Snack $35' },
-  { id: 'varios', label: 'Gastos varios $400' },
+const ITEMS = [
+  { id: 'transporte', label: 'Transporte habitual · $30' },
+  { id: 'streaming', label: 'Suscripción de streaming · $189' },
+  { id: 'salida', label: 'Salida con amistades · $350' },
+  { id: 'impresiones', label: 'Impresiones para una tarea · $60' },
+  { id: 'varios', label: 'Gastos sin registrar · $400' },
 ];
+const IDS = new Set(ITEMS.map((item) => item.id));
 
 export default function L01() {
-  const [step, setStep] = useState(0);
+  const userId = useAuth((state) => state.user?.id ?? 'local');
+  return <SpendingAwarenessSession key={userId} />;
+}
 
-  const resume = useLessonResume('presupuesto', 'L01');
-  const [resumeHandled, setResumeHandled] = useState(false);
-
+function SpendingAwarenessSession() {
+  const [draft, setDraft] = useState<SpendingAwarenessDraft>(initialSpendingAwareness);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
+  const lock = useRef(false);
   useEffect(() => {
-    if (step > 0) resume.save({ step });
-  }, [step, resume]);
-  const [quincenaAnswer, setQuincenaAnswer] = useState<string | null>(null);
-  const [classifications, setClassifications] = useState<Record<string, Classification>>({});
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setLoadError(false);
+    void lessonDataRepository
+      .load('presupuesto', KEY)
+      .then((raw) => {
+        if (!active) return;
+        setDraft(parseSpendingAwareness(raw, IDS) ?? initialSpendingAwareness());
+        setLoading(false);
+      })
+      .catch(() => {
+        if (active) {
+          setLoadError(true);
+          setLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [retry]);
 
-  const allClassified = GASTOS.every((g) => classifications[g.id] !== undefined && classifications[g.id] !== null);
-
-  const classify = (id: string, val: Classification) => {
-    setClassifications((prev) => ({ ...prev, [id]: val }));
+  const answered = Object.keys(draft.classifications).length;
+  const allAnswered = answered === ITEMS.length;
+  const persist = async (stage: SpendingAwarenessDraft['stage']) => {
+    if (
+      lock.current ||
+      (stage !== 'observe' && !draft.expectation) ||
+      (['review', 'complete'].includes(stage) && !allAnswered)
+    )
+      return;
+    lock.current = true;
+    setBusy(true);
+    setError(null);
+    const next = { ...draft, stage };
+    try {
+      if (stage === 'complete') {
+        await lessonDataRepository.saveBatch('presupuesto', [
+          {
+            key: 'l1_spending_awareness',
+            data: {
+              expectation: draft.expectation,
+              classifications: draft.classifications,
+            },
+          },
+          { key: KEY, data: next },
+        ]);
+      } else {
+        await lessonDataRepository.save('presupuesto', KEY, next);
+      }
+      if (mounted.current) {
+        setDraft(next);
+        setDirty(false);
+        setCue(stage);
+      }
+    } catch {
+      if (mounted.current) setError('No pudimos guardar esta parte. Tu trabajo sigue en pantalla.');
+    } finally {
+      lock.current = false;
+      if (mounted.current) setBusy(false);
+    }
   };
-
-  let balance = 0;
-  const timeline = WEEK_EVENTS.map((e) => {
-    balance += e.amount;
-    return { ...e, balance };
-  });
-  const maxBalance = 2000;
-
-  const progressValue = step === 0 ? 0 : step === 1 ? 33 : step === 2 ? 66 : 100;
+  const change = (patch: Partial<SpendingAwarenessDraft>) => {
+    setDraft((current) => ({ ...current, ...patch }));
+    setDirty(true);
+    setCue(null);
+  };
+  const stageIndex = { observe: 0, classify: 1, review: 2, complete: 2 }[draft.stage];
+  const advice =
+    draft.stage === 'observe'
+      ? {
+          title: 'Primero observa, luego ajusta',
+          text: 'No tienes que recordar cada compra propia. Este recorrido usa una semana ficticia para descubrir el patrón.',
+          tone: 'info' as const,
+        }
+      : draft.stage === 'classify'
+        ? {
+            title: 'Planear no significa dejar de disfrutar',
+            text: 'Un gasto puede ser válido y estar planeado. La claridad está en decidirlo antes de pagarlo.',
+            tone: 'review' as const,
+          }
+        : {
+            title: 'Ya encontraste el punto de control',
+            text: 'Registrar y planear convierte un saldo confuso en decisiones que puedes revisar.',
+            tone: 'success' as const,
+          };
 
   return (
     <LessonShell
       id="L01"
       title="¿A dónde se fue mi quincena?"
-      completion={{ ready: allClassified }}
+      showGreeting={false}
+      completion={{ ready: draft.stage === 'complete', score: 100 }}
     >
-      <div className="p-1">
-        {resume.hasSaved && !resumeHandled && (
-          <LessonResumeBanner
-            step={resume.savedStep ?? 0}
-            onContinue={() => {
-              const snapshot = resume.accept();
-              if (snapshot) setStep(snapshot.step);
-              setResumeHandled(true);
-            }}
-            onRestart={() => {
-              resume.ignore();
-              setResumeHandled(true);
-            }}
-          />
-        )}
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
-        </div>
-
-        {step === 0 && (
-          <div className="space-y-3">
-            <FinniMessage
-              variant="coach"
-              title="¡Hola! Soy Finni"
-              message="Oye… ¿ya es martes y tu tarjeta dice $47? Tranqui, a casi todos nos ha pasado. Hoy vamos a resolver el misterio más común entre casi todos nosotros: ¿a dónde se va el dinero?"
-            />
-            <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
-              <p className="font-bold text-base mb-2">
-                ¿Cuánto tiempo te duró la última quincena o semana?
-              </p>
-              <div className="space-y-2">
-                {['Menos de 3 días', 'Una semana', 'Dos semanas', 'Me sobró algo'].map((opt) => (
+      {loading ? (
+        <ActivityLoading message="Recuperando tu recorrido…" />
+      ) : loadError ? (
+        <ActivityLoadError
+          message="No pudimos recuperar esta lección."
+          onRetry={() => setRetry((value) => value + 1)}
+        />
+      ) : (
+        <ActivityFrame
+          label="Recorrido de conciencia de gasto"
+          className="spending-awareness"
+          busy={busy}
+          title={
+            draft.stage === 'observe'
+              ? 'Sigue el dinero durante una semana.'
+              : draft.stage === 'classify'
+                ? '¿Qué se decidió antes de gastar?'
+                : 'Tu primera regla de presupuesto.'
+          }
+          description="Observa una semana ficticia, distingue lo planeado y cierra con una regla que puedas repetir."
+          progressLabel="Etapas completadas"
+          progressValue={stageIndex}
+          progressMax={2}
+          stepLabel={`Paso ${stageIndex + 1} de 3`}
+          focusKey={draft.stage}
+          advice={advice}
+          adviceCue={cue}
+          error={error}
+          status={
+            busy
+              ? 'Guardando…'
+              : dirty
+                ? 'Cambios sin guardar.'
+                : draft.stage === 'complete'
+                  ? 'Recorrido guardado.'
+                  : 'Tu último avance está guardado en este dispositivo.'
+          }
+          actions={
+            <div className="sa-actions">
+              {draft.stage === 'observe' && (
+                <button
+                  className="ca-primary"
+                  disabled={busy || !draft.expectation}
+                  onClick={() => void persist('classify')}
+                >
+                  Clasificar gastos
+                </button>
+              )}
+              {draft.stage === 'classify' && (
+                <button
+                  className="ca-primary"
+                  disabled={busy || !allAnswered}
+                  onClick={() => void persist('review')}
+                >
+                  Revisar patrón
+                </button>
+              )}
+              {draft.stage === 'review' && (
+                <>
                   <button
-                    key={opt}
-                    onClick={() => setQuincenaAnswer(opt)}
-                    className={cn(
-                      'w-full text-left px-4 py-2 rounded-xl text-sm font-semibold border transition-colors',
-                      quincenaAnswer === opt
-                        ? 'bg-[var(--color-brand-warning)] text-white border-[var(--color-brand-warning)]'
-                        : 'border-[var(--color-brand-warning)] text-[var(--color-brand-warning)]'
-                    )}
+                    className="sa-choice"
+                    disabled={busy}
+                    onClick={() => change({ stage: 'classify' })}
                   >
-                    {opt}
+                    Ajustar respuestas
                   </button>
+                  <button
+                    className="ca-primary"
+                    disabled={busy}
+                    onClick={() => void persist('complete')}
+                  >
+                    Guardar y terminar
+                  </button>
+                </>
+              )}
+            </div>
+          }
+        >
+          {draft.stage === 'observe' && (
+            <>
+              <div className="sa-question">
+                <h3>¿Cuánto suele durarte el dinero disponible?</h3>
+                <div className="sa-options">
+                  {EXPECTATIONS.map((option) => (
+                    <button
+                      key={option}
+                      className="sa-choice"
+                      aria-pressed={draft.expectation === option}
+                      onClick={() => change({ expectation: option })}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="sa-timeline">
+                {DAYS.map((item) => (
+                  <div className="sa-day" key={item.day}>
+                    <strong>{item.day}</strong>
+                    <span>{item.event}</span>
+                    <strong>${item.balance.toLocaleString('es-MX')}</strong>
+                  </div>
                 ))}
               </div>
-            </FECard>
-            {quincenaAnswer && (
-              <button
-                className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-                onClick={() => setStep(1)}
-              >
-                Ver cómo se va el dinero →
-              </button>
-            )}
-          </div>
-        )}
-
-        {step === 1 && (
-          <div className="space-y-3">
-            <p className="font-bold text-base">Una semana en tu bolsillo</p>
-            <div className="space-y-2">
-              {timeline.map((event) => (
-                <FECard key={event.day} variant="flat" className="p-3">
-                  <div className="flex justify-between items-center mb-1">
-                    <p className="font-bold text-sm">{event.day}</p>
-                    <p className={cn('font-bold text-sm', event.isIncome ? 'text-[var(--color-brand-success)]' : 'text-[var(--color-brand-error)]')}>
-                      {event.amount > 0 ? `+$${event.amount}` : `-$${Math.abs(event.amount)}`}
-                    </p>
-                  </div>
-                  <p className="text-xs text-[var(--color-text-secondary)]">{event.desc}</p>
-                  <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mt-2">
-                    <div
-                      className={cn('h-2 rounded-full transition-all', event.balance > 500 ? 'bg-[var(--color-brand-success)]' : event.balance > 100 ? 'bg-[var(--color-brand-warning)]' : 'bg-[var(--color-brand-error)]')}
-                      style={{ width: `${Math.max(0, (event.balance / maxBalance) * 100)}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-[var(--color-text-secondary)]">Saldo: ${event.balance}</p>
-                </FECard>
-              ))}
-            </div>
-            <FinniMessage
-              variant="coach"
-              title="¿Ves el patrón?"
-              message="Gastos pequeños, gastos grandes, gastos que ni recuerdas. Y de repente: cero."
-            />
-            <button
-              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-              onClick={() => setStep(2)}
-            >
-              ¿Cuáles planeaste? →
-            </button>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-3">
-            <FinniMessage
-              variant="coach"
-              title="¿Reconoces alguno?"
-              message="¿Cuántos de estos gastos planeaste y cuántos llegaron solos? Toca cada uno y clasifícalo."
-            />
-            <div className="space-y-2">
-              {GASTOS.map((g) => (
-                <FECard key={g.id} variant="flat" className="p-3 border border-[var(--color-neutral-200)]">
-                  <p className="font-semibold text-sm mb-2">{g.label}</p>
-                  <div className="flex gap-2">
+            </>
+          )}
+          {draft.stage === 'classify' && (
+            <div>
+              {ITEMS.map((item) => (
+                <div className="sa-item" key={item.id}>
+                  <p>{item.label}</p>
+                  <div className="sa-classify">
                     <button
-                      onClick={() => classify(g.id, 'planned')}
-                      className={cn(
-                        'px-3 py-1 rounded-full text-sm font-semibold border transition-colors',
-                        classifications[g.id] === 'planned'
-                          ? 'bg-[var(--color-brand-success)] text-white border-[var(--color-brand-success)]'
-                          : 'border-[var(--color-neutral-200)] text-[var(--color-text-secondary)]'
-                      )}
+                      aria-pressed={draft.classifications[item.id] === 'planned'}
+                      onClick={() =>
+                        change({
+                          classifications: { ...draft.classifications, [item.id]: 'planned' },
+                        })
+                      }
                     >
                       Lo planeé
                     </button>
                     <button
-                      onClick={() => classify(g.id, 'unplanned')}
-                      className={cn(
-                        'px-3 py-1 rounded-full text-sm font-semibold border transition-colors',
-                        classifications[g.id] === 'unplanned'
-                          ? 'bg-[var(--color-brand-warning)] text-white border-[var(--color-brand-warning)]'
-                          : 'border-[var(--color-neutral-200)] text-[var(--color-text-secondary)]'
-                      )}
+                      aria-pressed={draft.classifications[item.id] === 'unplanned'}
+                      onClick={() =>
+                        change({
+                          classifications: { ...draft.classifications, [item.id]: 'unplanned' },
+                        })
+                      }
                     >
                       No lo planeé
                     </button>
                   </div>
-                </FECard>
+                </div>
               ))}
             </div>
-            {allClassified && (
-              <button
-                className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-                onClick={() => setStep(3)}
-              >
-                Ver el dato clave →
-              </button>
-            )}
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-3">
-            <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 border-2 border-[var(--color-brand-warning)] text-center py-6">
-              <p className="text-4xl mb-2">68%</p>
-              <p className="font-bold">
-                de las personas no sabe exactamente cuánto gasta al mes.
+          )}
+          {(draft.stage === 'review' || draft.stage === 'complete') && (
+            <div className="sa-review">
+              <h3>Claridad antes de restricción</h3>
+              <p>
+                Clasificaste {answered} gastos del ejemplo. Un presupuesto sirve para anticipar,
+                registrar y revisar; no para prohibir cada gusto.
               </p>
-              <p className="text-xs text-[var(--color-text-secondary)]">Fuente: CONDUSEF</p>
-            </FECard>
-            <FECard variant="flat" className="text-center py-4">
-              <p className="font-bold text-base italic text-[var(--color-brand-warning)]">
-                "Un presupuesto no te quita libertad. Te da claridad."
+              <p>
+                <strong>Próxima práctica:</strong> anota un gasto durante tres días y marca si
+                estaba previsto.
               </p>
-            </FECard>
-            <FinniMessage
-              variant="success"
-              title="¿Ves el patrón?"
-              message="Cuando no planeamos, el dinero planea por nosotros. En las siguientes lecciones vamos a cambiar eso."
-            />
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </ActivityFrame>
+      )}
     </LessonShell>
   );
 }

@@ -1,272 +1,337 @@
-import { cn } from '@/lib/utils';
-import { useState, useEffect } from 'react';
-import { CheckCircle } from 'lucide-react';
-import { BarChart3, Notebook, Smartphone } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
+import {
+  initialExpenseRegistration,
+  parseExpenseRegistration,
+  type ExpenseRecord,
+  type ExpenseRegistrationDraft,
+} from '../../../../module-kit/activities/expenseRegistrationModel';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
-import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
-import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import { useAuth } from '../../../../store/auth';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/expense-registration.css';
 
+const KEY = 'l4_registration:v1';
 const METHODS = [
-  { id: 'libreta', label: 'Libreta o agenda', icon: Notebook, pro: 'Rápido, sin batería, lo de toda la vida.' },
-  { id: 'excel', label: 'Hoja de cálculo (Excel/Sheets)', icon: BarChart3, pro: 'Más organizado, ideal para análisis mensual.' },
-  { id: 'app', label: 'App especializada', icon: Smartphone, pro: 'Práctica, con categorías automáticas y alertas.' },
+  { id: 'libreta', label: 'Libreta o agenda', detail: 'Directa, sin batería y fácil de llevar.' },
+  { id: 'hoja', label: 'Hoja de cálculo', detail: 'Ordena y compara el mes con más detalle.' },
+  { id: 'app', label: 'App especializada', detail: 'Agiliza categorías y consultas frecuentes.' },
 ];
-
-const CATEGORIAS = ['Alimentación', 'Transporte', 'Educación', 'Entretenimiento', 'Varios'];
-const PAGOS = ['Efectivo', 'Tarjeta', 'App de pago', 'Transferencia'];
-
-const MOMENTOS = [
-  { id: 'desayuno', time: '8:00 AM', evento: 'Desayuno', detalle: 'Tacos en la entrada', monto: 65, categoria: 'Alimentación' },
-  { id: 'transporte', time: '8:45 AM', evento: 'Transporte', detalle: 'Camión a la oficina', monto: 22, categoria: 'Transporte' },
-  { id: 'almuerzo', time: '1:30 PM', evento: 'Almuerzo', detalle: 'Comedor de la oficina', monto: 95, categoria: 'Alimentación' },
-  { id: 'fotocopia', time: '3:00 PM', evento: 'Fotocopia', detalle: 'Papelería', monto: 14, categoria: 'Educación' },
-  { id: 'cafe', time: '5:00 PM', evento: 'Café tarde', detalle: 'Cafetería del trabajo', monto: 52, categoria: 'Alimentación' },
+const EXPENSES = [
+  {
+    id: 'desayuno',
+    time: '8:00',
+    title: 'Tacos en la entrada',
+    amount: 65,
+    category: 'Alimentación',
+  },
+  {
+    id: 'transporte',
+    time: '8:45',
+    title: 'Camión a la oficina',
+    amount: 22,
+    category: 'Transporte',
+  },
+  {
+    id: 'almuerzo',
+    time: '13:30',
+    title: 'Comedor de la oficina',
+    amount: 95,
+    category: 'Alimentación',
+  },
+  {
+    id: 'fotocopia',
+    time: '15:00',
+    title: 'Fotocopias para clase',
+    amount: 14,
+    category: 'Educación',
+  },
+  { id: 'cafe', time: '17:00', title: 'Café de la tarde', amount: 52, category: 'Alimentación' },
 ];
-
-type RegistroEntry = { categoria: string; metodoPago: string };
+const CATEGORIES = ['Alimentación', 'Transporte', 'Educación', 'Entretenimiento', 'Varios'];
+const PAYMENTS = ['Efectivo', 'Tarjeta', 'App de pago', 'Transferencia'];
+const IDS = new Set(EXPENSES.map((item) => item.id));
+const METHOD_IDS = new Set(METHODS.map((item) => item.id));
 
 export default function L04() {
-  const [step, setStep] = useState(0);
+  const userId = useAuth((state) => state.user?.id ?? 'local');
+  return <RegistrationSession key={userId} />;
+}
 
-  const resume = useLessonResume('presupuesto', 'L04');
-  const [resumeHandled, setResumeHandled] = useState(false);
-
+function RegistrationSession() {
+  const [draft, setDraft] = useState<ExpenseRegistrationDraft>(initialExpenseRegistration);
+  const [category, setCategory] = useState('');
+  const [payment, setPayment] = useState('');
+  const [feedback, setFeedback] = useState<{ correct: boolean; text: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
+  const lock = useRef(false);
   useEffect(() => {
-    if (step > 0) resume.save({ step });
-  }, [step, resume]);
-  const [preferredMethod, setPreferredMethod] = useState<string | null>(null);
-  const [momentoIdx, setMomentoIdx] = useState(0);
-  const [registros, setRegistros] = useState<Record<string, RegistroEntry>>({});
-  const [currentCategoria, setCurrentCategoria] = useState('');
-  const [currentMetodo, setCurrentMetodo] = useState('');
-  const [feedback, setFeedback] = useState<string | null>(null);
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setLoadError(false);
+    void lessonDataRepository
+      .load('presupuesto', KEY)
+      .then((raw) => {
+        if (!active) return;
+        setDraft(parseExpenseRegistration(raw, IDS, METHOD_IDS) ?? initialExpenseRegistration());
+        setLoading(false);
+      })
+      .catch(() => {
+        if (active) {
+          setLoadError(true);
+          setLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [retry]);
 
-  const allRegistered = MOMENTOS.every((m) => registros[m.id] !== undefined);
-  const totalGasto = MOMENTOS.reduce((a, m) => a + m.monto, 0);
-
-  const registrarGasto = () => {
-    const momento = MOMENTOS[momentoIdx];
-    if (!currentCategoria || !currentMetodo) return;
-    const isCorrectCat = currentCategoria === momento.categoria;
-    setRegistros((prev) => ({ ...prev, [momento.id]: { categoria: currentCategoria, metodoPago: currentMetodo } }));
-    setFeedback(
-      isCorrectCat
-        ? '¡Bien categorizado!'
-        : `Ojo: ese va en "${momento.categoria}", no "${currentCategoria}"`
-    );
-    setTimeout(() => {
-      setFeedback(null);
-      if (momentoIdx < MOMENTOS.length - 1) {
-        setMomentoIdx((i) => i + 1);
-        setCurrentCategoria('');
-        setCurrentMetodo('');
+  const current = EXPENSES[draft.index];
+  const persist = async (next: ExpenseRegistrationDraft, final = false) => {
+    if (lock.current) return false;
+    lock.current = true;
+    setBusy(true);
+    setError(null);
+    try {
+      if (final) {
+        await lessonDataRepository.saveBatch('presupuesto', [
+          { key: 'l4_method', data: { method: next.method } },
+          {
+            key: 'l4_records',
+            data: {
+              records: next.records,
+              total: EXPENSES.reduce((sum, item) => sum + item.amount, 0),
+            },
+          },
+          { key: KEY, data: next },
+        ]);
       } else {
-        setStep(3);
+        await lessonDataRepository.save('presupuesto', KEY, next);
       }
-    }, 1500);
-  };
-
-  useEffect(() => {
-    if (preferredMethod) {
-      void lessonDataRepository.save('presupuesto', 'l4_method', { method: preferredMethod });
+      if (mounted.current) {
+        setDraft(next);
+        setDirty(false);
+      }
+      return true;
+    } catch {
+      if (mounted.current) setError('No pudimos guardar el registro. Conservamos lo que elegiste.');
+      return false;
+    } finally {
+      lock.current = false;
+      if (mounted.current) setBusy(false);
     }
-  }, [preferredMethod]);
-
-  const currentMomento = MOMENTOS[momentoIdx];
-  const progressValue = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 50 : 100;
+  };
+  const submitRecord = async () => {
+    if (!category || !payment || !current) return;
+    const correct = category === current.category;
+    setFeedback({
+      correct,
+      text: correct
+        ? 'Categoría correcta. Ya puedes guardar este movimiento.'
+        : `Este ejemplo corresponde a ${current.category}. Corrige la categoría para continuar.`,
+    });
+    setCue(`${current.id}-${correct}`);
+    if (!correct) return;
+    const records = {
+      ...draft.records,
+      [current.id]: { category, payment, correct } satisfies ExpenseRecord,
+    };
+    const last = draft.index === EXPENSES.length - 1;
+    const next = {
+      ...draft,
+      records,
+      index: last ? draft.index : draft.index + 1,
+      stage: last ? ('review' as const) : ('practice' as const),
+    };
+    if (await persist(next)) {
+      setCategory('');
+      setPayment('');
+      setFeedback(null);
+    }
+  };
+  const stageNumber = draft.stage === 'method' ? 0 : draft.stage === 'practice' ? 1 : 2;
+  const advice = feedback
+    ? {
+        title: feedback.correct ? 'Registro listo' : 'Revisa la categoría',
+        text: feedback.text,
+        tone: feedback.correct ? ('success' as const) : ('review' as const),
+      }
+    : {
+        title: 'Registra en el momento',
+        text: 'Categoría y forma de pago bastan para empezar. La constancia importa más que la herramienta.',
+        tone: 'info' as const,
+      };
 
   return (
     <LessonShell
       id="L04"
       title="Registra sin morir en el intento"
-      completion={{ ready: allRegistered }}
+      showGreeting={false}
+      completion={{ ready: draft.stage === 'complete', score: 100 }}
     >
-      <div className="p-1">
-        {resume.hasSaved && !resumeHandled && (
-          <LessonResumeBanner
-            step={resume.savedStep ?? 0}
-            onContinue={() => {
-              const snapshot = resume.accept();
-              if (snapshot) setStep(snapshot.step);
-              setResumeHandled(true);
-            }}
-            onRestart={() => {
-              resume.ignore();
-              setResumeHandled(true);
-            }}
-          />
-        )}
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
-        </div>
-
-        {step === 0 && (
-          <div className="space-y-3">
-            <FinniMessage
-              variant="coach"
-              title="¿Intentaste anotar gastos y lo dejaste al tercer día?"
-              message="Sí, a todos nos pasó. Hoy vamos a hacerlo de forma que sí dure."
-            />
-            <div className="space-y-2">
-              {METHODS.map((m) => (
-                <FECard
-                  key={m.id}
-                  variant="flat"
-                  className={cn(
-                    'border-2 cursor-pointer transition-colors',
-                    preferredMethod === m.id
-                      ? 'border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10'
-                      : 'border-[var(--color-neutral-200)]'
-                  )}
-                  onClick={() => setPreferredMethod(m.id)}
-                  role="button"
-                  tabIndex={0}
+      {loading ? (
+        <ActivityLoading message="Recuperando tu práctica…" />
+      ) : loadError ? (
+        <ActivityLoadError
+          message="No pudimos recuperar tus registros."
+          onRetry={() => setRetry((value) => value + 1)}
+        />
+      ) : (
+        <ActivityFrame
+          label="Tutorial de registro de gastos"
+          className="expense-registration"
+          busy={busy}
+          title={
+            draft.stage === 'method'
+              ? 'Elige un método que sí usarías.'
+              : draft.stage === 'practice'
+                ? 'Registra el día de Mariana.'
+                : 'Revisa el registro completo.'
+          }
+          description="Practica con datos ficticios y confirma cada movimiento antes de avanzar."
+          progressLabel="Movimientos registrados"
+          progressValue={Object.keys(draft.records).length}
+          progressMax={EXPENSES.length}
+          stepLabel={`Paso ${stageNumber + 1} de 3`}
+          focusKey={`${draft.stage}-${draft.index}`}
+          advice={advice}
+          adviceCue={cue}
+          error={error}
+          status={
+            busy
+              ? 'Guardando…'
+              : dirty
+                ? 'Cambios sin guardar.'
+                : `${Object.keys(draft.records).length} de ${EXPENSES.length} movimientos guardados.`
+          }
+          actions={
+            <div className="er-actions">
+              {draft.stage === 'method' && (
+                <button
+                  className="ca-primary"
+                  disabled={busy || !draft.method}
+                  onClick={() => void persist({ ...draft, stage: 'practice' })}
                 >
-                  <div className="flex items-center gap-3">
-                    <m.icon className="h-9 w-9 text-[var(--color-brand-primary)]" aria-hidden="true" />
-                    <div className="flex-1">
-                      <p className="font-bold">{m.label}</p>
-                      <p className="text-sm text-[var(--color-text-secondary)]">{m.pro}</p>
-                    </div>
-                    {preferredMethod === m.id && <CheckCircle className="text-[var(--color-brand-warning)] ml-auto" size={20} />}
-                  </div>
-                </FECard>
+                  Comenzar práctica
+                </button>
+              )}
+              {draft.stage === 'practice' && (
+                <button
+                  className="ca-primary"
+                  disabled={busy || !category || !payment}
+                  onClick={() => void submitRecord()}
+                >
+                  Comprobar y guardar
+                </button>
+              )}
+              {draft.stage === 'review' && (
+                <button
+                  className="ca-primary"
+                  disabled={busy}
+                  onClick={() => void persist({ ...draft, stage: 'complete' }, true)}
+                >
+                  Guardar y terminar
+                </button>
+              )}
+            </div>
+          }
+        >
+          {draft.stage === 'method' && (
+            <div className="er-methods">
+              {METHODS.map((method) => (
+                <button
+                  key={method.id}
+                  className="er-method"
+                  aria-pressed={draft.method === method.id}
+                  onClick={() => {
+                    setDraft((value) => ({ ...value, method: method.id }));
+                    setDirty(true);
+                  }}
+                >
+                  <strong>{method.label}</strong>
+                  <span>{method.detail}</span>
+                </button>
               ))}
             </div>
-            <FinniMessage
-              variant="coach"
-              title="Clave"
-              message="No hay una mejor que otra. Hay una que tú realmente usarás. Esa es la mejor."
-            />
-            {preferredMethod && (
-              <button
-                className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-                onClick={() => setStep(1)}
-              >
-                ¡Practicar con Mariana! →
-              </button>
-            )}
-          </div>
-        )}
-
-        {step === 1 && (
-          <div className="space-y-3">
-            <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 text-center py-4">
-              <p className="font-bold text-base">El día de Mariana</p>
-              <p className="text-sm text-[var(--color-text-secondary)]">
-                Mariana trabaja y estudia. Registra sus 5 gastos del día.
-              </p>
-            </FECard>
-            <p className="text-sm">
-              Para cada gasto, elige la <b>categoría</b> y el <b>método de pago</b>. Finni te orientará si te equivocas.
-            </p>
-            <button
-              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-              onClick={() => setStep(2)}
-            >
-              ¡Empezar! →
-            </button>
-          </div>
-        )}
-
-        {step === 2 && currentMomento && (
-          <div className="space-y-3" key={currentMomento.id}>
-            <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2">
-              <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${(momentoIdx / MOMENTOS.length) * 100}%` }} />
-            </div>
-            <p className="text-xs text-[var(--color-text-secondary)]">
-              Gasto {momentoIdx + 1}/{MOMENTOS.length}
-            </p>
-            <FECard variant="flat" className="border-2 border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10">
-              <div className="flex justify-between items-center">
-                <p className="text-sm text-[var(--color-text-secondary)]">{currentMomento.time}</p>
-                <p className="font-bold text-[var(--color-brand-warning)]">${currentMomento.monto}</p>
+          )}
+          {draft.stage === 'practice' && current && (
+            <>
+              <article className="er-ticket">
+                <header>
+                  <span>{current.time}</span>
+                  <strong>${current.amount}</strong>
+                </header>
+                <h3>{current.title}</h3>
+                <span>Movimiento ficticio</span>
+              </article>
+              <div className="er-form">
+                <label>
+                  Categoría
+                  <select
+                    value={category}
+                    onChange={(event) => {
+                      setCategory(event.target.value);
+                      setFeedback(null);
+                    }}
+                  >
+                    <option value="">Selecciona</option>
+                    {CATEGORIES.map((value) => (
+                      <option key={value}>{value}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Forma de pago
+                  <select value={payment} onChange={(event) => setPayment(event.target.value)}>
+                    <option value="">Selecciona</option>
+                    {PAYMENTS.map((value) => (
+                      <option key={value}>{value}</option>
+                    ))}
+                  </select>
+                </label>
               </div>
-              <p className="font-bold text-base mt-1">{currentMomento.evento}</p>
-              <p className="text-sm text-[var(--color-text-secondary)]">{currentMomento.detalle}</p>
-            </FECard>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-[var(--color-text-secondary)]">Categoría</label>
-              <select
-                value={currentCategoria}
-                onChange={(e) => setCurrentCategoria(e.target.value)}
-                className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm"
-              >
-                <option value="">Seleccionar...</option>
-                {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-[var(--color-text-secondary)]">Método de pago</label>
-              <select
-                value={currentMetodo}
-                onChange={(e) => setCurrentMetodo(e.target.value)}
-                className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm"
-              >
-                <option value="">Seleccionar...</option>
-                {PAGOS.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </div>
-            {feedback && (
-              <FECard
-                variant="flat"
-                className={feedback.startsWith('¡') ? 'bg-[var(--color-brand-success)]/10' : 'bg-[var(--color-brand-warning)]/10'}
-              >
-                <p className="font-bold text-sm">
-                  {feedback}
+              {feedback && (
+                <p className="er-feedback" data-correct={feedback.correct}>
+                  {feedback.text}
                 </p>
-              </FECard>
-            )}
-            {!feedback && (
-              <button
-                className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!currentCategoria || !currentMetodo}
-                onClick={registrarGasto}
-              >
-                Registrar gasto
-              </button>
-            )}
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-3">
-            <FinniMessage
-              variant="success"
-              title="¡Día registrado!"
-              message="Así se ve un registro completo. ¿Ves qué útil es tenerlo categorizado?"
-            />
-            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="font-bold text-base mb-4">Resumen del día de Mariana</p>
-              <div className="space-y-2">
-                {MOMENTOS.map((m) => (
-                  <div key={m.id} className="flex justify-between items-center">
-                    <div>
-                      <p className="font-bold text-sm">{m.evento}</p>
-                      <p className="text-xs text-[var(--color-text-secondary)]">
-                        {registros[m.id]?.categoria ?? m.categoria} · {registros[m.id]?.metodoPago ?? '—'}
-                      </p>
-                    </div>
-                    <p className="font-bold text-sm text-[var(--color-brand-warning)]">${m.monto}</p>
+              )}
+            </>
+          )}
+          {(draft.stage === 'review' || draft.stage === 'complete') && (
+            <div className="er-summary">
+              {EXPENSES.map((item) => (
+                <div className="er-row" key={item.id}>
+                  <div>
+                    <strong>{item.title}</strong>
+                    <span>
+                      {draft.records[item.id]?.category} · {draft.records[item.id]?.payment}
+                    </span>
                   </div>
-                ))}
-              </div>
-              <div className="flex justify-between mt-4 pt-3 border-t border-[var(--color-neutral-200)]">
-                <p className="font-bold">Total del día</p>
-                <p className="font-bold text-[var(--color-brand-warning)]">${totalGasto}</p>
-              </div>
-            </FECard>
-            <FinniMessage
-              variant="coach"
-              title="Tu reto"
-              message="¿Te animas a registrar tus gastos de hoy en la vida real? Con tu método favorito."
-            />
-          </div>
-        )}
-      </div>
+                  <strong>${item.amount}</strong>
+                </div>
+              ))}
+            </div>
+          )}
+        </ActivityFrame>
+      )}
     </LessonShell>
   );
 }
