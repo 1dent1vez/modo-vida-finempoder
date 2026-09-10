@@ -77,6 +77,7 @@ export type LessonShellCoreProps = {
   completeWhen?: boolean;
   score?: number;
   completion?: LessonCompletion;
+  showGreeting?: boolean;
 };
 
 export type LessonShellProps = LessonShellCoreProps & {
@@ -202,11 +203,13 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
         // F2-GAMIFICACION: avisa a la celebración global de logros para que el
         // modal espere ~2.5s tras el confetti/XP de esta lección (evento
         // mínimo y documentado en F2_GAMIFICACION.md).
-        window.dispatchEvent(
-          new CustomEvent('fe:lesson-completed', {
-            detail: { moduleId, lessonId: props.id, completedAt: Date.now() },
-          })
-        );
+        if (mounted.current && typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('fe:lesson-completed', {
+              detail: { moduleId, lessonId: props.id, completedAt: Date.now() },
+            })
+          );
+        }
         track(EVENTOS.LESSON_COMPLETED, { moduleId, lessonId: props.id, xp: completion.score ?? 100 });
 
         if (import.meta.env.DEV) {
@@ -276,7 +279,7 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
     schedule(step);
     return () => {
       cancelled = true;
-      if (frameId !== null) {
+      if (frameId !== null && typeof window !== 'undefined') {
         if (typeof window.cancelAnimationFrame === 'function') {
           window.cancelAnimationFrame(frameId);
         } else {
@@ -332,7 +335,7 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
       <PageHeader title={props.title} onBack={goOverview} moduleColor={moduleColor} />
       <div className="p-4 pb-20">
         <FECard variant="flat" className="mt-3">
-          {showDayGreeting && !completed && (
+          {props.showGreeting !== false && showDayGreeting && !completed && (
             <FinniMessage variant="coach" message={dayGreeting} className="mb-4" />
           )}
           {props.children}

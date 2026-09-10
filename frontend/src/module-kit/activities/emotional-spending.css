@@ -1,0 +1,56 @@
+.emotional-spending .es-card {
+  padding: 20px;
+  border-radius: 15px;
+  background: #fff5dc;
+}
+.emotional-spending .es-card h3 {
+  margin: 0 0 8px;
+}
+.emotional-spending .es-options {
+  display: grid;
+  gap: 9px;
+  margin-top: 17px;
+}
+.emotional-spending .es-option,
+.emotional-spending .es-secondary {
+  min-height: 46px;
+  border: 1px solid #bdc8d6;
+  border-radius: 11px;
+  background: #fff;
+  padding: 11px 14px;
+  text-align: left;
+  color: #253249;
+  font-weight: 700;
+}
+.emotional-spending .es-option[aria-pressed='true'] {
+  border-color: #e69d18;
+  background: #fff2c9;
+  box-shadow: inset 0 0 0 1px #e69d18;
+}
+.emotional-spending .es-tags,
+.emotional-spending .es-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.emotional-spending .es-review {
+  display: grid;
+  gap: 10px;
+}
+.emotional-spending .es-review div {
+  padding: 13px;
+  border-bottom: 1px solid #e2e7ee;
+}
+.emotional-spending .es-actions {
+  justify-content: flex-end;
+}
+@media (max-width: 620px) {
+  .emotional-spending .es-tags,
+  .emotional-spending .es-actions {
+    flex-direction: column;
+  }
+  .emotional-spending .es-tags button,
+  .emotional-spending .es-actions button {
+    width: 100%;
+  }
+}

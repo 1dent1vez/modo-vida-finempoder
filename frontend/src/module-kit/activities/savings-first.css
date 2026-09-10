@@ -1,0 +1,69 @@
+.savings-first .sf-card {
+  padding: 20px;
+  border: 1px solid #cce8d8;
+  border-radius: 15px;
+  background: #effaf3;
+}
+.savings-first .sf-card h3 {
+  margin: 0 0 9px;
+}
+.savings-first .sf-compare {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+.savings-first .sf-compare div {
+  padding: 14px;
+  border-radius: 12px;
+  background: #fff;
+}
+.savings-first .sf-options {
+  display: grid;
+  gap: 9px;
+  margin-top: 16px;
+}
+.savings-first .sf-option,
+.savings-first .sf-secondary {
+  min-height: 46px;
+  padding: 11px 14px;
+  border: 1px solid #bdc8d6;
+  border-radius: 11px;
+  background: #fff;
+  color: #253249;
+  text-align: left;
+  font-weight: 700;
+}
+.savings-first .sf-option[aria-pressed='true'] {
+  border-color: #238653;
+  background: #e2f6e9;
+  box-shadow: inset 0 0 0 1px #238653;
+}
+.savings-first .sf-projection {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+.savings-first .sf-projection div {
+  padding: 12px 8px;
+  border-radius: 11px;
+  background: #fff;
+  text-align: center;
+}
+.savings-first .sf-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 9px;
+}
+@media (max-width: 620px) {
+  .savings-first .sf-projection {
+    grid-template-columns: 1fr;
+  }
+  .savings-first .sf-actions {
+    flex-direction: column;
+  }
+  .savings-first .sf-actions button {
+    width: 100%;
+  }
+}
