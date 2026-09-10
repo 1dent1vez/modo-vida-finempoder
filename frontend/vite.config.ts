@@ -32,15 +32,12 @@ export default defineConfig({
     viteCompression({ algorithm: 'gzip', ext: '.gz' }),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: [
-        'favicon.ico',
-        'robots.txt',
-        'apple-touch-icon.png'
-      ],
+      includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
         name: 'FinEmpoder',
         short_name: 'FinEmpoder',
-        description: 'PWA de educación financiera gamificada para estudiantes del Instituto Tecnológico de Toluca',
+        description:
+          'PWA de educación financiera gamificada para estudiantes del Instituto Tecnológico de Toluca',
         lang: 'es-MX',
         start_url: '/app',
         scope: '/',
@@ -52,25 +49,30 @@ export default defineConfig({
           {
             src: '/icons/icon-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
           },
           {
             src: '/icons/icon-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
           },
           {
             src: '/icons/icon-512x512-maskable.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
-          }
-        ]
+            purpose: 'any maskable',
+          },
+        ],
       },
       workbox: {
         navigateFallback: '/index.html',
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,woff2}'],
         runtimeCaching: [
+          {
+            // Paid content and membership responses must never enter the PWA cache.
+            urlPattern: ({ url }) => /\/(?:api\/)?newsletter(?:\/|$)/.test(url.pathname),
+            handler: 'NetworkOnly',
+          },
           {
             // Assets estáticos (JS, CSS, fonts) — cache-first tras precache
             urlPattern: /\.(?:js|css|woff2?|ttf|otf)$/i,
@@ -79,23 +81,16 @@ export default defineConfig({
               cacheName: 'finempoder-static-assets',
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 días
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 días
               },
-              cacheableResponse: { statuses: [200] }
-            }
+              cacheableResponse: { statuses: [200] },
+            },
           },
           {
-            // API FinEmpoder
-            // Intercepta las llamadas que empiezan con /api/
+            // Las respuestas de API pueden contener datos personales. Nunca se
+            // guardan en Cache Storage ni se comparten entre sesiones del equipo.
             urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'finempoder-api-cache',
-              networkTimeoutSeconds: 10,
-              cacheableResponse: {
-                statuses: [200]
-              }
-            }
+            handler: 'NetworkOnly',
           },
           {
             // Navegación (rutas React)
@@ -103,22 +98,29 @@ export default defineConfig({
             handler: 'NetworkFirst',
             options: {
               cacheName: 'finempoder-pages',
-              networkTimeoutSeconds: 10
-            }
+              networkTimeoutSeconds: 10,
+            },
           },
           {
             // Rutas clave para experiencia offline
             urlPattern: ({ url }) =>
-              ['/app', '/app/presupuesto', '/app/ahorro', '/app/inversion', '/login', '/signup'].includes(url.pathname),
+              [
+                '/app',
+                '/app/presupuesto',
+                '/app/ahorro',
+                '/app/inversion',
+                '/login',
+                '/signup',
+              ].includes(url.pathname),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'finempoder-core-pages',
-              cacheableResponse: { statuses: [200] }
-            }
-          }
-        ]
-      }
-    })
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+        ],
+      },
+    }),
   ],
   build: {
     rollupOptions: {
@@ -134,12 +136,12 @@ export default defineConfig({
     },
   },
   server: {
-    host: true,              // Permite acceso desde red local (móvil)
+    host: true, // Permite acceso desde red local (móvil)
     port: 5173,
-    allowedHosts: true,       // Permite hosts del túnel (cloudflared) en dev; solo afecta dev server
+    allowedHosts: true, // Permite hosts del túnel (cloudflared) en dev; solo afecta dev server
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:4000', // Backend express
+        target: process.env.LOCAL_API_TARGET ?? 'http://127.0.0.1:4000', // Backend express
         changeOrigin: true,
         secure: false,
       },
@@ -150,22 +152,10 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:4000',
+        target: process.env.LOCAL_API_TARGET ?? 'http://127.0.0.1:4000',
         changeOrigin: true,
         secure: false,
       },
-    },
-  },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['**/node_modules/**', '**/e2e/**'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      include: ['src/lib/**', 'src/store/**', 'src/db/**', 'src/shared/utils/**'],
     },
   },
 });
