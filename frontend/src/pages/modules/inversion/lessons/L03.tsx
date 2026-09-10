@@ -1,271 +1,326 @@
-import { useEffect, useState } from 'react';
-import { AlertTriangle, BookOpen, Droplet, Hourglass, Target, TrendingUp } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
-import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
-import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
+import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/investment-foundations.css';
 
-const infoColor = 'var(--color-brand-info)';
-
-type ConceptoColor = 'success' | 'error' | 'warning' | 'info';
-
-const CONCEPTOS: { nombre: string; icon: React.ComponentType<{ className?: string }>; color: ConceptoColor; def: string; ejemplo: string; analogia: string; nota: string }[] = [
-  { nombre: 'Rendimiento', icon: TrendingUp, color: 'success', def: 'El dinero extra que genera tu inversión. Se expresa en % anual.', ejemplo: '8% anual sobre $10,000 = $800 al año.', analogia: 'El sueldo que le pagas al dinero por trabajar para ti.', nota: 'El rendimiento pasado no garantiza el futuro.' },
-  { nombre: 'Riesgo', icon: AlertTriangle, color: 'error', def: 'La posibilidad de que la inversión no genere lo esperado o que pierdas parte del capital.', ejemplo: 'A mayor rendimiento esperado, generalmente mayor riesgo.', analogia: 'La velocidad del coche — más rápido puedes llegar, pero también más puedes lastimarte.', nota: 'El riesgo no es malo. Es algo que se gestiona con conocimiento.' },
-  { nombre: 'Plazo', icon: Hourglass, color: 'warning', def: 'El tiempo que tu dinero permanecerá invertido.', ejemplo: 'A mayor plazo, mayor potencial de rendimiento y mayor capacidad de recuperarse ante caídas.', analogia: 'Dejar fermentar el pan — necesita tiempo para crecer bien.', nota: 'Las inversiones a largo plazo históricamente superan a las de corto plazo.' },
-  { nombre: 'Liquidez', icon: Droplet, color: 'info', def: 'Qué tan rápido puedes convertir tu inversión en efectivo sin perder valor.', ejemplo: 'Una cuenta bancaria tiene alta liquidez. Un bien inmueble, baja.', analogia: 'Hielo vs agua — el hielo tarda en convertirse en efectivo.', nota: 'Mayor liquidez generalmente implica menor rendimiento.' },
-];
-
-const colorVars: Record<ConceptoColor, { bg: string; border: string; text: string }> = {
-  success: { bg: 'var(--color-brand-success-bg)', border: 'var(--color-brand-success)', text: 'var(--color-brand-success)' },
-  error:   { bg: 'var(--color-brand-error-bg)',   border: 'var(--color-brand-error)',   text: 'var(--color-brand-error)' },
-  warning: { bg: 'var(--color-brand-warning-bg)', border: 'var(--color-brand-warning)', text: 'var(--color-brand-warning)' },
-  info:    { bg: 'var(--color-brand-info-bg)',     border: 'var(--color-brand-info)',    text: '#4B73F0' },
+type Stage = 'discover' | 'connect' | 'check' | 'review' | 'complete';
+type Draft = {
+  version: 1;
+  stage: Stage;
+  viewed: string[];
+  scenario: string | null;
+  answers: (number | null)[];
 };
-
-const QUIZ = [
-  { pregunta: '¿Qué significa que una inversión tenga alta liquidez?', opciones: ['Que da mucho rendimiento', 'Que puedes convertirla en efectivo rápido', 'Que es muy segura'], correcta: 1 },
-  { pregunta: 'A mayor rendimiento esperado, generalmente el riesgo es:', opciones: ['Menor', 'Mayor', 'Igual'], correcta: 1 },
-  { pregunta: '¿Cuál tiene más liquidez?', opciones: ['Una casa', 'CETES', 'Un fondo a 5 años'], correcta: 1 },
-  { pregunta: 'Te ofrecen 15% mensual garantizado sin riesgo. ¿Qué es?', opciones: ['Una gran oportunidad de inversión', 'Una señal de fraude'], correcta: 1 },
+const KEY = 'investment_l3:vocabulary:v1';
+const initial = (): Draft => ({
+  version: 1,
+  stage: 'discover',
+  viewed: [],
+  scenario: null,
+  answers: [null, null, null],
+});
+const TERMS = [
+  {
+    id: 'return',
+    name: 'Rendimiento',
+    text: 'Cambio porcentual del valor durante un periodo. Puede ser positivo o negativo.',
+  },
+  {
+    id: 'risk',
+    name: 'Riesgo',
+    text: 'Posibilidad de que el resultado sea distinto del esperado, incluida una pérdida.',
+  },
+  {
+    id: 'term',
+    name: 'Plazo',
+    text: 'Tiempo previsto para mantener el dinero antes de necesitarlo.',
+  },
+  {
+    id: 'liquidity',
+    name: 'Liquidez',
+    text: 'Facilidad, tiempo y condiciones para convertir un activo en dinero disponible.',
+  },
+  {
+    id: 'cost',
+    name: 'Costos',
+    text: 'Comisiones, impuestos u otros cargos que pueden reducir el resultado.',
+  },
 ];
-
+const CHECK = [
+  {
+    q: 'Una opción permite retirar rápido, pero cobra por hacerlo. ¿Qué debes revisar?',
+    o: ['Solo el rendimiento', 'Liquidez y condiciones', 'Solo el nombre'],
+    a: 1,
+  },
+  {
+    q: '¿Qué describe mejor el riesgo?',
+    o: ['Una tasa alta', 'Un resultado distinto al esperado', 'Una pérdida segura'],
+    a: 1,
+  },
+  {
+    q: 'Te prometen rendimiento alto, fijo y sin riesgo. ¿Qué conviene hacer?',
+    o: [
+      'Depositar de inmediato',
+      'Verificar entidad, condiciones y alertas',
+      'Ignorar los documentos',
+    ],
+    a: 1,
+  },
+];
+function parse(x: unknown): Draft | null {
+  if (!x || typeof x !== 'object') return null;
+  const v = x as Draft;
+  return v.version === 1 &&
+    ['discover', 'connect', 'check', 'review', 'complete'].includes(v.stage) &&
+    Array.isArray(v.viewed) &&
+    Array.isArray(v.answers) &&
+    v.answers.length === 3
+    ? v
+    : null;
+}
 export default function L03() {
-  const [step, setStep] = useState(0);
-
-  const resume = useLessonResume('inversion', 'L03');
-  const [resumeHandled, setResumeHandled] = useState(false);
-
+  const [d, setD] = useState(initial);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
   useEffect(() => {
-    if (step > 0) resume.save({ step });
-  }, [step, resume]);
-  const [expandido, setExpandido] = useState<number | null>(null);
-  const [riesgoSlider, setRiesgoSlider] = useState(50);
-  const [respuestas, setRespuestas] = useState<(number | null)[]>(Array(4).fill(null));
-
-  const aciertos = respuestas.filter((r, i) => r === QUIZ[i]!.correcta).length;
-  const quizCompleto = respuestas.every((r) => r !== null);
-  const score = quizCompleto ? aciertos / 4 : 0;
-  const rendimientoEstimado = Math.round(2 + (riesgoSlider / 100) * 15);
-
-  const responder = (qi: number, oi: number) => {
-    setRespuestas((prev) => prev.map((r, i) => (i === qi ? oi : r)));
+    mounted.current = true;
+    setLoading(true);
+    setFailed(false);
+    void lessonDataRepository
+      .load('inversion', KEY)
+      .then((x) => {
+        if (mounted.current) {
+          setD(parse(x) ?? initial());
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (mounted.current) {
+          setLoading(false);
+          setFailed(true);
+        }
+      });
+    return () => {
+      mounted.current = false;
+    };
+  }, [attempt]);
+  const save = async (next: Draft, final = false) => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (final) {
+        await lessonDataRepository.saveBatch('inversion', [
+          {
+            key: 'l03_vocabulary',
+            data: {
+              scenario: next.scenario,
+              answers: next.answers,
+              termsViewed: next.viewed,
+            },
+          },
+          { key: KEY, data: next },
+        ]);
+      } else {
+        await lessonDataRepository.save('inversion', KEY, next);
+      }
+      if (mounted.current) setD(next);
+    } catch {
+      if (mounted.current) setError('No pudimos guardar. Tus respuestas siguen en pantalla.');
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
   };
-
-  const progressPct = (step / 2) * 100;
-  const riesgoLabel = riesgoSlider < 33 ? 'Bajo' : riesgoSlider < 66 ? 'Medio' : 'Alto';
-  const riesgoChipColor = riesgoSlider < 33 ? colorVars.success : riesgoSlider < 66 ? colorVars.warning : colorVars.error;
-
+  const score = d.answers.filter((x, i) => x === CHECK[i]!.a).length / 3;
+  const review = d.stage === 'review' || d.stage === 'complete';
+  if (loading)
+    return (
+      <LessonShell id="L03" title="Variables de una inversión" completion={{ ready: false }}>
+        <ActivityLoading />
+      </LessonShell>
+    );
+  if (failed)
+    return (
+      <LessonShell id="L03" title="Variables de una inversión" completion={{ ready: false }}>
+        <ActivityLoadError
+          message="No pudimos recuperar tu avance."
+          onRetry={() => setAttempt((x) => x + 1)}
+        />
+      </LessonShell>
+    );
   return (
     <LessonShell
       id="L03"
-      title="El alfabeto del inversionista: rendimiento, riesgo, plazo y liquidez"
-      completion={{ ready: quizCompleto, score }}
+      title="Variables de una inversión"
+      showGreeting={false}
+      completion={{ ready: d.stage === 'complete', score }}
     >
-      <div className="p-1">
-        {resume.hasSaved && !resumeHandled && (
-          <LessonResumeBanner
-            step={resume.savedStep ?? 0}
-            onContinue={() => {
-              const snapshot = resume.accept();
-              if (snapshot) setStep(snapshot.step);
-              setResumeHandled(true);
-            }}
-            onRestart={() => {
-              resume.ignore();
-              setResumeHandled(true);
-            }}
-          />
-        )}
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full transition-all" style={{ width: `${progressPct}%`, backgroundColor: infoColor }} />
-        </div>
-
-        {/* Pantalla 0 — Los 4 conceptos */}
-        {step === 0 && (
-          <div className="space-y-6">
-            <FinniMessage
-              variant="coach"
-              title="El vocabulario del inversionista"
-              message="Antes de hablar de productos de inversión, necesitas el vocabulario. No para sonar inteligente en reuniones — para entender lo que estás firmando."
-            />
-            <p className="text-lg font-bold">Los 4 conceptos clave</p>
-            <p className="text-sm text-[var(--color-text-secondary)]">Toca cada concepto para expandirlo:</p>
-            <div className="space-y-4">
-              {CONCEPTOS.map((c, i) => {
-                const cv = colorVars[c.color];
-                const isOpen = expandido === i;
-                return (
-                  <div
-                    key={c.nombre}
-                    className="rounded-2xl overflow-hidden border-2 transition-colors"
-                    style={{ borderColor: isOpen ? cv.border : 'var(--color-neutral-200)' }}
-                  >
-                    <button
-                      className="w-full flex items-center gap-3 p-3 text-left transition-colors"
-                      style={{ backgroundColor: isOpen ? cv.bg : '#F9FAFB' }}
-                      onClick={() => setExpandido(isOpen ? null : i)}
-                    >
-                      <c.icon className="h-6 w-6" aria-hidden="true" />
-                      <span className="font-extrabold">{c.nombre}</span>
-                    </button>
-                    {isOpen && (
-                      <div className="p-3 space-y-2">
-                        <p className="text-sm"><strong>Definición:</strong> {c.def}</p>
-                        <p className="text-sm"><strong>Ejemplo:</strong> {c.ejemplo}</p>
-                        <div className="p-2 rounded-lg" style={{ backgroundColor: colorVars.info.bg, border: `1px solid ${colorVars.info.border}` }}>
-                          <span className="text-xs"><strong>Analogía:</strong> {c.analogia}</span>
-                        </div>
-                        <span className="text-xs text-[var(--color-text-secondary)] block">{c.nota}</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <button
-              className="w-full min-h-11 text-white rounded-xl font-semibold text-sm"
-              style={{ backgroundColor: infoColor }}
-              onClick={() => setStep(1)}
-            >
-              Ver relaciones y alerta antifraude →
-            </button>
-          </div>
-        )}
-
-        {/* Pantalla 1 — Slider de relaciones + alerta antifraude */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <p className="text-lg font-bold">La tensión entre las 4 variables</p>
-            <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
-              <p className="text-sm font-bold mb-2">Mueve el nivel de riesgo y observa el impacto:</p>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={riesgoSlider}
-                onChange={(e) => setRiesgoSlider(Number(e.target.value))}
-                className="w-full mb-4 accent-[var(--color-brand-info)]"
-              />
-              <div className="flex flex-wrap gap-2 mb-2">
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: riesgoChipColor.bg, color: riesgoChipColor.text }}>
-                  Riesgo: {riesgoLabel}
-                </span>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: colorVars.info.bg, color: colorVars.info.text }}>
-                  Rendimiento: ~{rendimientoEstimado}% anual
-                </span>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-[var(--color-neutral-100)] text-[var(--color-text-secondary)]">
-                  Liquidez: {riesgoSlider > 66 ? 'Media' : 'Alta'}
-                </span>
-              </div>
-              <p className="text-xs text-[var(--color-text-secondary)] mt-1">
-                {riesgoSlider < 33
-                  ? 'Ejemplo: CETES — bajo riesgo, bajo rendimiento, alta liquidez.'
-                  : riesgoSlider < 66
-                  ? 'Ejemplo: Fondo balanceado — riesgo medio, rendimiento moderado.'
-                  : 'Ejemplo: Acciones BMV — alto riesgo, alto potencial, liquidez media.'}
-              </p>
-            </FECard>
-            <div className="rounded-2xl p-4 border-2" style={{ backgroundColor: colorVars.error.bg, borderColor: colorVars.error.border }}>
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="h-5 w-5 text-[var(--color-brand-warning)]" aria-hidden="true" />
-                <p className="font-extrabold" style={{ color: colorVars.error.text }}>Alerta antifraude</p>
-              </div>
-              <p className="text-sm font-bold">Si te ofrecen esto combinado, es fraude:</p>
-              <p className="text-sm">Rendimiento garantizado alto + cero riesgo + liquidez inmediata</p>
-              <p className="text-sm mt-2" style={{ color: colorVars.error.text }}>
-                Ejemplos en México: esquemas Ponzi de cripto, tandas fraudulentas, apps sin regulación CNBV.
-              </p>
-            </div>
-            <button
-              className="w-full min-h-11 text-white rounded-xl font-semibold text-sm"
-              style={{ backgroundColor: infoColor }}
-              onClick={() => setStep(2)}
-            >
-              Test rápido de 4 preguntas →
-            </button>
-          </div>
-        )}
-
-        {/* Pantalla 2 — Quiz */}
-        {step === 2 && (
-          <div className="space-y-6">
-            <p className="text-lg font-bold">Test rápido</p>
-            <div className="space-y-6">
-              {QUIZ.map((q, qi) => {
-                const resp = respuestas[qi];
-                const respondido = resp !== null;
-                const correcto = resp === q.correcta;
-                return (
-                  <FECard
-                    key={qi}
-                    variant="flat"
-                    className="border"
-                    style={{ borderColor: respondido ? (correcto ? 'var(--color-brand-success)' : 'var(--color-brand-error)') : 'var(--color-neutral-200)' }}
-                  >
-                    <p className="text-sm font-bold mb-3">{qi + 1}. {q.pregunta}</p>
-                    <div className="space-y-2">
-                      {q.opciones.map((op, oi) => {
-                        const isSelected = resp === oi;
-                        const isCorrect = oi === q.correcta;
-                        let bg = 'transparent';
-                        let borderColor = infoColor;
-                        let textColor = infoColor;
-                        if (respondido) {
-                          if (isCorrect) { bg = colorVars.success.bg; borderColor = colorVars.success.border; textColor = colorVars.success.text; }
-                          else if (isSelected) { bg = colorVars.error.bg; borderColor = colorVars.error.border; textColor = colorVars.error.text; }
-                          else { bg = 'transparent'; borderColor = 'var(--color-neutral-200)'; textColor = 'var(--color-text-secondary)'; }
-                        } else if (isSelected) {
-                          bg = colorVars.info.bg;
-                        }
-                        return (
-                          <button
-                            key={oi}
-                            className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
-                            style={{ backgroundColor: bg, borderColor, color: textColor }}
-                            onClick={() => { if (!respondido) responder(qi, oi); }}
-                            disabled={respondido}
-                          >
-                            {op}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {respondido && (
-                      <p className="text-xs mt-2" style={{ color: correcto ? colorVars.success.text : colorVars.error.text }}>
-                        {correcto ? 'Correcto' : `La respuesta correcta era: "${q.opciones[q.correcta]}"`}
-                      </p>
-                    )}
-                  </FECard>
-                );
-              })}
-            </div>
-            {quizCompleto && (
-              <FECard
-                variant="flat"
-                className="text-center border-2"
-                style={{
-                  backgroundColor: aciertos >= 3 ? colorVars.success.bg : colorVars.info.bg,
-                  borderColor: aciertos >= 3 ? colorVars.success.border : colorVars.info.border,
-                }}
+      <ActivityFrame
+        label="Laboratorio de conceptos"
+        className="investment-foundations"
+        busy={busy}
+        title={
+          review
+            ? 'Conserva el mapa completo.'
+            : d.stage === 'check'
+              ? 'Comprueba cómo lees las condiciones.'
+              : d.stage === 'connect'
+                ? 'Las variables se relacionan, pero no se predicen entre sí.'
+                : 'Cinco preguntas antes de comparar.'
+        }
+        description="Lee rendimiento, riesgo, plazo, liquidez y costos como un conjunto."
+        progressLabel="Etapas completadas"
+        progressValue={
+          d.stage === 'discover' ? 0 : d.stage === 'connect' ? 1 : d.stage === 'check' ? 2 : 3
+        }
+        progressMax={3}
+        stepLabel={
+          review
+            ? 'Paso 4 de 4 · Revisar'
+            : d.stage === 'check'
+              ? 'Paso 3 de 4 · Comprobar'
+              : d.stage === 'connect'
+                ? 'Paso 2 de 4 · Conectar'
+                : 'Paso 1 de 4 · Descubrir'
+        }
+        focusKey={d.stage}
+        advice={{
+          title: 'Finni lee la letra completa',
+          text:
+            cue ??
+            'Un nivel de riesgo no permite calcular automáticamente un rendimiento ni una liquidez.',
+          tone: score === 1 ? 'success' : 'info',
+        }}
+        adviceCue={cue}
+        error={error}
+        status={busy ? 'Guardando…' : 'Tu avance está guardado.'}
+        actions={
+          <div className="if-actions">
+            {d.stage === 'discover' && (
+              <button
+                className="ca-primary"
+                disabled={d.viewed.length < 5}
+                onClick={() => void save({ ...d, stage: 'connect' })}
               >
-                {aciertos >= 3 ? (
-                  <Target className="h-9 w-9 mx-auto" aria-hidden="true" />
-                ) : (
-                  <BookOpen className="h-9 w-9 mx-auto" aria-hidden="true" />
-                )}
-                <p className="font-extrabold">{aciertos}/4 correctas</p>
-                <p className="text-sm">
-                  {aciertos === 4 ? '¡Perfecto! Dominas el vocabulario del inversionista.'
-                    : aciertos >= 3 ? '¡Muy bien! Tienes las bases sólidas.'
-                    : 'Repasa los conceptos — el vocabulario es la base de todo.'}
-                </p>
-              </FECard>
+                Conectar variables
+              </button>
+            )}
+            {d.stage === 'connect' && (
+              <button
+                className="ca-primary"
+                disabled={!d.scenario}
+                onClick={() => void save({ ...d, stage: 'check' })}
+              >
+                Comprobar lectura
+              </button>
+            )}
+            {d.stage === 'check' && (
+              <button
+                className="ca-primary"
+                disabled={d.answers.some((x) => x === null)}
+                onClick={() => void save({ ...d, stage: 'review' })}
+              >
+                Revisar mapa
+              </button>
+            )}
+            {d.stage === 'review' && (
+              <button
+                className="ca-primary"
+                onClick={() => void save({ ...d, stage: 'complete' }, true)}
+              >
+                Guardar y terminar
+              </button>
             )}
           </div>
+        }
+      >
+        {d.stage === 'discover' && (
+          <section className="if-grid">
+            {TERMS.map((t) => (
+              <button
+                key={t.id}
+                className={d.viewed.includes(t.id) ? 'is-viewed' : ''}
+                onClick={() => {
+                  setD((v) => ({
+                    ...v,
+                    viewed: v.viewed.includes(t.id) ? v.viewed : [...v.viewed, t.id],
+                  }));
+                  setCue(t.text);
+                }}
+              >
+                <span>{t.name}</span>
+                <small>{d.viewed.includes(t.id) ? t.text : 'Toca para descubrir'}</small>
+              </button>
+            ))}
+          </section>
         )}
-      </div>
+        {d.stage === 'connect' && (
+          <section className="if-options">
+            <h3>Una opción anuncia mayor rendimiento esperado. ¿Qué puedes concluir?</h3>
+            {[
+              'Que siempre conviene',
+              'Que debes revisar las demás variables',
+              'Que tendrá poca liquidez',
+            ].map((x) => (
+              <button
+                key={x}
+                className={d.scenario === x ? 'is-selected' : ''}
+                onClick={() => {
+                  setD({ ...d, scenario: x });
+                  setCue(
+                    x === 'Que debes revisar las demás variables'
+                      ? 'Correcto: el anuncio no resuelve riesgo, plazo, liquidez ni costos.'
+                      : 'Ese dato no basta para inferir las demás condiciones.',
+                  );
+                }}
+              >
+                {x}
+              </button>
+            ))}
+          </section>
+        )}
+        {d.stage === 'check' && (
+          <section className="if-options">
+            {CHECK.map((q, i) => (
+              <div className="if-case" key={q.q}>
+                <h3>{q.q}</h3>
+                {q.o.map((x, j) => (
+                  <button
+                    key={x}
+                    className={d.answers[i] === j ? 'is-selected' : ''}
+                    onClick={() => {
+                      setD((v) => ({ ...v, answers: v.answers.map((a, k) => (k === i ? j : a)) }));
+                      setCue(
+                        j === q.a
+                          ? 'Lectura completa.'
+                          : 'Revisa qué variable describe la situación.',
+                      );
+                    }}
+                  >
+                    {x}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </section>
+        )}
+        {review && (
+          <section className="if-review">
+            <span>Mapa de lectura</span>
+            <h3>Un porcentaje nunca cuenta toda la historia.</h3>
+            <p>Compararé rendimiento, riesgo, plazo, liquidez, costos y documentos verificables.</p>
+          </section>
+        )}
+      </ActivityFrame>
     </LessonShell>
   );
 }

@@ -1,214 +1,415 @@
-import { useEffect, useState } from 'react';
-import { PartyPopper } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
-import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
-import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
+import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/investment-foundations.css';
 
-function calcInvested(principal: number, rate: number, years: number) {
-  return principal * Math.pow(1 + rate, years);
-}
-function calcInflationReal(principal: number, inflacion: number, years: number) {
-  return principal / Math.pow(1 + inflacion, years);
-}
-
-const MYTHS = [
-  { mito: 'Necesito mucho dinero para invertir', realidad: 'Puedes empezar con $100 en CETES. No hay mínimo imposible.' },
-  { mito: 'Invertir es muy riesgoso', realidad: 'El riesgo se gestiona con conocimiento y diversificación. No toda inversión es especulativa.' },
-  { mito: 'Es muy complicado', realidad: 'Existen instrumentos diseñados para principiantes como CETES y fondos de deuda.' },
-  { mito: 'Es para cuando sea grande', realidad: 'El tiempo es tu mayor aliado — cada año que esperas, cuesta dinero real.' },
+type Stage = 'calibrate' | 'explore' | 'concepts' | 'review' | 'complete';
+type Draft = {
+  version: 1;
+  stage: Stage;
+  experience: string | null;
+  years: number;
+  rate: number;
+  inflation: number;
+  viewed: string[];
+  answer: number | null;
+};
+const KEY = 'investment_l1:foundations:v1';
+const CONCEPTS = [
+  {
+    id: 'return',
+    term: 'Rendimiento',
+    text: 'Cambio en el valor de una inversión durante un periodo. Puede ser positivo o negativo.',
+  },
+  {
+    id: 'risk',
+    term: 'Riesgo',
+    text: 'Posibilidad de obtener un resultado distinto al esperado, incluida una pérdida.',
+  },
+  {
+    id: 'term',
+    term: 'Plazo',
+    text: 'Tiempo durante el cual puedes mantener el dinero sin necesitarlo.',
+  },
+  {
+    id: 'liquidity',
+    term: 'Liquidez',
+    text: 'Facilidad y condiciones para convertir un instrumento en dinero disponible.',
+  },
 ];
-
-const VOCAB = [
-  { term: 'Inversión', def: 'Poner tu dinero en algo con la expectativa de que genere más dinero con el tiempo.' },
-  { term: 'Rendimiento', def: 'El dinero extra que genera tu inversión, expresado en porcentaje anual.' },
-  { term: 'Riesgo', def: 'La posibilidad de que la inversión no genere lo esperado — algo que se gestiona, no se ignora.' },
-];
-
-const infoColor = 'var(--color-brand-info)';
-const infoBg = 'var(--color-brand-info-bg)';
-const successColor = 'var(--color-brand-success)';
-const successBg = 'var(--color-brand-success-bg)';
-const warnColor = 'var(--color-brand-warning)';
-const warnBg = 'var(--color-brand-warning-bg)';
-const errorBg = 'var(--color-brand-error-bg)';
-const errorColor = 'var(--color-brand-error)';
-
+const initial = (): Draft => ({
+  version: 1,
+  stage: 'calibrate',
+  experience: null,
+  years: 5,
+  rate: 5,
+  inflation: 4,
+  viewed: [],
+  answer: null,
+});
+function parse(raw: unknown): Draft | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const v = raw as Draft;
+  if (
+    v.version !== 1 ||
+    !['calibrate', 'explore', 'concepts', 'review', 'complete'].includes(v.stage) ||
+    (v.experience !== null && typeof v.experience !== 'string') ||
+    !Number.isFinite(v.years) ||
+    v.years < 1 ||
+    v.years > 20 ||
+    !Number.isFinite(v.rate) ||
+    v.rate < -10 ||
+    v.rate > 15 ||
+    !Number.isFinite(v.inflation) ||
+    v.inflation < 0 ||
+    v.inflation > 15 ||
+    !Array.isArray(v.viewed) ||
+    v.viewed.some((id) => !CONCEPTS.some((item) => item.id === id)) ||
+    (v.answer !== null && ![0, 1, 2].includes(v.answer))
+  )
+    return null;
+  return v;
+}
+const money = (value: number) => Math.round(value).toLocaleString('es-MX');
 export default function L01() {
-  const [step, setStep] = useState(0);
-
-  const resume = useLessonResume('inversion', 'L01');
-  const [resumeHandled, setResumeHandled] = useState(false);
-
+  const [draft, setDraft] = useState<Draft>(initial);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
   useEffect(() => {
-    if (step > 0) resume.save({ step });
-  }, [step, resume]);
-  const [calibracion, setCalibracion] = useState<string | null>(null);
-  const [years, setYears] = useState(10);
-  const [flipped, setFlipped] = useState<boolean[]>([false, false, false, false]);
-  const [vocabVisto, setVocabVisto] = useState(false);
-
-  const allFlipped = flipped.every(Boolean);
-  const ready = allFlipped && vocabVisto;
-
-  const flip = (i: number) => setFlipped((prev) => prev.map((v, idx) => (idx === i ? true : v)));
-
-  const invested = calcInvested(5000, 0.06, years);
-  const savedReal = calcInflationReal(5000, 0.055, years);
-
+    mounted.current = true;
+    setLoading(true);
+    setLoadError(false);
+    void lessonDataRepository
+      .load('inversion', KEY)
+      .then((raw) => {
+        if (mounted.current) {
+          setDraft(parse(raw) ?? initial());
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (mounted.current) {
+          setLoading(false);
+          setLoadError(true);
+        }
+      });
+    return () => {
+      mounted.current = false;
+    };
+  }, [attempt]);
+  const persist = async (next: Draft, final = false) => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (final) {
+        await lessonDataRepository.saveBatch('inversion', [
+          {
+            key: 'l01_foundations',
+            data: {
+              experience: next.experience,
+              scenario: {
+                years: next.years,
+                hypotheticalAnnualReturn: next.rate,
+                hypotheticalInflation: next.inflation,
+              },
+              conceptsViewed: next.viewed,
+              answer: next.answer,
+            },
+          },
+          { key: KEY, data: next },
+        ]);
+      } else {
+        await lessonDataRepository.save('inversion', KEY, next);
+      }
+      if (mounted.current) {
+        setDraft(next);
+        setDirty(false);
+      }
+    } catch {
+      if (mounted.current) setError('No pudimos guardar. Tu avance sigue en pantalla.');
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
+  };
+  const nominal = useMemo(
+    () => 5000 * (1 + draft.rate / 100) ** draft.years,
+    [draft.rate, draft.years],
+  );
+  const real = useMemo(
+    () => nominal / (1 + draft.inflation / 100) ** draft.years,
+    [nominal, draft.inflation, draft.years],
+  );
+  const reviewing = draft.stage === 'review' || draft.stage === 'complete';
+  const correct = draft.answer === 1;
+  if (loading)
+    return (
+      <LessonShell id="L01" title="Qué significa invertir" completion={{ ready: false }}>
+        <ActivityLoading />
+      </LessonShell>
+    );
+  if (loadError)
+    return (
+      <LessonShell id="L01" title="Qué significa invertir" completion={{ ready: false }}>
+        <ActivityLoadError
+          message="No pudimos recuperar tu avance."
+          onRetry={() => setAttempt((value) => value + 1)}
+        />
+      </LessonShell>
+    );
   return (
-    <LessonShell id="L01" title="Invertir no es para ricos: qué significa poner tu dinero a trabajar" completion={{ ready }}>
-      <div className="p-1">
-        {resume.hasSaved && !resumeHandled && (
-          <LessonResumeBanner
-            step={resume.savedStep ?? 0}
-            onContinue={() => {
-              const snapshot = resume.accept();
-              if (snapshot) setStep(snapshot.step);
-              setResumeHandled(true);
-            }}
-            onRestart={() => {
-              resume.ignore();
-              setResumeHandled(true);
-            }}
-          />
-        )}
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full transition-all" style={{ width: `${(step / 4) * 100}%`, backgroundColor: infoColor }} />
-        </div>
-
-        {/* Pantalla 0 — Calibración */}
-        {step === 0 && (
-          <div className="space-y-6">
-            <FinniMessage variant="coach" title="Terminamos con el mito" message="¿Cuántas veces escuchaste que invertir es para gente rica, para expertos, o para cuando seas mayor? Hoy terminamos con eso. Invertir es para cualquiera que entienda cómo funciona." />
-            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="text-base font-bold mb-4">¿Has invertido alguna vez?</p>
-              <div className="space-y-3">
-                {['Nunca', 'No sé si lo que tengo cuenta', 'Una vez pero no entendí bien', 'Sí, regularmente'].map((op) => (
-                  <button
-                    key={op}
-                    onClick={() => setCalibracion(op)}
-                    className="w-full text-left px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors"
-                    style={{
-                      borderColor: infoColor,
-                      backgroundColor: calibracion === op ? infoColor : 'transparent',
-                      color: calibracion === op ? 'white' : 'inherit',
-                    }}
-                  >
-                    {op}
-                  </button>
-                ))}
-              </div>
-            </FECard>
-            {calibracion && (
-              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setStep(1)}>
-                Continuar →
+    <LessonShell
+      id="L01"
+      title="Qué significa invertir"
+      showGreeting={false}
+      completion={{ ready: draft.stage === 'complete', score: 100 }}
+    >
+      <ActivityFrame
+        label="Fundamentos de inversión"
+        className="investment-foundations"
+        busy={busy}
+        title={
+          reviewing
+            ? 'Conserva una definición útil.'
+            : draft.stage === 'concepts'
+              ? 'Cuatro variables viajan juntas.'
+              : draft.stage === 'explore'
+                ? 'Explora supuestos, no promesas.'
+                : 'Invertir implica una expectativa y una incertidumbre.'
+        }
+        description="Distingue crecimiento nominal, poder de compra y riesgo antes de conocer productos."
+        progressLabel="Etapas completadas"
+        progressValue={
+          draft.stage === 'calibrate'
+            ? 0
+            : draft.stage === 'explore'
+              ? 1
+              : draft.stage === 'concepts'
+                ? 2
+                : 3
+        }
+        progressMax={3}
+        stepLabel={
+          reviewing
+            ? 'Paso 4 de 4 · Revisar'
+            : draft.stage === 'concepts'
+              ? 'Paso 3 de 4 · Conectar'
+              : draft.stage === 'explore'
+                ? 'Paso 2 de 4 · Explorar'
+                : 'Paso 1 de 4 · Ubicarte'
+        }
+        focusKey={draft.stage}
+        advice={{
+          title:
+            draft.stage === 'concepts' && draft.answer !== null
+              ? correct
+                ? 'Lectura completa'
+                : 'El rendimiento no viaja solo'
+              : 'Finni pone límites al ejemplo',
+          text:
+            draft.stage === 'concepts' && draft.answer !== null
+              ? 'Para comparar opciones necesitas mirar rendimiento, riesgo, plazo, liquidez y costos en conjunto.'
+              : 'Las tasas de esta pantalla son hipótesis educativas. Un resultado real puede subir, bajar o no compensar la inflación.',
+          tone:
+            draft.stage === 'concepts' && draft.answer !== null
+              ? correct
+                ? 'success'
+                : 'review'
+              : 'info',
+        }}
+        adviceCue={cue}
+        error={error}
+        status={busy ? 'Guardando…' : dirty ? 'Cambios sin guardar.' : 'Tu avance está guardado.'}
+        actions={
+          <div className="if-actions">
+            {draft.stage === 'calibrate' && (
+              <button
+                className="ca-primary"
+                disabled={!draft.experience || busy}
+                onClick={() => void persist({ ...draft, stage: 'explore' })}
+              >
+                Explorar un escenario
+              </button>
+            )}
+            {draft.stage === 'explore' && (
+              <button
+                className="ca-primary"
+                onClick={() => void persist({ ...draft, stage: 'concepts' })}
+              >
+                Conectar las variables
+              </button>
+            )}
+            {draft.stage === 'concepts' && (
+              <button
+                className="ca-primary"
+                disabled={draft.viewed.length !== CONCEPTS.length || draft.answer === null || busy}
+                onClick={() => void persist({ ...draft, stage: 'review' })}
+              >
+                Revisar definición
+              </button>
+            )}
+            {draft.stage === 'review' && (
+              <button
+                className="ca-primary"
+                onClick={() => void persist({ ...draft, stage: 'complete' }, true)}
+              >
+                Guardar y terminar
               </button>
             )}
           </div>
+        }
+      >
+        {draft.stage === 'calibrate' && (
+          <section className="if-options">
+            <h3>¿Qué experiencia reconoces?</h3>
+            {[
+              'Nunca he invertido',
+              'No sé si algo que tengo cuenta',
+              'Ya probé algún instrumento',
+              'Invierto con regularidad',
+            ].map((option) => (
+              <button
+                key={option}
+                className={draft.experience === option ? 'is-selected' : ''}
+                aria-pressed={draft.experience === option}
+                onClick={() => {
+                  setDraft((value) => ({ ...value, experience: option }));
+                  setDirty(true);
+                }}
+              >
+                {option}
+              </button>
+            ))}
+          </section>
         )}
-
-        {/* Pantalla 1 — Comparativa con slider */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <p className="text-2xl font-bold">¿Qué pasa con $5,000 en el tiempo?</p>
-            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="text-sm font-bold mb-2">Arrastra para ver la diferencia en {years} año{years !== 1 ? 's' : ''}:</p>
-              <input type="range" min={1} max={20} step={1} value={years} onChange={(e) => setYears(Number(e.target.value))} className="w-full mb-4 accent-[var(--color-brand-info)]" />
-              <div className="space-y-3">
-                <div className="p-4 rounded-xl bg-[var(--color-neutral-100)]">
-                  <p className="text-xs text-[var(--color-text-secondary)]">LÍNEA A — Dinero guardado en efectivo</p>
-                  <p className="text-xl font-extrabold">$5,000</p>
-                  <p className="text-xs" style={{ color: errorColor }}>Pero la inflación erosionó su valor real a ${savedReal.toFixed(0)}</p>
-                </div>
-                <div className="p-4 rounded-xl border-2" style={{ borderColor: warnColor, backgroundColor: warnBg }}>
-                  <p className="text-xs text-[var(--color-text-secondary)]">LÍNEA B — Dinero invertido al 6% anual</p>
-                  <p className="text-xl font-extrabold" style={{ color: 'var(--color-brand-secondary-dark)' }}>${invested.toFixed(0)}</p>
-                  <p className="text-xs" style={{ color: successColor }}>Ganaste ${(invested - 5000).toFixed(0)} extra</p>
-                </div>
-                <div className="p-4 rounded-xl" style={{ backgroundColor: errorBg }}>
-                  <p className="text-xs text-[var(--color-text-secondary)]">LÍNEA C — Diferencia real</p>
-                  <p className="text-xl font-extrabold" style={{ color: 'var(--color-brand-error)' }}>${(invested - savedReal).toFixed(0)} de ventaja al invertir</p>
-                </div>
-              </div>
-              <p className="text-sm mt-4 italic">"La diferencia no es suerte. Es el tiempo y el conocimiento."</p>
-            </FECard>
-            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setStep(2)}>
-              Ver los mitos →
-            </button>
-          </div>
+        {draft.stage === 'explore' && (
+          <section className="if-simulator">
+            <label>
+              Plazo <strong>{draft.years} años</strong>
+              <input
+                aria-label="Plazo"
+                type="range"
+                min="1"
+                max="20"
+                value={draft.years}
+                onChange={(event) => {
+                  setDraft((value) => ({ ...value, years: Number(event.target.value) }));
+                  setDirty(true);
+                }}
+              />
+            </label>
+            <label>
+              Rendimiento anual hipotético <strong>{draft.rate}%</strong>
+              <input
+                aria-label="Rendimiento anual hipotético"
+                type="range"
+                min="-10"
+                max="15"
+                step="1"
+                value={draft.rate}
+                onChange={(event) => {
+                  setDraft((value) => ({ ...value, rate: Number(event.target.value) }));
+                  setDirty(true);
+                }}
+              />
+            </label>
+            <label>
+              Inflación anual hipotética <strong>{draft.inflation}%</strong>
+              <input
+                aria-label="Inflación anual hipotética"
+                type="range"
+                min="0"
+                max="15"
+                step="1"
+                value={draft.inflation}
+                onChange={(event) => {
+                  setDraft((value) => ({ ...value, inflation: Number(event.target.value) }));
+                  setDirty(true);
+                }}
+              />
+            </label>
+            <div className="if-result">
+              <span>Saldo nominal del escenario</span>
+              <strong>${money(nominal)}</strong>
+              <small>Poder de compra estimado en dinero de hoy: ${money(real)}</small>
+            </div>
+            <p>
+              Modelo simplificado con tasas constantes, sin impuestos, comisiones ni variaciones de
+              mercado.
+            </p>
+          </section>
         )}
-
-        {/* Pantalla 2 — Mitos vs Realidades */}
-        {step === 2 && (
-          <div className="space-y-6">
-            <p className="text-2xl font-bold">Mitos vs Realidades</p>
-            <p className="text-sm text-[var(--color-text-secondary)]">Toca cada tarjeta para revelar la realidad:</p>
-            <div className="space-y-4">
-              {MYTHS.map((m, i) => (
-                <div
-                  key={i}
-                  onClick={() => flip(i)}
-                  className="p-4 rounded-2xl border-2 cursor-pointer transition-all"
-                  style={{
-                    borderColor: flipped[i] ? successColor : warnColor,
-                    backgroundColor: flipped[i] ? successBg : warnBg,
+        {draft.stage === 'concepts' && (
+          <>
+            <section className="if-grid">
+              {CONCEPTS.map((item) => (
+                <button
+                  key={item.id}
+                  className={draft.viewed.includes(item.id) ? 'is-viewed' : ''}
+                  onClick={() => {
+                    setDraft((value) => ({
+                      ...value,
+                      viewed: value.viewed.includes(item.id)
+                        ? value.viewed
+                        : [...value.viewed, item.id],
+                    }));
+                    setCue(item.text);
+                    setDirty(true);
                   }}
                 >
-                  {!flipped[i] ? (
-                    <>
-                      <p className="text-xs font-bold" style={{ color: 'var(--color-brand-secondary-dark)' }}>MITO</p>
-                      <p className="text-base font-bold">"{m.mito}"</p>
-                      <p className="text-xs text-[var(--color-text-secondary)]">Toca para ver la realidad</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-xs font-bold" style={{ color: 'var(--color-brand-success)' }}>REALIDAD</p>
-                      <p className="text-base font-bold">{m.realidad}</p>
-                    </>
-                  )}
-                </div>
+                  <span>{item.term}</span>
+                  <small>
+                    {draft.viewed.includes(item.id) ? item.text : 'Toca para descubrir'}
+                  </small>
+                </button>
               ))}
-            </div>
-            {allFlipped && (
-              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setStep(3)}>
-                Ver el vocabulario base →
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Pantalla 3 — Vocabulario base */}
-        {step === 3 && (
-          <div className="space-y-6">
-            <p className="text-2xl font-bold">Vocabulario base</p>
-            <div className="space-y-4">
-              {VOCAB.map((v) => (
-                <FECard key={v.term} variant="flat" className="border" style={{ borderColor: warnColor }}>
-                  <p className="text-base font-extrabold" style={{ color: 'var(--color-brand-secondary-dark)' }}>{v.term}</p>
-                  <p className="text-sm">{v.def}</p>
-                </FECard>
+            </section>
+            <section className="if-options">
+              <h3>¿Qué debes comparar antes de invertir?</h3>
+              {[
+                'Solo el rendimiento anunciado',
+                'Rendimiento, riesgo, plazo, liquidez y costos',
+                'Solo el monto mínimo',
+              ].map((option, index) => (
+                <button
+                  key={option}
+                  className={draft.answer === index ? 'is-selected' : ''}
+                  aria-pressed={draft.answer === index}
+                  onClick={() => {
+                    setDraft((value) => ({ ...value, answer: index }));
+                    setCue(option);
+                    setDirty(true);
+                  }}
+                >
+                  {option}
+                </button>
               ))}
-            </div>
-            <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
-              <p className="text-sm font-bold">Diferencia clave con el ahorro:</p>
-              <p className="text-sm">El ahorro protege tu dinero. La inversión lo hace crecer (asumiendo cierto riesgo).</p>
-            </FECard>
-            <FinniMessage variant="coach" title="¡Y eso es todo el vocabulario que necesitas para empezar!" message="En este módulo vas a aprender a tomar decisiones de inversión informadas. No vas a ser Warren Buffett, pero vas a dejar de tener miedo." />
-            {!vocabVisto ? (
-              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setVocabVisto(true)}>
-                ¡Entendido! Marcar como visto
-              </button>
-            ) : (
-              <FECard variant="flat" className="border-2 text-center py-4" style={{ borderColor: successColor, backgroundColor: successBg }}>
-                <PartyPopper className="h-10 w-10 mx-auto" aria-hidden="true" />
-                <p className="text-base font-bold">¡Lección 1 completada! Ya tienes las bases para invertir con criterio.</p>
-              </FECard>
-            )}
-          </div>
+            </section>
+          </>
         )}
-      </div>
+        {reviewing && (
+          <section className="if-review">
+            <span>Definición guardable</span>
+            <h3>
+              Invertir es asignar dinero a un instrumento con expectativa de rendimiento y
+              posibilidad de obtener un resultado distinto.
+            </h3>
+            <p>
+              Antes de decidir, compara riesgo, plazo, liquidez, costos y condiciones verificables.
+            </p>
+          </section>
+        )}
+      </ActivityFrame>
     </LessonShell>
   );
 }

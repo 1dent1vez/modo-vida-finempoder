@@ -7,66 +7,53 @@ import ActivityFrame, {
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
 import '../../../../module-kit/activities/classification.css';
 import '../../../../module-kit/activities/investment-foundations.css';
-type Stage = 'model' | 'inspect' | 'check' | 'review' | 'complete';
+export type PracticeConfig = {
+  id: string;
+  title: string;
+  label: string;
+  headings: [string, string, string, string];
+  description: string;
+  cards: { id: string; name: string; text: string }[];
+  prompt: string;
+  options: string[];
+  questions: { q: string; o: string[]; a: number; feedback: string }[];
+  reviewTitle: string;
+  reviewText: string;
+  key: string;
+  resultKey: string;
+  defaultAdvice: string;
+};
+type Stage = 'discover' | 'apply' | 'check' | 'review' | 'complete';
 type Draft = {
   version: 1;
   stage: Stage;
   viewed: string[];
   choice: string | null;
+  note: string;
   answers: (number | null)[];
-  question: string;
 };
-const KEY = 'investment_l7:collective-vs-direct:v1';
-const initial = (): Draft => ({
+const initial = (n: number): Draft => ({
   version: 1,
-  stage: 'model',
+  stage: 'discover',
   viewed: [],
   choice: null,
-  answers: [null, null, null],
-  question: '',
+  note: '',
+  answers: Array(n).fill(null),
 });
-const MODELS = [
-  {
-    id: 'fund',
-    name: 'Vehículo colectivo',
-    text: 'Un administrador ejecuta una estrategia con recursos de varias personas. Revisa mandato, cartera, costos, valuación y retiros.',
-  },
-  {
-    id: 'direct',
-    name: 'Participación directa',
-    text: 'La persona elige valores específicos y asume la gestión de selección, concentración, costos y seguimiento.',
-  },
-];
-const Q = [
-  {
-    q: '¿Un vehículo colectivo elimina el riesgo?',
-    o: ['Sí', 'No; depende de su estrategia y activos'],
-    a: 1,
-  },
-  {
-    q: '¿Qué reduce la concentración?',
-    o: ['Distribuir exposición entre distintos activos', 'Comprar una sola empresa'],
-    a: 0,
-  },
-  {
-    q: '¿Una plataforma disponible hoy garantiza regulación futura?',
-    o: ['Sí', 'No; hay que verificar registros vigentes'],
-    a: 1,
-  },
-];
-function parse(x: unknown): Draft | null {
+function parse(x: unknown, n: number): Draft | null {
   if (!x || typeof x !== 'object') return null;
   const v = x as Draft;
   return v.version === 1 &&
-    ['model', 'inspect', 'check', 'review', 'complete'].includes(v.stage) &&
+    ['discover', 'apply', 'check', 'review', 'complete'].includes(v.stage) &&
     Array.isArray(v.viewed) &&
     Array.isArray(v.answers) &&
-    typeof v.question === 'string'
+    v.answers.length === n &&
+    typeof v.note === 'string'
     ? v
     : null;
 }
-export default function L07() {
-  const [d, setD] = useState(initial);
+export default function InvestmentPracticeLesson({ config: c }: { config: PracticeConfig }) {
+  const [d, setD] = useState(() => initial(c.questions.length));
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -79,10 +66,10 @@ export default function L07() {
     setLoading(true);
     setFailed(false);
     void lessonDataRepository
-      .load('inversion', KEY)
+      .load('inversion', c.key)
       .then((x) => {
         if (mounted.current) {
-          setD(parse(x) ?? initial());
+          setD(parse(x, c.questions.length) ?? initial(c.questions.length));
           setLoading(false);
         }
       })
@@ -95,7 +82,7 @@ export default function L07() {
     return () => {
       mounted.current = false;
     };
-  }, [attempt]);
+  }, [attempt, c.key, c.questions.length]);
   const save = async (n: Draft, final = false) => {
     setBusy(true);
     setError(null);
@@ -103,44 +90,32 @@ export default function L07() {
       if (final) {
         await lessonDataRepository.saveBatch('inversion', [
           {
-            key: 'l07_models',
-            data: {
-              modelToInvestigate: n.choice,
-              answers: n.answers,
-              question: n.question,
-            },
+            key: c.resultKey,
+            data: { choice: n.choice, note: n.note, answers: n.answers, conceptsViewed: n.viewed },
           },
-          { key: KEY, data: n },
+          { key: c.key, data: n },
         ]);
       } else {
-        await lessonDataRepository.save('inversion', KEY, n);
+        await lessonDataRepository.save('inversion', c.key, n);
       }
       if (mounted.current) setD(n);
     } catch {
-      if (mounted.current) setError('No pudimos guardar. Tu análisis sigue en pantalla.');
+      if (mounted.current) setError('No pudimos guardar. Tu trabajo sigue en pantalla.');
     } finally {
       if (mounted.current) setBusy(false);
     }
   };
-  const score = d.answers.filter((x, i) => x === Q[i]!.a).length / 3;
+  const correct = d.answers.filter((x, i) => x === c.questions[i]!.a).length;
   const review = d.stage === 'review' || d.stage === 'complete';
   if (loading)
     return (
-      <LessonShell
-        id="L07"
-        title="Vehículos colectivos y participación directa"
-        completion={{ ready: false }}
-      >
+      <LessonShell id={c.id} title={c.title} completion={{ ready: false }}>
         <ActivityLoading />
       </LessonShell>
     );
   if (failed)
     return (
-      <LessonShell
-        id="L07"
-        title="Vehículos colectivos y participación directa"
-        completion={{ ready: false }}
-      >
+      <LessonShell id={c.id} title={c.title} completion={{ ready: false }}>
         <ActivityLoadError
           message="No pudimos recuperar tu avance."
           onRetry={() => setAttempt((x) => x + 1)}
@@ -149,28 +124,28 @@ export default function L07() {
     );
   return (
     <LessonShell
-      id="L07"
-      title="Vehículos colectivos y participación directa"
+      id={c.id}
+      title={c.title}
       showGreeting={false}
-      completion={{ ready: d.stage === 'complete', score }}
+      completion={{ ready: d.stage === 'complete', score: correct / c.questions.length }}
     >
       <ActivityFrame
-        label="Comparador de modelos"
+        label={c.label}
         className="investment-foundations"
         busy={busy}
         title={
           review
-            ? 'Conserva una pregunta para investigar.'
+            ? c.headings[3]
             : d.stage === 'check'
-              ? 'Comprueba las diferencias.'
-              : d.stage === 'inspect'
-                ? 'Mira dentro antes de elegir.'
-                : 'Dos maneras de obtener exposición.'
+              ? c.headings[2]
+              : d.stage === 'apply'
+                ? c.headings[1]
+                : c.headings[0]
         }
-        description="Compara gestión colectiva y selección directa sin promocionar plataformas."
+        description={c.description}
         progressLabel="Etapas completadas"
         progressValue={
-          d.stage === 'model' ? 0 : d.stage === 'inspect' ? 1 : d.stage === 'check' ? 2 : 3
+          d.stage === 'discover' ? 0 : d.stage === 'apply' ? 1 : d.stage === 'check' ? 2 : 3
         }
         progressMax={3}
         stepLabel={
@@ -178,39 +153,37 @@ export default function L07() {
             ? 'Paso 4 de 4 · Revisar'
             : d.stage === 'check'
               ? 'Paso 3 de 4 · Comprobar'
-              : d.stage === 'inspect'
-                ? 'Paso 2 de 4 · Investigar'
-                : 'Paso 1 de 4 · Comparar'
+              : d.stage === 'apply'
+                ? 'Paso 2 de 4 · Aplicar'
+                : 'Paso 1 de 4 · Explorar'
         }
         focusKey={d.stage}
         advice={{
-          title: 'Finni pregunta qué hay dentro',
-          text:
-            cue ??
-            '“Fondo”, “acción” o “plataforma” no describen por sí solos diversificación, costos, liquidez ni regulación.',
-          tone: score === 1 ? 'success' : 'info',
+          title: 'Finni te acompaña',
+          text: cue ?? c.defaultAdvice,
+          tone: correct === c.questions.length ? 'success' : 'info',
         }}
         adviceCue={cue}
         error={error}
         status={busy ? 'Guardando…' : 'Tu avance está guardado.'}
         actions={
           <div className="if-actions">
-            {d.stage === 'model' && (
+            {d.stage === 'discover' && (
               <button
                 className="ca-primary"
-                disabled={d.viewed.length < 2}
-                onClick={() => void save({ ...d, stage: 'inspect' })}
+                disabled={d.viewed.length < c.cards.length}
+                onClick={() => void save({ ...d, stage: 'apply' })}
               >
-                Preparar investigación
+                Aplicar criterios
               </button>
             )}
-            {d.stage === 'inspect' && (
+            {d.stage === 'apply' && (
               <button
                 className="ca-primary"
-                disabled={!d.choice || d.question.trim().length < 5}
+                disabled={!d.choice || d.note.trim().length < 5}
                 onClick={() => void save({ ...d, stage: 'check' })}
               >
-                Comprobar diferencias
+                Comprobar decisiones
               </button>
             )}
             {d.stage === 'check' && (
@@ -219,7 +192,7 @@ export default function L07() {
                 disabled={d.answers.some((x) => x === null)}
                 onClick={() => void save({ ...d, stage: 'review' })}
               >
-                Revisar análisis
+                Revisar aprendizaje
               </button>
             )}
             {d.stage === 'review' && (
@@ -233,9 +206,9 @@ export default function L07() {
           </div>
         }
       >
-        {d.stage === 'model' && (
+        {d.stage === 'discover' && (
           <section className="if-grid">
-            {MODELS.map((x) => (
+            {c.cards.map((x) => (
               <button
                 key={x.id}
                 className={d.viewed.includes(x.id) ? 'is-viewed' : ''}
@@ -253,33 +226,36 @@ export default function L07() {
             ))}
           </section>
         )}
-        {d.stage === 'inspect' && (
+        {d.stage === 'apply' && (
           <section className="if-form">
             <div className="if-options">
-              <h3>¿Qué modelo quieres investigar?</h3>
-              {MODELS.map((x) => (
+              <h3>{c.prompt}</h3>
+              {c.options.map((x) => (
                 <button
-                  key={x.id}
-                  className={d.choice === x.id ? 'is-selected' : ''}
-                  onClick={() => setD({ ...d, choice: x.id })}
+                  key={x}
+                  className={d.choice === x ? 'is-selected' : ''}
+                  onClick={() => {
+                    setD({ ...d, choice: x });
+                    setCue(x);
+                  }}
                 >
-                  {x.name}
+                  {x}
                 </button>
               ))}
             </div>
             <label>
-              Escribe una pregunta para comparar
-              <input
-                value={d.question}
-                onChange={(e) => setD({ ...d, question: e.target.value })}
-                placeholder="Ej. ¿Qué costos y activos contiene?"
+              Explica qué revisarías
+              <textarea
+                value={d.note}
+                onChange={(e) => setD({ ...d, note: e.target.value })}
+                placeholder="Escribe tu criterio…"
               />
             </label>
           </section>
         )}
         {d.stage === 'check' && (
           <section className="if-options">
-            {Q.map((q, i) => (
+            {c.questions.map((q, i) => (
               <div className="if-case" key={q.q}>
                 <h3>{q.q}</h3>
                 {q.o.map((x, j) => (
@@ -288,7 +264,7 @@ export default function L07() {
                     className={d.answers[i] === j ? 'is-selected' : ''}
                     onClick={() => {
                       setD((v) => ({ ...v, answers: v.answers.map((a, k) => (k === i ? j : a)) }));
-                      setCue(j === q.a ? 'Correcto.' : 'Revisa el alcance de esa afirmación.');
+                      setCue(j === q.a ? q.feedback : 'Revisa las condiciones antes de concluir.');
                     }}
                   >
                     {x}
@@ -300,12 +276,10 @@ export default function L07() {
         )}
         {review && (
           <section className="if-review">
-            <span>Pregunta guardada</span>
-            <h3>{d.question}</h3>
-            <p>
-              Verificaré estrategia, activos, concentración, costos, liquidez y registro vigente
-              antes de elegir.
-            </p>
+            <span>Resultado revisable</span>
+            <h3>{c.reviewTitle}</h3>
+            <p>{c.reviewText}</p>
+            <p>Tu criterio: {d.note}</p>
           </section>
         )}
       </ActivityFrame>
