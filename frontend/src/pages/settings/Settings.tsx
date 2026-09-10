@@ -51,7 +51,7 @@ export default function Settings() {
                     'rounded-xl border-2 p-3 text-center transition-colors',
                     selected
                       ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-info-bg)]'
-                      : 'border-[var(--color-neutral-200)]'
+                      : 'border-[var(--color-neutral-200)]',
                   )}
                 >
                   <span className="block text-sm font-bold">{DAILY_GOAL_META[opt].label}</span>
@@ -63,8 +63,8 @@ export default function Settings() {
             })}
           </div>
           <p className="mt-3 text-xs text-[var(--color-text-secondary)]">
-            Cada 3 días seguidos con meta cumplida ganas un escudo (máx. 2). Un
-            escudo protege tu racha si faltas un día.
+            Cada 3 días seguidos con meta cumplida ganas un escudo (máx. 2). Un escudo protege tu
+            racha si faltas un día.
           </p>
         </FECard>
 
@@ -81,6 +81,13 @@ export default function Settings() {
               <p className="font-medium text-sm">v{APP_VERSION}</p>
             </div>
           </div>
+        </FECard>
+
+        <FECard variant="flat">
+          <h2 className="text-base font-bold mb-3">Newsletter</h2>
+          <Link to="/app/newsletter" className="text-[var(--color-brand-primary)] font-semibold">
+            Administrar mi suscripción y correos
+          </Link>
         </FECard>
 
         {/* Datos y privacidad */}

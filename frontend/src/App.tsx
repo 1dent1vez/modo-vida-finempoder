@@ -8,7 +8,6 @@ import OfflineBanner from './components/OfflineBanner';
 import GlobalSnackbar from './components/GlobalSnackbar';
 import AdminBanner from './components/AdminBanner';
 import { AchievementModal } from './shared/components/gamification/AchievementModal';
-import { NewsletterPrompt } from './shared/components/growth/NewsletterPrompt';
 import { NamePromptDialog } from './shared/components/auth/NamePromptDialog';
 import { isAdminMode } from './lib/adminMode';
 import { isOnboarded } from '@/shared/utils/onboarding';
@@ -27,13 +26,15 @@ const Terms = lazy(() => import('./pages/legal/Terms'));
 const Privacy = lazy(() => import('./pages/legal/Privacy'));
 const AdminPage = lazy(() => import('./pages/admin/AdminPage'));
 
+const NotFound = lazy(() => import('./pages/errors/NotFound'));
 const Home = lazy(() => import('./pages/home/Home'));
 const PreTest = lazy(() => import('./pages/research/PreTest'));
 const PostTest = lazy(() => import('./pages/research/PostTest'));
 const Profile = lazy(() => import('./pages/profile/Profile'));
+const Newsletter = lazy(() => import('./pages/newsletter/Newsletter'));
+const NewsletterAdmin = lazy(() => import('./pages/newsletter/NewsletterAdmin'));
 const Settings = lazy(() => import('./pages/settings/Settings'));
 const Achievements = lazy(() => import('./pages/achievements/Achievements'));
-const LigasPage = lazy(() => import('./pages/ligas/LigasPage'));
 
 // ── Module overviews ──────────────────────────────────
 const PresupuestoOverview = lazy(() => import('./pages/modules/presupuesto/Overview'));
@@ -80,7 +81,6 @@ export default function App() {
       {admin && <AdminBanner />}
       <GlobalSnackbar />
       <AchievementModal />
-      <NewsletterPrompt />
       <NamePromptDialog />
 
       <Suspense fallback={<PageLoader />}>
@@ -109,8 +109,9 @@ export default function App() {
           <Route element={<PrivateRoute />}>
             <Route path="/app" element={<Home />} />
             <Route path="/app/achievements" element={<Achievements />} />
-            <Route path="/app/ligas" element={<LigasPage />} />
             <Route path="/app/profile" element={<Profile />} />
+            <Route path="/app/newsletter" element={<Newsletter />} />
+            <Route path="/app/newsletter/editor" element={<NewsletterAdmin />} />
             <Route path="/app/settings" element={<Settings />} />
 
             {/* Overviews de módulos */}
@@ -124,7 +125,7 @@ export default function App() {
           </Route>
 
           {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
     </>

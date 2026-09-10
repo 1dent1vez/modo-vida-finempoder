@@ -1,4 +1,6 @@
 import express from 'express';
+import { ZodError } from 'zod';
+import { newsletterRouter, stripeWebhook } from './newsletter/router.js';
 import { Sentry } from './lib/sentry.js';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -39,6 +41,7 @@ app.use(cors({
 }));
 
 // ── Body parsing ───────────────────────────────────────
+app.post('/api/newsletter/webhook/stripe', express.raw({ type: 'application/json', limit: '100kb' }), stripeWebhook);
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
@@ -79,6 +82,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 // ── Rutas ──────────────────────────────────────────────
+app.use('/api/newsletter', newsletterRouter);
 app.use('/api/progress', progressRouter);
 app.use('/api/questionnaire', questionnaireRouter);
 app.use('/api/research', researchRouter);
@@ -90,6 +94,7 @@ app.use('/api', (_req, res) => {
 
 // ── Error handler diferenciado ────────────────────────
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (err instanceof ZodError) return res.status(400).json({ error: err.issues[0]?.message ?? 'Revisa los datos enviados.' });
   Sentry.captureException(err);
   logger.error({ err }, '[api] unhandled error');
 

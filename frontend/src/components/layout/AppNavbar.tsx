@@ -1,4 +1,4 @@
-import { Home, Trophy, User, Users } from 'lucide-react';
+import { Home, Trophy, User, Mail } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -6,10 +6,10 @@ import { cn } from '@/lib/utils';
 type NavItem = { label: string; icon: React.ReactNode; path: string };
 
 const items: NavItem[] = [
-  { label: 'Inicio',  icon: <Home size={22} />,    path: '/app' },
-  { label: 'Logros',  icon: <Trophy size={22} />,  path: '/app/achievements' },
-  { label: 'Yo',  icon: <User size={22} />,    path: '/app/profile' },
-  { label: 'Ligas', icon: <Users size={22} />, path: '/app/ligas' },
+  { label: 'Inicio', icon: <Home size={22} />, path: '/app' },
+  { label: 'Logros', icon: <Trophy size={22} />, path: '/app/achievements' },
+  { label: 'Newsletter', icon: <Mail size={22} />, path: '/app/newsletter' },
+  { label: 'Yo', icon: <User size={22} />, path: '/app/profile' },
 ];
 
 export function AppNavbar() {
@@ -17,7 +17,9 @@ export function AppNavbar() {
   const navigate = useNavigate();
 
   const current = useMemo(() => {
-    const found = items.findIndex((i) => location.pathname.startsWith(i.path));
+    const found = items.findIndex((i) =>
+      i.path === '/app' ? location.pathname === '/app' : location.pathname.startsWith(i.path),
+    );
     return found === -1 ? 0 : found;
   }, [location.pathname]);
 
@@ -38,7 +40,7 @@ export function AppNavbar() {
               'flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs font-medium transition-colors',
               current === idx
                 ? 'text-[var(--color-brand-primary)]'
-                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
             )}
           >
             {item.icon}
