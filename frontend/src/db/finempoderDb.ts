@@ -155,6 +155,61 @@ export class FinempoderDB extends Dexie {
       syncQueue: '++id, userId, type, status, createdAt',
       newsletterSubscriptions: '++id, email, source, createdAt, synced',
     });
+
+    // v8: prepara claves compuestas y elimina duplicados históricos antes de
+    // volverlas únicas. Conserva siempre el registro actualizado más reciente.
+    this.version(8)
+      .stores({
+        lessonProgress:
+          '++id, [userId+moduleId+lessonId], userId, moduleId, lessonId, completed, completedAt',
+        streaks: '++id, date',
+        pendingActions: '++id, userId, type, resource, createdAt, retryCount, lastTriedAt',
+        userLessonData: '++id, [userId+moduleId+key], userId, moduleId, key',
+        syncQueue: '++id, userId, type, status, createdAt',
+        newsletterSubscriptions: '++id, email, source, createdAt, synced',
+      })
+      .upgrade(async (tx) => {
+        const lessonData = tx.table<UserLessonData, number>('userLessonData');
+        const lessonRows = await lessonData.toArray();
+        const latestData = new Map<string, UserLessonData>();
+        for (const row of lessonRows) {
+          const key = `${row.userId}\u0000${row.moduleId}\u0000${row.key}`;
+          const current = latestData.get(key);
+          if (!current || row.updatedAt >= current.updatedAt) latestData.set(key, row);
+        }
+        const retainedDataIds = new Set([...latestData.values()].map((row) => row.id));
+        await lessonData.bulkDelete(
+          lessonRows.flatMap((row) => (row.id && !retainedDataIds.has(row.id) ? [row.id] : [])),
+        );
+
+        const progress = tx.table<LessonProgress, number>('lessonProgress');
+        const progressRows = await progress.toArray();
+        const latestProgress = new Map<string, LessonProgress>();
+        for (const row of progressRows) {
+          const key = `${row.userId}\u0000${row.moduleId}\u0000${row.lessonId}`;
+          const current = latestProgress.get(key);
+          if (!current || (row.completedAt ?? '') >= (current.completedAt ?? '')) {
+            latestProgress.set(key, row);
+          }
+        }
+        const retainedProgressIds = new Set([...latestProgress.values()].map((row) => row.id));
+        await progress.bulkDelete(
+          progressRows.flatMap((row) =>
+            row.id && !retainedProgressIds.has(row.id) ? [row.id] : [],
+          ),
+        );
+      });
+
+    // v9: la base de datos garantiza una sola fila lógica por lección y usuario.
+    this.version(9).stores({
+      lessonProgress:
+        '++id, [userId+moduleId+lessonId], userId, moduleId, lessonId, completed, completedAt',
+      streaks: '++id, date',
+      pendingActions: '++id, userId, type, resource, createdAt, retryCount, lastTriedAt',
+      userLessonData: '++id, &[userId+moduleId+key], userId, moduleId, key',
+      syncQueue: '++id, userId, type, status, createdAt',
+      newsletterSubscriptions: '++id, email, source, createdAt, synced',
+    });
   }
 }
 

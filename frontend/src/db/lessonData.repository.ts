@@ -10,18 +10,39 @@ const currentUserId = () => useAuth.getState().user?.id ?? 'local';
 export const lessonDataRepository = {
   async save(moduleId: string, key: string, data: unknown): Promise<void> {
     const userId = currentUserId();
-    const existing = await db.userLessonData.where({ userId, moduleId, key }).first();
-    const now = new Date().toISOString();
-    if (existing) {
-      await db.userLessonData.update(existing.id!, { data, updatedAt: now });
-    } else {
-      await db.userLessonData.add({ userId, moduleId, key, data, updatedAt: now });
-    }
+    await db.transaction('rw', db.userLessonData, async () => {
+      const existing = await db.userLessonData
+        .where('[userId+moduleId+key]')
+        .equals([userId, moduleId, key])
+        .first();
+      const row = { userId, moduleId, key, data, updatedAt: new Date().toISOString() };
+      await db.userLessonData.put(existing?.id ? { ...row, id: existing.id } : row);
+    });
+  },
+
+  async saveBatch(
+    moduleId: string,
+    entries: ReadonlyArray<{ key: string; data: unknown }>,
+  ): Promise<void> {
+    const userId = currentUserId();
+    await db.transaction('rw', db.userLessonData, async () => {
+      for (const { key, data } of entries) {
+        const existing = await db.userLessonData
+          .where('[userId+moduleId+key]')
+          .equals([userId, moduleId, key])
+          .first();
+        const row = { userId, moduleId, key, data, updatedAt: new Date().toISOString() };
+        await db.userLessonData.put(existing?.id ? { ...row, id: existing.id } : row);
+      }
+    });
   },
 
   async load<T = unknown>(moduleId: string, key: string): Promise<T | null> {
     const userId = currentUserId();
-    const row = await db.userLessonData.where({ userId, moduleId, key }).first();
+    const row = await db.userLessonData
+      .where('[userId+moduleId+key]')
+      .equals([userId, moduleId, key])
+      .first();
     return row ? (row.data as T) : null;
   },
 };
