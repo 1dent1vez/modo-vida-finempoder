@@ -1,341 +1,280 @@
-import { useEffect, useState } from 'react';
-
-import { Check, Trophy } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
-import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
-import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
 import { daysAgoLocalKey, localDayKey } from '../../../../lib/localDate';
-
-const successColor = 'var(--color-brand-success)';
-const successBg    = 'var(--color-brand-success-bg)';
-const warnColor    = 'var(--color-brand-warning)';
-const warnBg       = 'var(--color-brand-warning-bg)';
-
-const FINNI_MSGS = [
-  '¡Primer día completado! Ya llevas {monto} hacia tu meta.',
-  '¡Dos días de ahorro! Estás construyendo algo real.',
-  '¡Lo lograste! Tres días de ahorro. Eso ya es el inicio de un hábito real.',
-];
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/savings-progress.css';
 
 const MAX_DAYS = 3;
-
 type RetoPayload = {
   days?: string[];
   dayAmounts?: number[];
   totalAcumulado?: number;
   completedAt?: string;
-  completadoViaLegacy?: boolean;
 };
-
-type RetoMigrado = {
-  days: string[];
-  dayAmounts: number[];
-  totalAcumulado: number;
-  completadoViaLegacy: boolean;
-};
-
-function formatFecha(key: string): string {
-  const [y, m, d] = key.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
-}
-
-/**
- * Migración del payload viejo de 'l11_reto' (sin campo days).
- * El código anterior solo persistía al completar 3/3, así que un payload con
- * completedAt ya es un reto completado: se respeta sin inventar fechas
- * (completadoViaLegacy). Si aparecen 1-2 montos sin completedAt (caso
- * defensivo que el código viejo nunca escribía), se migran como fechas
- * ESTIMADAS hacia atrás (hoy-1, hoy-2), no reales: documentado en
- * F5_PROMESAS.md. Con 'days' presente (payload nuevo) se usa tal cual.
- */
+type RetoMigrado = { days: string[]; dayAmounts: number[]; completadoViaLegacy: boolean };
 function migrarPayload(p: RetoPayload | null): RetoMigrado {
   const dayAmounts = p?.dayAmounts ?? [];
-  const totalAcumulado = p?.totalAcumulado ?? 0;
-  if (!p) return { days: [], dayAmounts, totalAcumulado, completadoViaLegacy: false };
-  if (Array.isArray(p.days) && p.days.length > 0) {
-    return { days: p.days, dayAmounts, totalAcumulado, completadoViaLegacy: false };
-  }
-  if (p.completedAt || dayAmounts.length >= MAX_DAYS) {
-    return { days: [], dayAmounts, totalAcumulado, completadoViaLegacy: true };
-  }
-  const days = dayAmounts.map((_, i) => daysAgoLocalKey(i + 1));
-  return { days, dayAmounts, totalAcumulado, completadoViaLegacy: false };
+  if (!p) return { days: [], dayAmounts, completadoViaLegacy: false };
+  if (p.days?.length) return { days: p.days, dayAmounts, completadoViaLegacy: false };
+  if (p.completedAt || dayAmounts.length >= MAX_DAYS)
+    return { days: [], dayAmounts, completadoViaLegacy: true };
+  return {
+    days: dayAmounts.map((_, index) => daysAgoLocalKey(index + 1)),
+    dayAmounts,
+    completadoViaLegacy: false,
+  };
+}
+function formatDate(key: string) {
+  const [year, month, day] = key.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('es-MX', {
+    day: 'numeric',
+    month: 'short',
+  });
 }
 
 export default function L11() {
-  const [step, setStep] = useState(0);
-
-  const resume = useLessonResume('ahorro', 'L11');
-  const [resumeHandled, setResumeHandled] = useState(false);
-
-  useEffect(() => {
-    if (step > 0) resume.save({ step });
-  }, [step, resume]);
   const [accepted, setAccepted] = useState(false);
   const [days, setDays] = useState<string[]>([]);
-  const [dayAmounts, setDayAmounts] = useState<number[]>([]);
-  const [completadoViaLegacy, setCompletadoViaLegacy] = useState(false);
-  const [montoInput, setMontoInput] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
-  const [badgeUnlocked, setBadgeUnlocked] = useState(false);
-  const [extendReto, setExtendReto] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-
+  const [amounts, setAmounts] = useState<number[]>([]);
+  const [legacy, setLegacy] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
   useEffect(() => {
-    const load = async () => {
-      const p = await lessonDataRepository.load<RetoPayload>('ahorro', 'l11_reto');
-      const migrado = migrarPayload(p);
-      setDays(migrado.days);
-      setDayAmounts(migrado.dayAmounts);
-      setCompletadoViaLegacy(migrado.completadoViaLegacy);
-      if (migrado.completadoViaLegacy) {
-        setBadgeUnlocked(true);
-        setStep(3);
-      }
-      // F5-PROMESAS: payload nuevo con days 3/3 también restaura el badge en
-      // re-entrada (además del camino legacy de migración).
-      if (p?.days && p.days.length >= MAX_DAYS) {
-        setBadgeUnlocked(true);
-        setStep(3);
-      }
-      setLoaded(true);
+    mounted.current = true;
+    setLoading(true);
+    setLoadError(false);
+    void lessonDataRepository
+      .load<RetoPayload>('ahorro', 'l11_reto')
+      .then((raw) => {
+        if (!mounted.current) return;
+        const migrated = migrarPayload(raw);
+        setDays(migrated.days);
+        setAmounts(migrated.dayAmounts);
+        setLegacy(migrated.completadoViaLegacy);
+        setAccepted(false);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (mounted.current) {
+          setLoading(false);
+          setLoadError(true);
+        }
+      });
+    return () => {
+      mounted.current = false;
     };
-    void load();
-  }, []);
-
-  const completedCount = completadoViaLegacy ? MAX_DAYS : days.length;
-  const allDone = completadoViaLegacy || days.length >= MAX_DAYS;
-  const totalAcumulado = dayAmounts.reduce((sum, v) => sum + v, 0);
-  const hoy = localDayKey(new Date());
-  const hoyCompletado = days.includes(hoy);
-
+  }, [attempt]);
+  const count = legacy ? MAX_DAYS : days.length;
+  const done = legacy || count >= MAX_DAYS;
+  const today = localDayKey(new Date());
+  const todayDone = days.includes(today);
+  const total = amounts.reduce((sum, value) => sum + value, 0);
   const completeDay = async () => {
-    const idx = days.length;
-    if (idx >= MAX_DAYS) return;
-    const monto = parseFloat(montoInput) || 0;
-    if (monto <= 0) return;
-    if (hoyCompletado) return;
-    setSaving(true);
-    setSaveError('');
+    const parsed = Number(amount);
+    if (parsed <= 0 || todayDone || done) return;
+    setBusy(true);
+    setError(null);
+    const nextDays = [...days, today];
+    const nextAmounts = [...amounts, parsed];
+    const payload: RetoPayload = {
+      days: nextDays,
+      dayAmounts: nextAmounts,
+      totalAcumulado: nextAmounts.reduce((sum, value) => sum + value, 0),
+      ...(nextDays.length >= MAX_DAYS ? { completedAt: new Date().toISOString() } : {}),
+    };
     try {
-      const newDays = [...days, hoy];
-      const newAmounts = [...dayAmounts, monto];
-      const total = newAmounts.reduce((sum, v) => sum + v, 0);
-      const payload: RetoPayload = {
-        days: newDays,
-        dayAmounts: newAmounts,
-        totalAcumulado: total,
-      };
-      if (newDays.length >= MAX_DAYS) {
-        payload.completedAt = new Date().toISOString();
-      }
       await lessonDataRepository.save('ahorro', 'l11_reto', payload);
-      setDays(newDays);
-      setDayAmounts(newAmounts);
-      setMontoInput('');
-      if (newDays.length >= MAX_DAYS) {
-        setBadgeUnlocked(true);
-        setStep(3);
+      if (mounted.current) {
+        setDays(nextDays);
+        setAmounts(nextAmounts);
+        setAmount('');
+        setCue(`Día ${nextDays.length} registrado`);
       }
     } catch {
-      setSaveError('No pudimos guardar tu ahorro. Intenta de nuevo.');
+      if (mounted.current) setError('No pudimos guardar tu ahorro. Intenta de nuevo.');
     } finally {
-      setSaving(false);
+      if (mounted.current) setBusy(false);
     }
   };
-
-  const progress = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 50 : 100;
-
-  if (!loaded) {
+  if (loading)
     return (
       <LessonShell id="L11" title="Micro-reto: ahorra en 3 días" completion={{ ready: false }}>
-        <p className="text-sm text-[var(--color-text-secondary)]">Cargando tu reto...</p>
+        <ActivityLoading message="Cargando tu reto…" />
       </LessonShell>
     );
-  }
-
+  if (loadError)
+    return (
+      <LessonShell id="L11" title="Micro-reto: ahorra en 3 días" completion={{ ready: false }}>
+        <ActivityLoadError
+          message="No pudimos recuperar tu reto."
+          onRetry={() => setAttempt((value) => value + 1)}
+        />
+      </LessonShell>
+    );
   return (
-    <LessonShell id="L11" title="Micro-reto: ahorra en 3 días" completion={{ ready: allDone }}>
-      <div className="p-1">
-        {resume.hasSaved && !resumeHandled && !allDone && (
-          <LessonResumeBanner
-            step={resume.savedStep ?? 0}
-            onContinue={() => {
-              const snapshot = resume.accept();
-              if (snapshot) setStep(snapshot.step);
-              setResumeHandled(true);
-            }}
-            onRestart={() => {
-              resume.ignore();
-              setResumeHandled(true);
-            }}
-          />
-        )}
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
-        </div>
-
-        {/* Pantalla 0 — Apertura motivacional */}
-        {step === 0 && (
-          <div className="space-y-6">
-            <FinniMessage variant="coach" title="¡Es hora de pasar a la práctica!" message="Este micro-reto es simple: aparta algo un día a la vez. No importa si son $10 o $100. Completa 3 días y el hábito empieza a formarse." />
-            <FECard variant="flat" className="border" style={{ borderColor: successColor }}>
-              <p className="font-bold mb-2">Cómo funciona el reto:</p>
-              <div className="space-y-1">
-                <p className="text-sm">1. Aparta un monto (el que puedas) un día</p>
-                <p className="text-sm">2. Regístralo aquí en FinEmpoder</p>
-                <p className="text-sm">3. Repite hasta completar 3 días</p>
-              </div>
-              <span className="inline-flex items-center mt-3 px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: warnBg, color: warnColor, border: `1px solid ${warnColor}` }}>
-                Badge: Constancia de 3
-              </span>
-            </FECard>
-            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="text-sm font-bold mb-1">Reglas:</p>
-              <p className="text-sm">• No hay monto mínimo. $5 cuenta.</p>
-              <p className="text-sm">• Puede ser transferencia, alcancía física, o efectivo.</p>
-              <p className="text-sm">• Los 3 días no tienen que ser seguidos: completa uno por día.</p>
-            </FECard>
-            <button
-              className="w-full min-h-11 text-white rounded-xl font-semibold text-sm"
-              style={{ backgroundColor: successColor }}
-              onClick={() => { setAccepted(true); setStep(1); }}
-            >
-              Acepto el reto →
-            </button>
+    <LessonShell
+      id="L11"
+      title="Micro-reto: ahorra en 3 días"
+      showGreeting={false}
+      completion={{ ready: done, score: 100 }}
+    >
+      <ActivityFrame
+        label="Micro-reto de constancia"
+        className="savings-progress"
+        busy={busy}
+        title={
+          done
+            ? 'Completaste tres acciones reales.'
+            : accepted
+              ? 'Registra una acción real por día.'
+              : 'Haz visible un hábito pequeño.'
+        }
+        description="Aparta el monto que puedas en tres días distintos y registra aquí cada acción."
+        progressLabel="Días registrados"
+        progressValue={count}
+        progressMax={MAX_DAYS}
+        stepLabel={
+          done
+            ? 'Reto completado · 3 de 3'
+            : accepted
+              ? `Reto activo · ${count} de 3`
+              : 'Antes de empezar'
+        }
+        focusKey={`${accepted}-${count}`}
+        advice={{
+          title: done
+            ? 'Tres registros reales'
+            : todayDone
+              ? 'El siguiente registro es otro día'
+              : count
+                ? 'La repetición importa más que el monto'
+                : 'Tú eliges el monto',
+          text: done
+            ? 'Ya tienes evidencia de tres acciones. Usa esa información para decidir qué hábito quieres continuar.'
+            : todayDone
+              ? `Día ${count}/3 completado. Vuelve mañana para el día ${count + 1}; el reto conserva días distintos.`
+              : 'No hay monto mínimo. Registra solo dinero que realmente apartaste.',
+          tone: done ? 'success' : todayDone ? 'review' : 'info',
+        }}
+        adviceCue={cue}
+        error={error}
+        status={
+          busy
+            ? 'Guardando…'
+            : done
+              ? 'Reto guardado.'
+              : todayDone
+                ? 'Registro de hoy guardado.'
+                : 'Tus registros quedan guardados en este dispositivo.'
+        }
+        actions={
+          <div className="spg-actions">
+            {!accepted && !done && (
+              <button className="ca-primary" onClick={() => setAccepted(true)}>
+                Acepto el reto
+              </button>
+            )}
+            {accepted && !done && !todayDone && (
+              <button
+                className="ca-primary"
+                disabled={Number(amount) <= 0 || busy}
+                onClick={() => void completeDay()}
+              >
+                Completar día {count + 1}
+              </button>
+            )}
           </div>
+        }
+      >
+        {!accepted && !done && (
+          <section className="spg-concept">
+            <article>
+              <span>Acción</span>
+              <strong>Aparta algo que puedas</strong>
+              <p>Puede ser en una cuenta, alcancía o sobre.</p>
+            </article>
+            <article>
+              <span>Evidencia</span>
+              <strong>Un registro por día</strong>
+              <p>Los días no necesitan ser consecutivos.</p>
+            </article>
+            <p>
+              El reto mide acciones registradas, no el tamaño del monto ni tu valor como persona.
+            </p>
+          </section>
         )}
-
-        {/* Pantalla 1 — Contador de días */}
-        {accepted && step >= 1 && step < 3 && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <p className="font-bold">Tu progreso:</p>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: completedCount === 3 ? successBg : completedCount > 0 ? warnBg : 'var(--color-neutral-100)', color: completedCount === 3 ? successColor : completedCount > 0 ? warnColor : 'var(--color-text-secondary)', border: `1px solid ${completedCount === 3 ? successColor : completedCount > 0 ? warnColor : 'var(--color-neutral-200)'}` }}>
-                {completedCount}/3 días
-              </span>
+        {accepted && !done && (
+          <section className="spg-challenge">
+            <div className="spg-days">
+              {[0, 1, 2].map((index) => (
+                <article
+                  key={index}
+                  className={index < count ? 'is-done' : index === count ? 'is-current' : ''}
+                >
+                  <span>Día {index + 1}</span>
+                  <strong>
+                    {index < count
+                      ? `Día ${index + 1}/3 completado`
+                      : index === count
+                        ? 'Siguiente registro'
+                        : 'Pendiente'}
+                  </strong>
+                  {index < days.length && (
+                    <small>
+                      Apartado el {formatDate(days[index])} ·{' '}
+                      {(amounts[index] ?? 0).toLocaleString('es-MX', {
+                        style: 'currency',
+                        currency: 'MXN',
+                      })}
+                    </small>
+                  )}
+                </article>
+              ))}
             </div>
-            <FECard variant="flat" className="text-center py-4 border-2" style={{ backgroundColor: successBg, borderColor: successColor }}>
-              <p className="text-4xl font-extrabold">{completedCount}/3</p>
-              <p className="text-sm text-[var(--color-text-secondary)]">días de ahorro</p>
-            </FECard>
-            {saveError && (
-              <FinniMessage
-                variant="error"
-                title="No pudimos guardar"
-                message={saveError}
-              />
+            {todayDone ? (
+              <p className="spg-wait">Vuelve mañana para el día {count + 1}.</p>
+            ) : (
+              <label className="spg-amount">
+                Monto que apartaste hoy
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="$0"
+                  value={amount}
+                  onChange={(event) => setAmount(event.target.value)}
+                />
+              </label>
             )}
-            <div className="space-y-4">
-              {[0, 1, 2].map((idx) => {
-                const completado = days[idx] !== undefined;
-                const esActivo = !completadoViaLegacy && idx === days.length;
-                return (
-                  <FECard
-                    key={idx}
-                    variant="flat"
-                    className="border"
-                    style={{
-                      borderColor: completado ? successColor : esActivo ? warnColor : 'var(--color-neutral-200)',
-                      backgroundColor: completado ? successBg : 'white',
-                    }}
-                  >
-                    {completado ? (
-                      <div className="space-y-1">
-                        <div className="flex justify-between items-center">
-                          <p className="text-sm font-bold">Día {idx + 1}/3 completado</p>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: successBg, color: successColor, border: `1px solid ${successColor}` }}>Completado</span>
-                        </div>
-                        <p className="text-xs text-[var(--color-text-secondary)]">Apartado el {formatFecha(days[idx])}</p>
-                        <p className="text-sm" style={{ color: successColor }}>${(dayAmounts[idx] ?? 0).toLocaleString()} apartados</p>
-                        <p className="text-sm italic">{FINNI_MSGS[idx]?.replace('{monto}', `$${(dayAmounts[idx] ?? 0).toLocaleString()}`)}</p>
-                      </div>
-                    ) : esActivo ? (
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <p className="text-sm font-bold">Día {idx + 1}/3</p>
-                          {hoyCompletado && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: warnBg, color: warnColor, border: `1px solid ${warnColor}` }}>Pendiente</span>
-                          )}
-                        </div>
-                        {hoyCompletado ? (
-                          <p className="text-xs text-[var(--color-text-secondary)]">
-                            Vuelve mañana para el día {idx + 1}
-                          </p>
-                        ) : (
-                          <>
-                            <p className="text-xs text-[var(--color-text-secondary)]">
-                              Día {idx + 1}/3: toca completar (guarda tu ahorro del día)
-                            </p>
-                            <div className="flex gap-3">
-                              <input
-                                type="number"
-                                min={1}
-                                placeholder="$0"
-                                value={montoInput}
-                                onChange={(e) => setMontoInput(e.target.value)}
-                                className="flex-1 border border-[var(--color-neutral-200)] rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-success)]"
-                              />
-                              <button
-                                aria-label={`Completar día ${idx + 1}`}
-                                className="px-4 py-2 text-white rounded-lg text-sm font-bold disabled:opacity-40"
-                                style={{ backgroundColor: successColor }}
-                                onClick={() => void completeDay()}
-                                disabled={!montoInput || parseFloat(montoInput) <= 0 || saving}
-                              >
-                                <Check className="h-5 w-5" aria-hidden="true" />
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-sm font-bold">Día {idx + 1}/3</p>
-                    )}
-                  </FECard>
-                );
-              })}
-            </div>
-            {completedCount > 0 && !allDone && (
-              <FECard variant="flat" className="text-center border" style={{ backgroundColor: successBg, borderColor: successColor }}>
-                <p className="text-sm font-bold">Total acumulado: ${totalAcumulado.toLocaleString()}</p>
-              </FECard>
+            {count > 0 && (
+              <p className="spg-total">Total acumulado: ${total.toLocaleString('es-MX')}</p>
             )}
-          </div>
+          </section>
         )}
-
-        {/* Pantalla 3 — Badge desbloqueado */}
-        {step === 3 && badgeUnlocked && (
-          <div className="space-y-6">
-            <FECard variant="flat" className="text-center py-8 border-[3px]" style={{ backgroundColor: warnBg, borderColor: warnColor }}>
-              <Trophy className="h-12 w-12 mx-auto mb-2" aria-hidden="true" />
-              <p className="text-2xl font-bold mt-1">Constancia de 3</p>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">Badge desbloqueado · 3 días de ahorro</p>
-              <p className="font-bold mt-2">Total ahorrado: ${totalAcumulado.toLocaleString()}</p>
-            </FECard>
-            <FinniMessage variant="success" title="3 días de ahorro. Eso ya es el inicio de un hábito real." message="La ciencia dice que los hábitos comienzan a formarse con repetición constante. Acabas de dar el primer paso." />
-            {!extendReto && (
-              <FECard variant="flat" className="border" style={{ borderColor: successColor }}>
-                <p className="text-sm font-bold mb-2">¿Quieres continuar el reto 7 días más?</p>
-                <div className="flex gap-2">
-                  <button className="flex-1 py-2 rounded-xl text-sm font-semibold text-white" style={{ backgroundColor: successColor }} onClick={() => setExtendReto(true)}>¡Sí, continuar!</button>
-                  <button className="flex-1 py-2 rounded-xl text-sm font-semibold border border-[var(--color-neutral-200)] text-[var(--color-text-secondary)]">No por ahora</button>
-                </div>
-              </FECard>
+        {done && (
+          <section className="spg-review">
+            <span>Reto completado</span>
+            <h3>Constancia de 3</h3>
+            <p>3 días de ahorro registrados.</p>
+            <strong>Total ahorrado: ${total.toLocaleString('es-MX')}</strong>
+            {legacy && (
+              <small>
+                Conservamos el reto completado de la versión anterior sin inventar fechas.
+              </small>
             )}
-            {extendReto && (
-              <FECard variant="flat" className="text-center border" style={{ backgroundColor: successBg, borderColor: successColor }}>
-                <p className="text-sm font-bold">¡Excelente! Sigue registrando tus ahorros en las próximas lecciones.</p>
-              </FECard>
-            )}
-          </div>
+          </section>
         )}
-      </div>
+      </ActivityFrame>
     </LessonShell>
   );
 }

@@ -1,223 +1,350 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
-import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
-import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
+import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/savings-protection.css';
 
-type MapChoice = 'ahorro' | 'seguro' | 'ambos' | null;
-type Q = 'a' | 'b' | 'c' | null;
-
-const SITUACIONES = [
-  { id: 1, text: 'Laptop descompuesta cuando más la necesitas ($5,000)', correct: 'ahorro' as const, exp: 'Ahorro: este importe cabe en un buen fondo de emergencias.' },
-  { id: 2, text: 'Hospitalización de emergencia ($20,000)', correct: 'seguro' as const, exp: 'Seguro: un evento tan grande está fuera del alcance de la mayoría de los fondos.' },
-  { id: 3, text: 'Mes sin ingreso por enfermedad', correct: 'ambos' as const, exp: 'Ambos: el seguro cubre el evento, el fondo cubre la brecha mientras el seguro responde.' },
-  { id: 4, text: 'Multa inesperada ($500)', correct: 'ahorro' as const, exp: 'Ahorro: pequeño imprevisible que tu fondo cubre fácilmente.' },
-  { id: 5, text: 'Accidente de tránsito', correct: 'seguro' as const, exp: 'Seguro: responsabilidad civil y daños pueden superar cualquier fondo.' },
-  { id: 6, text: 'Pérdida de ingreso por 2 meses', correct: 'ambos' as const, exp: 'Ambos: fondo para los primeros meses, seguro de desempleo para mayor duración.' },
-];
-
-const SEGUROS = [
-  { label: 'Gastos médicos mayores', desc: 'Disponible en algunas universidades o empresas' },
-  { label: 'IMSS', desc: 'Si tienes trabajo formal o a través de tus padres' },
-  { label: 'Seguro de viajero', desc: 'Para viajes largos' },
-  { label: 'Seguro de gadgets', desc: 'Para laptop o celular si es tu herramienta de trabajo' },
-];
-
-const successColor = 'var(--color-brand-success)';
-const successBg = 'var(--color-brand-success-bg)';
-const errorColor = 'var(--color-brand-error)';
-const errorBg = 'var(--color-brand-error-bg)';
-const infoColor = 'var(--color-brand-info)';
-const infoBg = 'var(--color-brand-info-bg)';
-
-const OPT_LABELS: Record<string, string> = {
-  ahorro: 'Ahorro',
-  seguro: 'Seguro',
-  ambos: 'Ambos',
+type Tool = 'savings' | 'insurance' | 'both';
+type Stage = 'compare' | 'cases' | 'action' | 'review' | 'complete';
+type Draft = {
+  version: 1;
+  stage: Stage;
+  caseIndex: number;
+  pending: Tool | null;
+  answers: Record<number, Tool>;
+  action: string | null;
 };
-
+const KEY = 'savings_l9:coverage:v1';
+const TOOLS: { id: Tool; label: string }[] = [
+  { id: 'savings', label: 'Ahorro' },
+  { id: 'insurance', label: 'Seguro' },
+  { id: 'both', label: 'Ambos' },
+];
+const CASES = [
+  {
+    title: 'Reparación necesaria y manejable',
+    text: 'El costo cabe en el fondo y no existe una cobertura contratada para ese evento.',
+    best: 'savings' as Tool,
+    feedback:
+      'El ahorro aporta liquidez para gastos manejables. Después conviene reconstruir el fondo gradualmente.',
+  },
+  {
+    title: 'Evento de alto impacto con cobertura',
+    text: 'Una póliza vigente contempla el evento, pero tiene deducible y tiempos de respuesta.',
+    best: 'both' as Tool,
+    feedback:
+      'La cobertura puede absorber parte del impacto y el ahorro puede cubrir deducible, exclusiones o el tiempo de respuesta.',
+  },
+  {
+    title: 'Evento fuera de la póliza',
+    text: 'El contrato excluye expresamente la situación que ocurrió.',
+    best: 'savings' as Tool,
+    feedback:
+      'La palabra “seguro” no garantiza cobertura. Mandan las condiciones, exclusiones, límites y vigencia del contrato.',
+  },
+];
+const ACTIONS = [
+  { id: 'coverage', label: 'Confirmar qué eventos cubre' },
+  { id: 'cost', label: 'Revisar deducible y otros costos' },
+  { id: 'contact', label: 'Guardar el canal para solicitar apoyo' },
+];
+const initial = (): Draft => ({
+  version: 1,
+  stage: 'compare',
+  caseIndex: 0,
+  pending: null,
+  answers: {},
+  action: null,
+});
+function parse(raw: unknown): Draft | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const value = raw as Draft;
+  if (
+    value.version !== 1 ||
+    !['compare', 'cases', 'action', 'review', 'complete'].includes(value.stage) ||
+    !Number.isInteger(value.caseIndex) ||
+    value.caseIndex < 0 ||
+    value.caseIndex >= CASES.length ||
+    (value.pending !== null && !['savings', 'insurance', 'both'].includes(value.pending)) ||
+    !value.answers ||
+    (value.action !== null && !ACTIONS.some((item) => item.id === value.action)) ||
+    (['review', 'complete'].includes(value.stage) && !value.action)
+  )
+    return null;
+  return value;
+}
 export default function L09() {
-  const [step, setStep] = useState(0);
-
-  const resume = useLessonResume('ahorro', 'L09');
-  const [resumeHandled, setResumeHandled] = useState(false);
-
+  const [draft, setDraft] = useState<Draft>(initial);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
   useEffect(() => {
-    if (step > 0) resume.save({ step });
-  }, [step, resume]);
-  const [mapAnswers, setMapAnswers] = useState<Record<number, MapChoice>>({});
-  const [showMapFeedback, setShowMapFeedback] = useState<Record<number, boolean>>({});
-  const [q1, setQ1] = useState<Q>(null);
-  const [q2, setQ2] = useState<Q>(null);
-  const [q3, setQ3] = useState<Q>(null);
-
-  const mapDone = Object.values(mapAnswers).filter(Boolean).length === SITUACIONES.length;
-  const quizDone = q1 !== null && q2 !== null && q3 !== null;
-  const score = [q1 === 'b', q2 === 'a', q3 === 'b'].filter(Boolean).length;
-
-  const chooseMap = (id: number, choice: MapChoice) => {
-    if (mapAnswers[id]) return;
-    setMapAnswers((prev) => ({ ...prev, [id]: choice }));
-    setShowMapFeedback((prev) => ({ ...prev, [id]: true }));
+    mounted.current = true;
+    setLoading(true);
+    setLoadError(false);
+    void lessonDataRepository
+      .load('ahorro', KEY)
+      .then((raw) => {
+        if (mounted.current) {
+          setDraft(parse(raw) ?? initial());
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (mounted.current) {
+          setLoading(false);
+          setLoadError(true);
+        }
+      });
+    return () => {
+      mounted.current = false;
+    };
+  }, [attempt]);
+  const persist = async (next: Draft, final = false) => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (final) {
+        await lessonDataRepository.saveBatch('ahorro', [
+          {
+            key: 'l9_ahorro_seguro',
+            data: {
+              answers: next.answers,
+              action: next.action,
+            },
+          },
+          { key: KEY, data: next },
+        ]);
+      } else {
+        await lessonDataRepository.save('ahorro', KEY, next);
+      }
+      if (mounted.current) {
+        setDraft(next);
+        setDirty(false);
+      }
+    } catch {
+      if (mounted.current) setError('No pudimos guardar. Tus elecciones siguen en pantalla.');
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
   };
-
-  const progress = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 60 : step === 3 ? 80 : 100;
-
-  const quizOpts = [
-    { q: q1, set: setQ1, correct: 'b', opts: [{ key: 'a', label: 'A) Solo el fondo de emergencias' }, { key: 'b', label: 'B) Un seguro médico' }, { key: 'c', label: 'C) Pedir prestado' }], question: '1. Una emergencia médica de $25,000. ¿Qué conviene?', fb: { ok: 'Correcto. Para gastos tan grandes, el seguro es indispensable.', fail: 'Un seguro médico es el más adecuado para montos elevados.' } },
-    { q: q2, set: setQ2, correct: 'a', opts: [{ key: 'a', label: 'A) Mi fondo de emergencias' }, { key: 'b', label: 'B) Un seguro' }, { key: 'c', label: 'C) Una tarjeta de credito' }], question: '2. Una multa de $400. ¿Que usas?', fb: { ok: 'Correcto. Para imprevistos pequeños, el fondo es perfecto.', fail: 'Para imprevistos pequeños usa el fondo de emergencias.' } },
-    { q: q3, set: setQ3, correct: 'b', opts: [{ key: 'a', label: 'A) Solo el fondo de emergencias' }, { key: 'b', label: 'B) Fondo para los primeros meses + seguro de desempleo si disponible' }, { key: 'c', label: 'C) Solo el seguro' }], question: '3. Perdiste tu trabajo part-time por 4 meses. ¿La mejor estrategia?', fb: { ok: 'Correcto. La dupla ahorro + seguro es la estrategia óptima.', fail: 'La combinación de ambos es la estrategia más sólida.' } },
-  ];
-
+  if (loading)
+    return (
+      <LessonShell id="L09" title="Ahorro y seguros" completion={{ ready: false }}>
+        <ActivityLoading />
+      </LessonShell>
+    );
+  if (loadError)
+    return (
+      <LessonShell id="L09" title="Ahorro y seguros" completion={{ ready: false }}>
+        <ActivityLoadError
+          message="No pudimos recuperar tu avance."
+          onRetry={() => setAttempt((value) => value + 1)}
+        />
+      </LessonShell>
+    );
+  const current = CASES[draft.caseIndex];
+  const feedback = draft.pending === null ? null : draft.pending === current.best;
+  const reviewing = draft.stage === 'review' || draft.stage === 'complete';
+  const confirm = () => {
+    if (!draft.pending) return;
+    const answers = { ...draft.answers, [draft.caseIndex]: draft.pending };
+    const last = draft.caseIndex === CASES.length - 1;
+    void persist({
+      ...draft,
+      answers,
+      pending: null,
+      caseIndex: last ? draft.caseIndex : draft.caseIndex + 1,
+      stage: last ? 'action' : 'cases',
+    });
+  };
   return (
-    <LessonShell id="L09" title="Ahorro y seguros: la dupla de la tranquilidad" completion={{ ready: mapDone && quizDone, score: score / 3 }}>
-      <div className="p-1">
-        {resume.hasSaved && !resumeHandled && (
-          <LessonResumeBanner
-            step={resume.savedStep ?? 0}
-            onContinue={() => {
-              const snapshot = resume.accept();
-              if (snapshot) setStep(snapshot.step);
-              setResumeHandled(true);
-            }}
-            onRestart={() => {
-              resume.ignore();
-              setResumeHandled(true);
-            }}
-          />
-        )}
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
-        </div>
-
-        {/* Pantalla 0 — Apertura */}
-        {step === 0 && (
-          <div className="space-y-6">
-            <FinniMessage variant="coach" title="La dupla imbatible" message="El ahorro te protege de lo que ya sabes que podria pasar. El seguro te protege de lo que no imaginas que podria pasar. Juntos son imbatibles." />
-            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="text-sm font-bold mb-2">Situación 1 — Carlos:</p>
-              <p className="text-sm">Tiene $3,000 en fondo de emergencias. Se enferma, gasto medico $8,000.</p>
-              <p className="text-sm mt-1" style={{ color: errorColor }}>Sin seguro → vacia el fondo y sigue debiendo $5,000.</p>
-              <p className="text-sm" style={{ color: successColor }}>Con seguro médico → paga $500 deducible, fondo intacto.</p>
-            </FECard>
-            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="text-sm font-bold mb-2">Situación 2 — Mariana:</p>
-              <p className="text-sm">Tiene seguro de desempleo. Pierde trabajo part-time.</p>
-              <p className="text-sm mt-1" style={{ color: successColor }}>El seguro cubre 3 meses de ingreso básico. Fondo intacto para otra situación.</p>
-            </FECard>
-            <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
-              <p className="text-sm font-bold mb-2">Seguros básicos para quien empieza:</p>
-              {SEGUROS.map((s) => (
-                <div key={s.label} className="flex gap-2 items-start mb-1">
-                  <p className="text-sm">•</p>
-                  <div>
-                    <p className="text-sm font-semibold">{s.label}</p>
-                    <p className="text-xs text-[var(--color-text-secondary)]">{s.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </FECard>
-            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
-              Mapa de situaciones →
-            </button>
-          </div>
-        )}
-
-        {/* Pantalla 1 — Mapa de 6 situaciones */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <p className="text-base font-bold">¿Qué herramienta usarías en cada situación?</p>
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>
-              {Object.values(mapAnswers).filter(Boolean).length}/{SITUACIONES.length}
-            </span>
-            <div className="space-y-4 mt-2">
-              {SITUACIONES.map((s) => {
-                const ans = mapAnswers[s.id];
-                const isCorrect = ans === s.correct;
-                return (
-                  <FECard
-                    key={s.id}
-                    variant="flat"
-                    className="border"
-                    style={{
-                      borderColor: ans ? (isCorrect ? successColor : errorColor) : 'var(--color-border)',
-                      backgroundColor: ans ? (isCorrect ? successBg : errorBg) : 'white',
-                    }}
-                  >
-                    <p className="text-sm font-semibold mb-2">{s.text}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {(['ahorro', 'seguro', 'ambos'] as const).map((opt) => (
-                        <button
-                          key={opt}
-                          onClick={() => chooseMap(s.id, opt)}
-                          disabled={!!ans}
-                          className="px-3 py-1.5 rounded-lg text-sm font-semibold border-2 transition-colors disabled:cursor-default"
-                          style={{
-                            borderColor: ans === opt ? (isCorrect ? successColor : errorColor) : 'var(--color-neutral-300)',
-                            backgroundColor: ans === opt ? (isCorrect ? successBg : errorBg) : 'transparent',
-                          }}
-                        >
-                          {OPT_LABELS[opt]}
-                        </button>
-                      ))}
-                    </div>
-                    {showMapFeedback[s.id] && (
-                      <p className="text-xs mt-2" style={{ color: isCorrect ? successColor : errorColor }}>
-                        {s.exp}
-                      </p>
-                    )}
-                  </FECard>
-                );
-              })}
-            </div>
-            {mapDone && (
-              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(2)}>
-                Quiz rápido →
+    <LessonShell
+      id="L09"
+      title="Ahorro y seguros: la dupla de la tranquilidad"
+      showGreeting={false}
+      completion={{ ready: draft.stage === 'complete', score: 100 }}
+    >
+      <ActivityFrame
+        label="Mapa de ahorro y cobertura"
+        className="savings-protection"
+        busy={busy}
+        title={
+          reviewing
+            ? 'Revisa tu próximo paso.'
+            : draft.stage === 'action'
+              ? 'Convierte la comparación en una acción.'
+              : draft.stage === 'cases'
+                ? 'Lee el evento y también el contrato.'
+                : 'Distingue liquidez de cobertura.'
+        }
+        description="Practica cuándo puede ayudar el ahorro, una cobertura vigente o la combinación de ambos."
+        progressLabel="Etapas completadas"
+        progressValue={
+          draft.stage === 'compare'
+            ? 0
+            : draft.stage === 'cases'
+              ? 1 + Object.keys(draft.answers).length
+              : draft.stage === 'action'
+                ? 4
+                : 5
+        }
+        progressMax={5}
+        stepLabel={
+          reviewing
+            ? 'Paso 4 de 4 · Revisar'
+            : draft.stage === 'action'
+              ? 'Paso 3 de 4 · Elegir acción'
+              : draft.stage === 'cases'
+                ? `Paso 2 de 4 · Caso ${draft.caseIndex + 1} de ${CASES.length}`
+                : 'Paso 1 de 4 · Comparar'
+        }
+        focusKey={`${draft.stage}-${draft.caseIndex}`}
+        advice={{
+          title:
+            feedback === null
+              ? 'Una póliza es un contrato'
+              : feedback
+                ? 'El criterio encaja'
+                : 'Falta una condición',
+          text:
+            feedback === null
+              ? 'Antes de contar con un seguro, revisa vigencia, eventos cubiertos, exclusiones, límites y costos.'
+              : current.feedback,
+          tone: feedback === null ? 'info' : feedback ? 'success' : 'review',
+        }}
+        adviceCue={cue}
+        error={error}
+        status={busy ? 'Guardando…' : dirty ? 'Cambios sin guardar.' : 'Tu avance está guardado.'}
+        actions={
+          <div className="spr-actions">
+            {draft.stage === 'compare' && (
+              <button
+                className="ca-primary"
+                onClick={() => void persist({ ...draft, stage: 'cases' })}
+              >
+                Practicar con casos
               </button>
             )}
-          </div>
-        )}
-
-        {/* Pantalla 2 — Quiz 3 preguntas */}
-        {step === 2 && (
-          <div className="space-y-6">
-            <p className="text-2xl font-bold">Quiz: ¿cuándo conviene cada uno?</p>
-            {quizOpts.map(({ q, set, correct, opts, question, fb }, idx) => {
-              if (idx > 0 && quizOpts[idx - 1]!.q === null) return null;
-              return (
-                <FECard key={idx} variant="flat" className="border border-[var(--color-neutral-200)]">
-                  <p className="text-base font-bold mb-3">{question}</p>
-                  <div className="space-y-2">
-                    {opts.map((o) => (
-                      <button
-                        key={o.key}
-                        onClick={() => { if (!q) set(o.key as Q); }}
-                        disabled={q !== null}
-                        className="w-full text-left px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors disabled:cursor-default"
-                        style={{
-                          borderColor: q === o.key ? (o.key === correct ? successColor : errorColor) : 'var(--color-neutral-200)',
-                          backgroundColor: q === o.key ? (o.key === correct ? successBg : errorBg) : 'transparent',
-                        }}
-                      >
-                        {o.label}
-                      </button>
-                    ))}
-                  </div>
-                  {q && (
-                    <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: q === correct ? successColor : errorColor }}>
-                      {q === correct ? fb.ok : fb.fail}
-                    </span>
-                  )}
-                </FECard>
-              );
-            })}
-            {quizDone && (
-              <FinniMessage variant="success" title={`${score}/3 correctas`} message="No necesitas el seguro perfecto. Necesitas empezar con el más básico que puedas costear." />
+            {draft.stage === 'cases' && (
+              <button className="ca-primary" disabled={!draft.pending || busy} onClick={confirm}>
+                {draft.caseIndex === CASES.length - 1
+                  ? 'Confirmar y elegir acción'
+                  : 'Confirmar caso'}
+              </button>
+            )}
+            {draft.stage === 'action' && (
+              <button
+                className="ca-primary"
+                disabled={!draft.action || busy}
+                onClick={() => void persist({ ...draft, stage: 'review' })}
+              >
+                Revisar mi acción
+              </button>
+            )}
+            {draft.stage === 'review' && (
+              <>
+                <button
+                  className="spr-secondary"
+                  onClick={() => {
+                    setDraft((value) => ({ ...value, stage: 'action' }));
+                    setDirty(true);
+                  }}
+                >
+                  Cambiar
+                </button>
+                <button
+                  className="ca-primary"
+                  onClick={() => void persist({ ...draft, stage: 'complete' }, true)}
+                >
+                  Guardar y terminar
+                </button>
+              </>
             )}
           </div>
+        }
+      >
+        {draft.stage === 'compare' && (
+          <section className="spr-compare">
+            <article>
+              <span>Ahorro</span>
+              <strong>Dinero disponible</strong>
+              <p>Puede atender un gasto hasta el monto acumulado.</p>
+            </article>
+            <article>
+              <span>Seguro</span>
+              <strong>Cobertura contratada</strong>
+              <p>Responde solo según condiciones, límites y vigencia.</p>
+            </article>
+            <article>
+              <span>Combinación</span>
+              <strong>Capas distintas</strong>
+              <p>El ahorro puede cubrir costos o tiempos que la póliza no absorbe.</p>
+            </article>
+          </section>
         )}
-      </div>
+        {draft.stage === 'cases' && (
+          <section className="spr-case">
+            <span>Situación</span>
+            <h3>{current.title}</h3>
+            <p>{current.text}</p>
+            <div role="group" aria-label="Elige una herramienta">
+              {TOOLS.map((tool) => (
+                <button
+                  key={tool.id}
+                  className={draft.pending === tool.id ? 'is-selected' : ''}
+                  aria-pressed={draft.pending === tool.id}
+                  onClick={() => {
+                    setDraft((value) => ({ ...value, pending: tool.id }));
+                    setCue(`${current.title}: ${tool.label}`);
+                    setDirty(true);
+                  }}
+                >
+                  {tool.label}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+        {draft.stage === 'action' && (
+          <section className="spr-select">
+            <p>Si ya tienes una póliza, ¿qué revisarás primero?</p>
+            {ACTIONS.map((item) => (
+              <label key={item.id}>
+                <input
+                  type="radio"
+                  name="action"
+                  checked={draft.action === item.id}
+                  onChange={() => {
+                    setDraft((value) => ({ ...value, action: item.id }));
+                    setDirty(true);
+                  }}
+                />
+                {item.label}
+              </label>
+            ))}
+          </section>
+        )}
+        {reviewing && (
+          <section className="spr-review">
+            <span>Tu próximo paso</span>
+            <h3>{ACTIONS.find((item) => item.id === draft.action)?.label}</h3>
+            <p>
+              Haz la revisión directamente en la carátula, condiciones o canal oficial de tu
+              cobertura.
+            </p>
+          </section>
+        )}
+      </ActivityFrame>
     </LessonShell>
   );
 }

@@ -1,201 +1,340 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
-import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
-import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
-import { MX, fmtFecha } from '@/lib/datos-mx';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
+import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/savings-protection.css';
 
-type Q = 'a' | 'b' | 'c' | null;
-
-const CUBRE = [
-  { label: 'Cuentas de ahorro', si: true },
-  { label: 'Cuentas de cheques', si: true },
-  { label: 'Depósitos a plazo', si: true },
-  { label: 'Depósitos en UDIs', si: true },
-  { label: 'Inversiones en bolsa', si: false },
-  { label: 'Seguros de vida', si: false },
-  { label: 'SIEFOREs (AFORE)', si: false },
-  { label: 'Pagares con rendimiento pre-2010', si: false },
+type Stage = 'learn' | 'verify' | 'quiz' | 'review' | 'complete';
+type Draft = {
+  version: 1;
+  stage: Stage;
+  checked: string[];
+  question: number;
+  pending: number | null;
+  answers: Record<number, number>;
+};
+const KEY = 'savings_l10:ipab:v1';
+const CHECKS = [
+  {
+    id: 'institution',
+    title: '1. Institución',
+    text: 'Confirma que la institución aparezca en los registros oficiales aplicables.',
+  },
+  {
+    id: 'product',
+    title: '2. Producto',
+    text: 'Identifica si el tipo de depósito está cubierto y bajo qué condiciones.',
+  },
+  {
+    id: 'limit',
+    title: '3. Límite vigente',
+    text: 'Consulta el límite en UDIs y su equivalencia actual directamente en la fuente oficial.',
+  },
 ];
-
-const TIMELINE = [
-  { dia: 'Día 1', evento: 'Tu banco cierra sus puertas.' },
-  { dia: 'Día 30', evento: 'El IPAB interviene y audita las cuentas.' },
-  { dia: 'Día 90', evento: 'Recibes tu dinero de vuelta (hasta el límite protegido).' },
-];
-
-const successColor = 'var(--color-brand-success)';
-const successBg = 'var(--color-brand-success-bg)';
-const errorColor = 'var(--color-brand-error)';
-const errorBg = 'var(--color-brand-error-bg)';
-
+const QUESTIONS = [
+  {
+    text: '¿Abrir una cuenta garantiza por sí solo la protección del IPAB?',
+    options: [
+      'Sí, toda cuenta está cubierta',
+      'No, depende de la institución, el producto y las condiciones',
+    ],
+    correct: 1,
+    feedback:
+      'El nombre comercial de una cuenta no basta. Hay que verificar institución y producto.',
+  },
+  {
+    text: '¿Dónde consultarías el límite vigente y los productos protegidos?',
+    options: ['En una publicación antigua', 'En los canales oficiales del IPAB'],
+    correct: 1,
+    feedback:
+      'La equivalencia en pesos cambia con la UDI; la fuente oficial permite consultar el dato vigente.',
+  },
+] as const;
+const initial = (): Draft => ({
+  version: 1,
+  stage: 'learn',
+  checked: [],
+  question: 0,
+  pending: null,
+  answers: {},
+});
+function parse(raw: unknown): Draft | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const value = raw as Draft;
+  if (
+    value.version !== 1 ||
+    !['learn', 'verify', 'quiz', 'review', 'complete'].includes(value.stage) ||
+    !Array.isArray(value.checked) ||
+    value.checked.some((id) => !CHECKS.some((item) => item.id === id)) ||
+    !Number.isInteger(value.question) ||
+    value.question < 0 ||
+    value.question > 1 ||
+    (value.pending !== null && ![0, 1].includes(value.pending)) ||
+    !value.answers ||
+    (['review', 'complete'].includes(value.stage) && Object.keys(value.answers).length !== 2)
+  )
+    return null;
+  return value;
+}
 export default function L10() {
-  const [step, setStep] = useState(0);
-
-  const resume = useLessonResume('ahorro', 'L10');
-  const [resumeHandled, setResumeHandled] = useState(false);
-
+  const [draft, setDraft] = useState<Draft>(initial);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
   useEffect(() => {
-    if (step > 0) resume.save({ step });
-  }, [step, resume]);
-  const [expanded, setExpanded] = useState<Set<number>>(new Set());
-  const [q1, setQ1] = useState<Q>(null);
-  const [q2, setQ2] = useState<Q>(null);
-  const [q3, setQ3] = useState<Q>(null);
-  const [q4, setQ4] = useState<Q>(null);
-
-  const quizDone = q1 !== null && q2 !== null && q3 !== null && q4 !== null;
-  const score = [q1 === 'b', q2 === 'b', q3 === 'b', q4 === 'a'].filter(Boolean).length;
-
-  const toggleExpanded = (i: number) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(i)) next.delete(i); else next.add(i);
-      return next;
+    mounted.current = true;
+    setLoading(true);
+    setLoadError(false);
+    void lessonDataRepository
+      .load('ahorro', KEY)
+      .then((raw) => {
+        if (mounted.current) {
+          setDraft(parse(raw) ?? initial());
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (mounted.current) {
+          setLoading(false);
+          setLoadError(true);
+        }
+      });
+    return () => {
+      mounted.current = false;
+    };
+  }, [attempt]);
+  const persist = async (next: Draft, final = false) => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (final) {
+        await lessonDataRepository.saveBatch('ahorro', [
+          {
+            key: 'l10_ipab_verification',
+            data: {
+              checklist: next.checked,
+              answers: next.answers,
+              sourcePolicy: 'official-current',
+            },
+          },
+          { key: KEY, data: next },
+        ]);
+      } else {
+        await lessonDataRepository.save('ahorro', KEY, next);
+      }
+      if (mounted.current) {
+        setDraft(next);
+        setDirty(false);
+      }
+    } catch {
+      if (mounted.current) setError('No pudimos guardar. Tu avance sigue en pantalla.');
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
+  };
+  if (loading)
+    return (
+      <LessonShell id="L10" title="Protección de depósitos" completion={{ ready: false }}>
+        <ActivityLoading />
+      </LessonShell>
+    );
+  if (loadError)
+    return (
+      <LessonShell id="L10" title="Protección de depósitos" completion={{ ready: false }}>
+        <ActivityLoadError
+          message="No pudimos recuperar tu avance."
+          onRetry={() => setAttempt((value) => value + 1)}
+        />
+      </LessonShell>
+    );
+  const question = QUESTIONS[draft.question];
+  const feedback = draft.pending === null ? null : draft.pending === question.correct;
+  const reviewing = draft.stage === 'review' || draft.stage === 'complete';
+  const confirm = () => {
+    if (draft.pending === null) return;
+    const answers = { ...draft.answers, [draft.question]: draft.pending };
+    const last = draft.question === 1;
+    void persist({
+      ...draft,
+      answers,
+      pending: null,
+      question: last ? 1 : 1,
+      stage: last ? 'review' : 'quiz',
     });
   };
-
-  const progress = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 60 : step === 3 ? 80 : 100;
-
-  const quizItems = [
-    { q: q1, set: setQ1, correct: 'b', question: '1. ¿Cuánto protege el IPAB por persona por banco?', opts: [{ key: 'a', label: 'A) $500,000' }, { key: 'b', label: `B) ≈ $3.5 millones (${fmtFecha(MX.ipab)})` }, { key: 'c', label: 'C) Sin límite' }], fb: { ok: `¡Correcto! 400,000 UDIs ≈ $3.5 millones (${fmtFecha(MX.ipab)}).`, fail: `Son ≈ $3.5 millones (400,000 UDIs, ${fmtFecha(MX.ipab)}).` } },
-    { q: q2, set: setQ2, correct: 'b', question: '2. ¿El IPAB cubre las inversiones en bolsa?', opts: [{ key: 'a', label: 'A) Sí' }, { key: 'b', label: 'B) No' }], fb: { ok: '¡Correcto! Solo depósitos en cuentas bancarias autorizadas.', fail: 'Las inversiones en bolsa NO están cubiertas por el IPAB.' } },
-    { q: q3, set: setQ3, correct: 'b', question: '3. ¿Qué organismo supervisa los bancos en México?', opts: [{ key: 'a', label: 'A) SAT' }, { key: 'b', label: 'B) CNBV' }, { key: 'c', label: 'C) IMSS' }], fb: { ok: '¡Correcto! Comisión Nacional Bancaria y de Valores.', fail: 'Es la CNBV — Comisión Nacional Bancaria y de Valores.' } },
-    { q: q4, set: setQ4, correct: 'a', question: '4. Tienes $80,000 en cuenta de ahorro en un banco autorizado que quiebra. ¿Estarías cubierto?', opts: [{ key: 'a', label: 'A) Sí, estoy dentro del límite IPAB' }, { key: 'b', label: 'B) No, lo perdería todo' }], fb: { ok: '¡Correcto! $80,000 está muy por debajo del límite.', fail: `$80,000 está muy por debajo del límite de ≈ $3.5 millones (${fmtFecha(MX.ipab)}).` } },
-  ];
-
   return (
-    <LessonShell id="L10" title="El IPAB: el guardian de tu dinero" completion={{ ready: quizDone, score: score / 4 }}>
-      <div className="p-1">
-        {resume.hasSaved && !resumeHandled && (
-          <LessonResumeBanner
-            step={resume.savedStep ?? 0}
-            onContinue={() => {
-              const snapshot = resume.accept();
-              if (snapshot) setStep(snapshot.step);
-              setResumeHandled(true);
-            }}
-            onRestart={() => {
-              resume.ignore();
-              setResumeHandled(true);
-            }}
-          />
-        )}
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
-        </div>
-
-        {/* Pantalla 0 — Apertura */}
-        {step === 0 && (
-          <div className="space-y-6">
-            <FinniMessage variant="coach" title="¿Y si mañana tu banco cerrara?" message="¿Perderías todo tu dinero? La respuesta depende de dónde tengas ese dinero. Si está en un banco autorizado… estás protegido." />
-            <FECard variant="flat" className="border-2" style={{ borderColor: successColor, backgroundColor: successBg }}>
-              <p className="text-base font-bold mb-2">El IPAB</p>
-              <p className="text-sm">Instituto para la Protección al Ahorro Bancario — es el organismo del gobierno mexicano que garantiza tus depósitos bancarios.</p>
-              <p className="text-sm mt-2">Protege hasta <b>400,000 UDIs por persona por banco</b> (≈ $3.5 millones en 2026).</p>
-              <p className="text-sm mt-2" style={{ color: successColor }}>No importa si el banco quiebra mañana: si tu saldo está por debajo del límite, lo recuperas.</p>
-            </FECard>
-            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
-              ¿Qué cubre y qué NO? →
-            </button>
-          </div>
-        )}
-
-        {/* Pantalla 1 — Que cubre y timeline */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <p className="text-base font-bold">Productos bancarios — ¿cubiertos?</p>
-            <p className="text-xs text-[var(--color-text-secondary)]">Toca cada uno para más detalle. Clave: solo bancos autorizados y supervisados por la CNBV.</p>
-            <div className="space-y-2">
-              {CUBRE.map((item, i) => (
-                <FECard
-                  key={i}
-                  variant="flat"
-                  className="border cursor-pointer"
-                  style={{
-                    borderColor: item.si ? successColor : errorColor,
-                    backgroundColor: expanded.has(i) ? (item.si ? successBg : errorBg) : 'white',
-                  }}
-                  onClick={() => toggleExpanded(i)}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className="flex justify-between items-center">
-                    <p className="text-sm font-semibold">{item.label}</p>
-                    <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: item.si ? successColor : errorColor }}>
-                      {item.si ? 'SI cubre' : 'NO cubre'}
-                    </span>
-                  </div>
-                  {expanded.has(i) && (
-                    <p className="text-xs mt-1.5" style={{ color: item.si ? successColor : errorColor }}>
-                      {item.si
-                        ? 'Protegido hasta el limite del IPAB en bancos autorizados.'
-                        : 'Este producto no está garantizado por el IPAB. Verifica antes de invertir.'}
-                    </p>
-                  )}
-                </FECard>
-              ))}
-            </div>
-
-            <p className="text-base font-bold mt-2">¿Qué pasa si mi banco quiebra?</p>
-            <div className="space-y-3">
-              {TIMELINE.map((t, i) => (
-                <FECard key={i} variant="flat" className="border" style={{ borderColor: successBg }}>
-                  <div className="flex gap-4 items-center">
-                    <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white shrink-0" style={{ backgroundColor: successColor }}>{t.dia}</span>
-                    <p className="text-sm">{t.evento}</p>
-                  </div>
-                </FECard>
-              ))}
-            </div>
-
-            <FinniMessage variant="coach" title="Dato de confianza" message="Desde 1999, el IPAB ha protegido a miles de ahorradores en México. Tu dinero está más seguro de lo que crees." />
-            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(2)}>
-              Quiz de 4 preguntas →
-            </button>
-          </div>
-        )}
-
-        {/* Pantalla 2 — Quiz */}
-        {step === 2 && (
-          <div className="space-y-6">
-            <p className="text-2xl font-bold">Quiz: El IPAB</p>
-            {quizItems.map(({ q, set, correct, question, opts, fb }, idx) => {
-              if (idx > 0 && quizItems[idx - 1]!.q === null) return null;
-              return (
-                <FECard key={idx} variant="flat" className="border border-[var(--color-neutral-200)]">
-                  <p className="text-base font-bold mb-3">{question}</p>
-                  <div className="space-y-2">
-                    {opts.map((o) => (
-                      <button
-                        key={o.key}
-                        onClick={() => { if (!q) set(o.key as Q); }}
-                        disabled={q !== null}
-                        className="w-full text-left px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors disabled:cursor-default"
-                        style={{
-                          borderColor: q === o.key ? (o.key === correct ? successColor : errorColor) : 'var(--color-neutral-200)',
-                          backgroundColor: q === o.key ? (o.key === correct ? successBg : errorBg) : 'transparent',
-                        }}
-                      >
-                        {o.label}
-                      </button>
-                    ))}
-                  </div>
-                  {q && (
-                    <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: q === correct ? successColor : errorColor }}>
-                      {q === correct ? fb.ok : fb.fail}
-                    </span>
-                  )}
-                </FECard>
-              );
-            })}
-            {quizDone && (
-              <FinniMessage variant="success" title={`${score}/4 correctas`} message="Acción pendiente: verifica que tu banco esté registrado en el IPAB hoy en ipab.gob.mx" />
+    <LessonShell
+      id="L10"
+      title="El IPAB: el guardián de tu dinero"
+      showGreeting={false}
+      completion={{ ready: draft.stage === 'complete', score: 100 }}
+    >
+      <ActivityFrame
+        label="Ruta de verificación IPAB"
+        className="savings-protection"
+        busy={busy}
+        title={
+          reviewing
+            ? 'Conserva una ruta que no caduca.'
+            : draft.stage === 'quiz'
+              ? 'Comprueba la ruta de verificación.'
+              : draft.stage === 'verify'
+                ? 'Verifica tres cosas por separado.'
+                : 'La protección depende de condiciones.'
+        }
+        description="Aprende a verificar información vigente sin memorizar una equivalencia en pesos que cambia."
+        progressLabel="Etapas completadas"
+        progressValue={
+          draft.stage === 'learn'
+            ? 0
+            : draft.stage === 'verify'
+              ? 1
+              : draft.stage === 'quiz'
+                ? 2 + Object.keys(draft.answers).length
+                : 4
+        }
+        progressMax={4}
+        stepLabel={
+          reviewing
+            ? 'Paso 4 de 4 · Revisar'
+            : draft.stage === 'quiz'
+              ? `Paso 3 de 4 · Pregunta ${draft.question + 1} de 2`
+              : draft.stage === 'verify'
+                ? 'Paso 2 de 4 · Verificar'
+                : 'Paso 1 de 4 · Comprender'
+        }
+        focusKey={`${draft.stage}-${draft.question}`}
+        advice={{
+          title:
+            feedback === null
+              ? 'El dato vigente vive en la fuente oficial'
+              : feedback
+                ? 'Ruta correcta'
+                : 'Evita memorizar una cifra aislada',
+          text:
+            feedback === null
+              ? 'El IPAB publica información sobre instituciones, productos protegidos y el límite aplicable. Revisa sus canales oficiales antes de decidir.'
+              : question.feedback,
+          tone: feedback === null ? 'info' : feedback ? 'success' : 'review',
+        }}
+        adviceCue={cue}
+        error={error}
+        status={busy ? 'Guardando…' : dirty ? 'Cambios sin guardar.' : 'Tu avance está guardado.'}
+        actions={
+          <div className="spr-actions">
+            {draft.stage === 'learn' && (
+              <button
+                className="ca-primary"
+                onClick={() => void persist({ ...draft, stage: 'verify' })}
+              >
+                Aprender la ruta
+              </button>
+            )}
+            {draft.stage === 'verify' && (
+              <button
+                className="ca-primary"
+                disabled={draft.checked.length !== CHECKS.length || busy}
+                onClick={() => void persist({ ...draft, stage: 'quiz' })}
+              >
+                Comprobar lo aprendido
+              </button>
+            )}
+            {draft.stage === 'quiz' && (
+              <button
+                className="ca-primary"
+                disabled={draft.pending === null || busy}
+                onClick={confirm}
+              >
+                {draft.question === 1 ? 'Confirmar y revisar' : 'Confirmar respuesta'}
+              </button>
+            )}
+            {draft.stage === 'review' && (
+              <button
+                className="ca-primary"
+                onClick={() => void persist({ ...draft, stage: 'complete' }, true)}
+              >
+                Guardar ruta y terminar
+              </button>
             )}
           </div>
+        }
+      >
+        {draft.stage === 'learn' && (
+          <section className="spr-definition">
+            <span>IPAB</span>
+            <h3>Protección al ahorro bancario en México</h3>
+            <p>
+              La protección aplica a determinados depósitos en instituciones bancarias cubiertas,
+              conforme a límites y condiciones vigentes. No equivale a una garantía sobre cualquier
+              producto financiero.
+            </p>
+          </section>
         )}
-      </div>
+        {draft.stage === 'verify' && (
+          <section className="spr-checks">
+            {CHECKS.map((item) => (
+              <label key={item.id}>
+                <input
+                  type="checkbox"
+                  checked={draft.checked.includes(item.id)}
+                  onChange={() => {
+                    setDraft((value) => ({
+                      ...value,
+                      checked: value.checked.includes(item.id)
+                        ? value.checked.filter((id) => id !== item.id)
+                        : [...value.checked, item.id],
+                    }));
+                    setDirty(true);
+                  }}
+                />
+                <span>
+                  <strong>{item.title}</strong>
+                  {item.text}
+                </span>
+              </label>
+            ))}
+            <p>Fuente de consulta: sitio y materiales oficiales del IPAB.</p>
+          </section>
+        )}
+        {draft.stage === 'quiz' && (
+          <section className="spr-question">
+            <h3>{question.text}</h3>
+            {question.options.map((option, index) => (
+              <button
+                key={option}
+                className={draft.pending === index ? 'is-selected' : ''}
+                aria-pressed={draft.pending === index}
+                onClick={() => {
+                  setDraft((value) => ({ ...value, pending: index }));
+                  setCue(`Pregunta ${draft.question + 1}: ${option}`);
+                  setDirty(true);
+                }}
+              >
+                {option}
+              </button>
+            ))}
+          </section>
+        )}
+        {reviewing && (
+          <section className="spr-review">
+            <span>Ruta guardada</span>
+            <h3>Institución → producto → límite vigente</h3>
+            <p>
+              Repite estas tres verificaciones cuando abras o cambies una cuenta. La equivalencia en
+              pesos puede variar.
+            </p>
+          </section>
+        )}
+      </ActivityFrame>
     </LessonShell>
   );
 }

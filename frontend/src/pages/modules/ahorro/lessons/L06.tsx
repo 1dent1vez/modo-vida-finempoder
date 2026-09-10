@@ -1,207 +1,316 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
-import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
-import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/savings-plan.css';
 
 type Horizon = 1 | 3 | 6;
-type MetaData = { nombre?: string; monto?: number; aportacionMensual?: number } | null;
-
-const successColor = 'var(--color-brand-success)';
-const successBg = 'var(--color-brand-success-bg)';
-const infoColor = 'var(--color-brand-info)';
-const infoBg = 'var(--color-brand-info-bg)';
-
-const HORIZON_WEEKS: Record<Horizon, number> = { 1: 4, 3: 13, 6: 26 };
-const PLAN_DESCRIPTIONS: Record<Horizon, { title: string; desc: string }> = {
-  1: { title: 'Plan 1 mes', desc: 'Para metas pequeñas o fondo de emergencias inicial. Requiere disciplina alta.' },
-  3: { title: 'Plan 3 meses', desc: 'El más recomendado para comenzar. Permite ajustes y tiene resultados visibles.' },
-  6: { title: 'Plan 6 meses', desc: 'Para metas medianas. Requiere constancia. La clave es la automatización.' },
+type Stage = 'compare' | 'build' | 'review' | 'complete';
+type Draft = {
+  version: 1;
+  stage: Stage;
+  horizon: Horizon | null;
+  monthly: string;
+  fallback: 'reduce' | 'extend' | 'pause' | null;
 };
+type Meta = { nombre?: string; monto?: number; aportacionMensual?: number } | null;
+const KEY = 'savings_l6:plan:v1';
+const HORIZONS: { id: Horizon; label: string; help: string }[] = [
+  { id: 1, label: '1 mes', help: 'Para probar una regla breve.' },
+  { id: 3, label: '3 meses', help: 'Para observar y ajustar el ritmo.' },
+  { id: 6, label: '6 meses', help: 'Para sostener una meta más larga.' },
+];
+const FALLBACKS = [
+  { id: 'reduce' as const, label: 'Reducir la aportación ese periodo' },
+  { id: 'extend' as const, label: 'Extender el plazo de la meta' },
+  { id: 'pause' as const, label: 'Pausar y retomar en la siguiente fecha' },
+];
+const initial = (): Draft => ({
+  version: 1,
+  stage: 'compare',
+  horizon: null,
+  monthly: '',
+  fallback: null,
+});
+function parse(raw: unknown): Draft | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const value = raw as Draft;
+  if (
+    value.version !== 1 ||
+    !['compare', 'build', 'review', 'complete'].includes(value.stage) ||
+    (value.horizon !== null && ![1, 3, 6].includes(value.horizon)) ||
+    typeof value.monthly !== 'string' ||
+    (value.fallback !== null && !['reduce', 'extend', 'pause'].includes(value.fallback)) ||
+    (['review', 'complete'].includes(value.stage) &&
+      (!value.horizon || !value.fallback || !(Number(value.monthly) > 0)))
+  )
+    return null;
+  return value;
+}
 
 export default function L06() {
-  const [step, setStep] = useState(0);
-
-  const resume = useLessonResume('ahorro', 'L06');
-  const [resumeHandled, setResumeHandled] = useState(false);
-
+  const [draft, setDraft] = useState<Draft>(initial);
+  const [meta, setMeta] = useState<Meta>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const mounted = useRef(true);
   useEffect(() => {
-    if (step > 0) resume.save({ step });
-  }, [step, resume]);
-  const [horizon, setHorizon] = useState<Horizon | null>(null);
-  const [metaData, setMetaData] = useState<MetaData>(null);
-  const [weekAmounts, setWeekAmounts] = useState<Record<number, string>>({});
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    const load = async () => {
-      const meta = await lessonDataRepository.load<MetaData>('ahorro', 'l5_meta');
-      setMetaData(meta);
+    mounted.current = true;
+    setLoading(true);
+    setLoadError(false);
+    void Promise.all([
+      lessonDataRepository.load('ahorro', KEY),
+      lessonDataRepository.load<Meta>('ahorro', 'l5_meta'),
+    ])
+      .then(([saved, goal]) => {
+        if (!mounted.current) return;
+        setMeta(goal);
+        const restored = parse(saved);
+        setDraft(
+          restored ?? {
+            ...initial(),
+            monthly: goal?.aportacionMensual ? String(goal.aportacionMensual) : '',
+          },
+        );
+        setLoading(false);
+      })
+      .catch(() => {
+        if (mounted.current) {
+          setLoading(false);
+          setLoadError(true);
+        }
+      });
+    return () => {
+      mounted.current = false;
     };
-    void load();
-  }, []);
-
-  const numWeeks = horizon ? HORIZON_WEEKS[horizon] : 0;
-  const totalPlanado = useMemo(() => Object.values(weekAmounts).reduce((sum, v) => sum + (parseFloat(v) || 0), 0), [weekAmounts]);
-  const weeksWithAmount = Object.values(weekAmounts).filter((v) => parseFloat(v) > 0).length;
-  const requiredFilled = Math.ceil(numWeeks * 0.8);
-  const canComplete = horizon !== null && weeksWithAmount >= requiredFilled && saved;
-
-  const handleWeekChange = (week: number, val: string) => setWeekAmounts((prev) => ({ ...prev, [week]: val }));
-
-  const handleSave = async () => {
-    await lessonDataRepository.save('ahorro', 'l6_plan', { horizon, numWeeks, weekAmounts, totalPlanado, savedAt: new Date().toISOString() });
-    setSaved(true);
-    setStep(3);
+  }, [attempt]);
+  const monthly = Number(draft.monthly) || 0;
+  const months = draft.horizon ?? 0;
+  const total = useMemo(() => monthly * months, [monthly, months]);
+  const valid = !!draft.horizon && monthly > 0 && !!draft.fallback;
+  const persist = async (next: Draft, final = false) => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (final) {
+        await lessonDataRepository.saveBatch('ahorro', [
+          {
+            key: 'l6_plan',
+            data: {
+              horizon: next.horizon,
+              numWeeks: next.horizon ? next.horizon * 4 : 0,
+              aportacionMensual: Number(next.monthly),
+              totalPlanado: Number(next.monthly) * (next.horizon ?? 0),
+              fallback: next.fallback,
+            },
+          },
+          { key: KEY, data: next },
+        ]);
+      } else {
+        await lessonDataRepository.save('ahorro', KEY, next);
+      }
+      if (mounted.current) {
+        setDraft(next);
+        setDirty(false);
+      }
+    } catch {
+      if (mounted.current) setError('No pudimos guardar. Tu plan sigue en pantalla.');
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
   };
-
-  const metaMonto = metaData?.monto ?? 0;
-  const pctAlcanzado = metaMonto > 0 ? Math.min(100, (totalPlanado / metaMonto) * 100) : 0;
-  const progress = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 60 : 100;
-
+  if (loading)
+    return (
+      <LessonShell id="L06" title="Tu plan de ahorro" completion={{ ready: false }}>
+        <ActivityLoading />
+      </LessonShell>
+    );
+  if (loadError)
+    return (
+      <LessonShell id="L06" title="Tu plan de ahorro" completion={{ ready: false }}>
+        <ActivityLoadError
+          message="No pudimos recuperar tu meta."
+          onRetry={() => setAttempt((value) => value + 1)}
+        />
+      </LessonShell>
+    );
+  const reviewing = draft.stage === 'review' || draft.stage === 'complete';
   return (
-    <LessonShell id="L06" title="Tu plan de ahorro: 1, 3 o 6 meses" completion={{ ready: canComplete }}>
-      <div className="p-1">
-        {resume.hasSaved && !resumeHandled && (
-          <LessonResumeBanner
-            step={resume.savedStep ?? 0}
-            onContinue={() => {
-              const snapshot = resume.accept();
-              if (snapshot) setStep(snapshot.step);
-              setResumeHandled(true);
-            }}
-            onRestart={() => {
-              resume.ignore();
-              setResumeHandled(true);
-            }}
-          />
-        )}
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
-        </div>
-
-        {/* Pantalla 0 — Apertura */}
-        {step === 0 && (
-          <div className="space-y-6">
-            <FinniMessage variant="coach" title="El plan es el cómo" message="Tener una meta es el qué. El plan es el cómo. Hoy vamos a construir tu plan de ahorro semana a semana." />
-            <div className="space-y-3">
-              {([1, 3, 6] as Horizon[]).map((h) => (
-                <FECard key={h} variant="flat" className="border border-[var(--color-neutral-200)]">
-                  <p className="font-bold text-sm">{PLAN_DESCRIPTIONS[h].title}</p>
-                  <p className="text-sm text-[var(--color-text-secondary)]">{PLAN_DESCRIPTIONS[h].desc}</p>
-                </FECard>
-              ))}
-            </div>
-            <FinniMessage variant="coach" title="El plan perfecto no existe" message="El plan que tú realmente vas a seguir, ese existe. Empecemos por ahí." />
-            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
-              Elegir mi horizonte →
-            </button>
-          </div>
-        )}
-
-        {/* Pantalla 1 — Selector de horizonte */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <p className="font-bold">¿Cuánto tiempo dura tu plan?</p>
-            {metaData?.nombre && (
-              <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
-                <p className="text-xs">Tu meta: <b>{metaData.nombre}</b> — ${metaData.monto?.toLocaleString()}</p>
-              </FECard>
+    <LessonShell
+      id="L06"
+      title="Tu plan de ahorro: 1, 3 o 6 meses"
+      showGreeting={false}
+      completion={{ ready: draft.stage === 'complete', score: 100 }}
+    >
+      <ActivityFrame
+        label="Constructor de plan de ahorro"
+        className="savings-plan"
+        busy={busy}
+        title={
+          reviewing
+            ? 'Revisa un plan con margen de ajuste.'
+            : draft.stage === 'build'
+              ? 'Define ritmo y plan alterno.'
+              : 'Elige un horizonte para probar.'
+        }
+        description="Construye una regla mensual sin llenar un calendario completo."
+        progressLabel="Etapas completadas"
+        progressValue={draft.stage === 'compare' ? 0 : draft.stage === 'build' ? 1 : 2}
+        progressMax={2}
+        stepLabel={
+          reviewing
+            ? 'Paso 3 de 3 · Revisar'
+            : draft.stage === 'build'
+              ? 'Paso 2 de 3 · Construir'
+              : 'Paso 1 de 3 · Comparar'
+        }
+        focusKey={draft.stage}
+        advice={{
+          title: 'Un plan sostenible incluye cambios',
+          text: 'Definir qué harás en un mes difícil evita convertir una pausa en abandono.',
+          tone: 'info',
+        }}
+        adviceCue={null}
+        error={error}
+        status={busy ? 'Guardando…' : dirty ? 'Cambios sin guardar.' : 'Tu avance está guardado.'}
+        actions={
+          <div className="sp-actions">
+            {draft.stage === 'compare' && (
+              <button
+                className="ca-primary"
+                disabled={!draft.horizon}
+                onClick={() => void persist({ ...draft, stage: 'build' })}
+              >
+                Construir este plan
+              </button>
             )}
-            <div className="space-y-3">
-              {([1, 3, 6] as Horizon[]).map((h) => (
+            {draft.stage === 'build' && (
+              <button
+                className="ca-primary"
+                disabled={!valid || busy}
+                onClick={() => void persist({ ...draft, stage: 'review' })}
+              >
+                Revisar mi plan
+              </button>
+            )}
+            {draft.stage === 'review' && (
+              <>
                 <button
-                  key={h}
-                  onClick={() => setHorizon(h)}
-                  className="w-full text-left px-4 py-3 rounded-xl border-2 transition-colors"
-                  style={{
-                    borderColor: successColor,
-                    backgroundColor: horizon === h ? successColor : 'transparent',
-                    color: horizon === h ? 'white' : 'inherit',
+                  className="sp-secondary"
+                  onClick={() => {
+                    setDraft((value) => ({ ...value, stage: 'build' }));
+                    setDirty(true);
                   }}
                 >
-                  <p className="font-bold text-sm">{PLAN_DESCRIPTIONS[h].title}</p>
-                  <p className="text-xs opacity-80">{HORIZON_WEEKS[h]} semanas</p>
+                  Ajustar
                 </button>
-              ))}
-            </div>
-            {horizon && (
-              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(2)}>
-                Construir mi calendario ({HORIZON_WEEKS[horizon]} semanas) →
-              </button>
+                <button
+                  className="ca-primary"
+                  onClick={() => void persist({ ...draft, stage: 'complete' }, true)}
+                >
+                  Guardar y terminar
+                </button>
+              </>
             )}
           </div>
-        )}
-
-        {/* Pantalla 2 — Calendario semanal */}
-        {step === 2 && horizon && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <p className="font-bold">Asigna un monto a cada semana:</p>
-              <span
-                className="px-2 py-0.5 rounded-full text-xs font-bold"
-                style={{
-                  backgroundColor: weeksWithAmount >= requiredFilled ? successBg : 'var(--color-neutral-100)',
-                  color: weeksWithAmount >= requiredFilled ? successColor : 'var(--color-text-secondary)',
-                  border: `1px solid ${weeksWithAmount >= requiredFilled ? successColor : 'var(--color-neutral-200)'}`,
+        }
+      >
+        {draft.stage === 'compare' && (
+          <section className="sp-horizons">
+            {meta?.nombre && (
+              <p>
+                Meta actual: <strong>{meta.nombre}</strong>
+                {meta.monto ? ` · $${meta.monto.toLocaleString()}` : ''}
+              </p>
+            )}
+            {HORIZONS.map((item) => (
+              <button
+                key={item.id}
+                className={draft.horizon === item.id ? 'is-selected' : ''}
+                aria-pressed={draft.horizon === item.id}
+                onClick={() => {
+                  setDraft((value) => ({ ...value, horizon: item.id }));
+                  setDirty(true);
                 }}
               >
-                {weeksWithAmount}/{numWeeks} sem
-              </span>
-            </div>
-
-            {metaMonto > 0 && (
-              <FECard variant="flat" className="border" style={{ borderColor: successColor }}>
-                <p className="text-xs text-[var(--color-text-secondary)]">Progreso hacia la meta: ${totalPlanado.toLocaleString()} / ${metaMonto.toLocaleString()}</p>
-                <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mt-1">
-                  <div className="h-2 rounded-full transition-all" style={{ width: `${pctAlcanzado}%`, backgroundColor: successColor }} />
-                </div>
-                <p className="text-xs mt-1" style={{ color: successColor }}>{pctAlcanzado.toFixed(0)}% planeado</p>
-              </FECard>
-            )}
-
-            <div className="space-y-2">
-              {Array.from({ length: numWeeks }, (_, i) => i + 1).map((week) => (
-                <div key={week} className="flex gap-3 items-center">
-                  <span className="text-xs text-[var(--color-text-secondary)] min-w-[72px]">Semana {week}</span>
-                  <input
-                    type="number"
-                    placeholder="$0"
-                    min={0}
-                    step={50}
-                    value={weekAmounts[week] ?? ''}
-                    onChange={(e) => handleWeekChange(week, e.target.value)}
-                    className="flex-1 border border-[var(--color-neutral-200)] rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-success)]"
-                  />
-                </div>
-              ))}
-            </div>
-
-            <FECard variant="flat" className="text-center" style={{ backgroundColor: successBg }}>
-              <p className="font-bold text-sm">Total planeado: ${totalPlanado.toLocaleString()}</p>
-            </FECard>
-
-            {weeksWithAmount >= requiredFilled && (
-              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => void handleSave()}>
-                Guardar mi plan →
+                <strong>{item.label}</strong>
+                <span>{item.help}</span>
               </button>
+            ))}
+          </section>
+        )}
+        {draft.stage === 'build' && (
+          <section className="sp-form">
+            <label>
+              Aportación mensual que probaré
+              <span className="sp-money">
+                <b>$</b>
+                <input
+                  aria-label="Aportación mensual del plan"
+                  type="number"
+                  min="1"
+                  value={draft.monthly}
+                  onChange={(event) => {
+                    setDraft((value) => ({ ...value, monthly: event.target.value }));
+                    setDirty(true);
+                  }}
+                />
+              </span>
+            </label>
+            {monthly > 0 && (
+              <div className="sp-result">
+                <span>
+                  Total planeado en {months} {months === 1 ? 'mes' : 'meses'}
+                </span>
+                <strong>${total.toLocaleString()}</strong>
+                {meta?.monto && (
+                  <small>
+                    {Math.min(100, (total / meta.monto) * 100).toFixed(0)}% de la meta actual
+                  </small>
+                )}
+              </div>
             )}
-          </div>
+            <fieldset>
+              <legend>Si un mes no cabe, voy a:</legend>
+              {FALLBACKS.map((item) => (
+                <label key={item.id}>
+                  <input
+                    type="radio"
+                    name="fallback"
+                    checked={draft.fallback === item.id}
+                    onChange={() => {
+                      setDraft((value) => ({ ...value, fallback: item.id }));
+                      setDirty(true);
+                    }}
+                  />
+                  {item.label}
+                </label>
+              ))}
+            </fieldset>
+          </section>
         )}
-
-        {/* Pantalla 3 — Confirmacion */}
-        {step === 3 && (
-          <div className="space-y-6">
-            <FECard variant="flat" className="text-center py-4 border-2" style={{ backgroundColor: successBg, borderColor: successColor }}>
-              <p className="text-2xl font-bold">Plan guardado</p>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">{horizon && PLAN_DESCRIPTIONS[horizon].title} · ${totalPlanado.toLocaleString()} planeados</p>
-            </FECard>
-            <FinniMessage variant="success" title="Tu plan está listo" message="Cada semana recibirás un aviso para aportar a tu meta. La constancia es lo que distingue a quien ahorra de quien intenta ahorrar." />
-          </div>
+        {reviewing && (
+          <section className="sp-review">
+            <span>Tu primer ciclo</span>
+            <h3>
+              {draft.horizon} {draft.horizon === 1 ? 'mes' : 'meses'}
+            </h3>
+            <strong>${monthly.toLocaleString()} al mes</strong>
+            <p>
+              Total planeado: ${total.toLocaleString()}. Si cambia tu capacidad:{' '}
+              {FALLBACKS.find((item) => item.id === draft.fallback)?.label.toLowerCase()}.
+            </p>
+          </section>
         )}
-      </div>
+      </ActivityFrame>
     </LessonShell>
   );
 }

@@ -1,238 +1,363 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Circle, CircleCheck } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
-import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
-import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/savings-protection.css';
 
-type BudgetData = { totalIngresos?: number; pctAhorro?: number } | null;
-type MetaData = { nombre?: string; aportacionMensual?: number } | null;
-
-const SITUACIONES = [
-  { id: 1, label: 'Laptop descompuesta', costo: '$3,000–$8,000' },
-  { id: 2, label: 'Mes sin beca/mesada', costo: '$1,500–$3,000' },
-  { id: 3, label: 'Emergencia médica', costo: '$2,000–$10,000' },
-  { id: 4, label: 'Falla de transporte personal', costo: '$1,000–$5,000' },
-  { id: 5, label: 'Perdida de trabajo part-time', costo: '$800–$3,500/mes' },
+type Stage = 'identify' | 'size' | 'review' | 'complete';
+type Draft = {
+  version: 1;
+  stage: Stage;
+  situations: string[];
+  essentials: string;
+  months: number;
+  contribution: string;
+  rule: 'essential' | 'unexpected' | 'both' | null;
+};
+const KEY = 'savings_l8:emergency:v1';
+const SITUATIONS = [
+  { id: 'health', label: 'Gasto de salud no planeado' },
+  { id: 'income', label: 'Interrupción temporal de ingreso' },
+  { id: 'repair', label: 'Reparación necesaria' },
+  { id: 'care', label: 'Apoyo urgente a alguien a mi cargo' },
 ];
-
-const successColor = 'var(--color-brand-success)';
-const successBg = 'var(--color-brand-success-bg)';
-const warnColor = 'var(--color-brand-warning)';
-const warnBg = 'var(--color-brand-warning-bg)';
-const infoColor = 'var(--color-brand-info)';
-const infoBg = 'var(--color-brand-info-bg)';
-
+const initial = (): Draft => ({
+  version: 1,
+  stage: 'identify',
+  situations: [],
+  essentials: '',
+  months: 1,
+  contribution: '',
+  rule: null,
+});
+function parse(raw: unknown): Draft | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const value = raw as Draft;
+  if (
+    value.version !== 1 ||
+    !['identify', 'size', 'review', 'complete'].includes(value.stage) ||
+    !Array.isArray(value.situations) ||
+    value.situations.some((id) => !SITUATIONS.some((item) => item.id === id)) ||
+    typeof value.essentials !== 'string' ||
+    !Number.isInteger(value.months) ||
+    value.months < 1 ||
+    value.months > 6 ||
+    typeof value.contribution !== 'string' ||
+    (value.rule !== null && !['essential', 'unexpected', 'both'].includes(value.rule)) ||
+    (['review', 'complete'].includes(value.stage) &&
+      (!(Number(value.essentials) > 0) || !(Number(value.contribution) > 0) || !value.rule))
+  )
+    return null;
+  return value;
+}
 export default function L08() {
-  const [step, setStep] = useState(0);
-
-  const resume = useLessonResume('ahorro', 'L08');
-  const [resumeHandled, setResumeHandled] = useState(false);
-
+  const [draft, setDraft] = useState<Draft>(initial);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const mounted = useRef(true);
   useEffect(() => {
-    if (step > 0) resume.save({ step });
-  }, [step, resume]);
-  const [budgetData, setBudgetData] = useState<BudgetData>(null);
-  const [metaData, setMetaData] = useState<MetaData>(null);
-  const [selectedSituaciones, setSelectedSituaciones] = useState<Set<number>>(new Set());
-  const [gastosMensuales, setGastosMensuales] = useState('');
-  const [aportacion, setAportacion] = useState('');
-  const [calculado, setCalculado] = useState(false);
-
-  useEffect(() => {
-    const load = async () => {
-      const budget = await lessonDataRepository.load<BudgetData>('presupuesto', 'l12_budget');
-      const meta = await lessonDataRepository.load<MetaData>('ahorro', 'l5_meta');
-      setBudgetData(budget);
-      setMetaData(meta);
-      if (budget?.totalIngresos) {
-        setGastosMensuales(String(Math.round(budget.totalIngresos * 0.8)));
-      }
+    mounted.current = true;
+    setLoading(true);
+    setLoadError(false);
+    void lessonDataRepository
+      .load('ahorro', KEY)
+      .then((raw) => {
+        if (mounted.current) {
+          setDraft(parse(raw) ?? initial());
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (mounted.current) {
+          setLoading(false);
+          setLoadError(true);
+        }
+      });
+    return () => {
+      mounted.current = false;
     };
-    void load();
-  }, []);
-
-  const gastosNum = parseFloat(gastosMensuales) || 0;
-  const aportNum = parseFloat(aportacion) || 0;
-
-  const metaMinima = useMemo(() => gastosNum * 3, [gastosNum]);
-  const metaIdeal = useMemo(() => gastosNum * 6, [gastosNum]);
-  const mesesMinima = useMemo(() => (aportNum > 0 ? Math.ceil(metaMinima / aportNum) : 0), [metaMinima, aportNum]);
-  const mesesIdeal = useMemo(() => (aportNum > 0 ? Math.ceil(metaIdeal / aportNum) : 0), [metaIdeal, aportNum]);
-
-  const toggleSituacion = (id: number) => {
-    setSelectedSituaciones((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
+  }, [attempt]);
+  const essentials = Number(draft.essentials) || 0;
+  const contribution = Number(draft.contribution) || 0;
+  const target = essentials * draft.months;
+  const buildMonths = useMemo(
+    () => (target > 0 && contribution > 0 ? Math.ceil(target / contribution) : 0),
+    [target, contribution],
+  );
+  const valid = essentials > 0 && contribution > 0 && !!draft.rule;
+  const persist = async (next: Draft, final = false) => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (final) {
+        const targetAmount = Number(next.essentials) * next.months;
+        await lessonDataRepository.saveBatch('ahorro', [
+          {
+            key: 'l8_fondo',
+            data: {
+              gastosMensuales: Number(next.essentials),
+              aportacionMensual: Number(next.contribution),
+              mesesCobertura: next.months,
+              metaObjetivo: targetAmount,
+              metaMinima: targetAmount,
+              metaIdeal: targetAmount,
+              mesesMinima: Math.ceil(targetAmount / Number(next.contribution)),
+              situaciones: next.situations,
+              reglaUso: next.rule,
+            },
+          },
+          { key: KEY, data: next },
+        ]);
+      } else {
+        await lessonDataRepository.save('ahorro', KEY, next);
+      }
+      if (mounted.current) {
+        setDraft(next);
+        setDirty(false);
+      }
+    } catch {
+      if (mounted.current) setError('No pudimos guardar. Tu cálculo sigue en pantalla.');
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
   };
-
-  const canCalculate = gastosNum > 0 && aportNum > 0;
-
-  const handleCalcular = async () => {
-    await lessonDataRepository.save('ahorro', 'l8_fondo', {
-      gastosMensuales: gastosNum,
-      aportacionMensual: aportNum,
-      metaMinima,
-      metaIdeal,
-      mesesMinima,
-      mesesIdeal,
-      savedAt: new Date().toISOString(),
-    });
-    setCalculado(true);
-    setStep(3);
-  };
-
-  const progress = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 60 : 100;
-
+  if (loading)
+    return (
+      <LessonShell id="L08" title="Fondo de emergencias" completion={{ ready: false }}>
+        <ActivityLoading />
+      </LessonShell>
+    );
+  if (loadError)
+    return (
+      <LessonShell id="L08" title="Fondo de emergencias" completion={{ ready: false }}>
+        <ActivityLoadError
+          message="No pudimos recuperar tu avance."
+          onRetry={() => setAttempt((value) => value + 1)}
+        />
+      </LessonShell>
+    );
+  const reviewing = draft.stage === 'review' || draft.stage === 'complete';
   return (
-    <LessonShell id="L08" title="Tu red de seguridad: fondo de emergencias" completion={{ ready: calculado }}>
-      <div className="p-1">
-        {resume.hasSaved && !resumeHandled && (
-          <LessonResumeBanner
-            step={resume.savedStep ?? 0}
-            onContinue={() => {
-              const snapshot = resume.accept();
-              if (snapshot) setStep(snapshot.step);
-              setResumeHandled(true);
-            }}
-            onRestart={() => {
-              resume.ignore();
-              setResumeHandled(true);
-            }}
-          />
-        )}
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
-        </div>
-
-        {/* Pantalla 0 — Apertura */}
-        {step === 0 && (
-          <div className="space-y-6">
-            <FinniMessage variant="coach" title="El fondo de emergencias es tu red" message="Imagina que mañana se descompone tu laptop justo antes de exámenes. ¿Tienes algo guardado para eso? El fondo de emergencias es esa red que atrapa antes del desastre." />
-            <FECard variant="flat" className="border" style={{ borderColor: successColor }}>
-              <p className="text-sm font-bold mb-2">¿Qué es un fondo de emergencias?</p>
-              <p className="text-sm">Dinero guardado específicamente para imprevistos. No es para el viaje, no es para la tele nueva. Es para cuando la vida sorprende.</p>
-              <div className="mt-3 space-y-1">
-                <p className="text-xs" style={{ color: successColor }}>3 meses de gastos básicos — si tienes apoyo familiar</p>
-                <p className="text-xs" style={{ color: successColor }}>6 meses — si eres más independiente</p>
-              </div>
-            </FECard>
-            <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
-              <p className="text-xs font-bold">¿Dónde guardarlo?</p>
-              <p className="text-sm">Cuenta separada, accesible pero no tan fácil de retirar. CETES a 28 días o cuenta con rendimiento son opciones ideales.</p>
-            </FECard>
-            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
-              ¿Qué situaciones te preocupan? →
-            </button>
-          </div>
-        )}
-
-        {/* Pantalla 1 — Tarjetas de situaciones */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <p className="text-base font-bold">Toca las situaciones que te han pasado o podrían pasarte:</p>
-            <div className="space-y-3">
-              {SITUACIONES.map((s) => (
-                <FECard
-                  key={s.id}
-                  variant="flat"
-                  className="border cursor-pointer"
-                  style={{
-                    borderColor: selectedSituaciones.has(s.id) ? warnColor : 'var(--color-border)',
-                    backgroundColor: selectedSituaciones.has(s.id) ? warnBg : 'white',
-                  }}
-                  onClick={() => toggleSituacion(s.id)}
-                  role="checkbox"
-                  tabIndex={0}
-                >
-                  <div className="flex justify-between items-center">
-                    <p className="text-sm font-semibold flex items-center gap-1.5">{selectedSituaciones.has(s.id) ? <CircleCheck className="h-4 w-4 text-[var(--color-brand-success)]" aria-hidden="true" /> : <Circle className="h-4 w-4 text-[var(--color-text-muted)]" aria-hidden="true" />} {s.label}</p>
-                    <span className="px-2 py-0.5 rounded-full text-xs font-bold border" style={{ borderColor: warnColor, color: warnColor }}>{s.costo}</span>
-                  </div>
-                </FECard>
-              ))}
-            </div>
-            {selectedSituaciones.size > 0 && (
-              <FECard variant="flat" className="border" style={{ borderColor: warnColor, backgroundColor: warnBg }}>
-                <p className="text-sm font-bold">{selectedSituaciones.size} situación(es) identificadas. El fondo de emergencias te protege de estas.</p>
-              </FECard>
-            )}
-            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(2)}>
-              Calcular mi fondo →
-            </button>
-          </div>
-        )}
-
-        {/* Pantalla 2 — Calculadora */}
-        {step === 2 && (
-          <div className="space-y-6">
-            <p className="text-base font-bold">Calculadora del fondo de emergencias:</p>
-            {budgetData?.totalIngresos && (
-              <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
-                <p className="text-xs">Datos de tu presupuesto (M1-L12) precargados</p>
-              </FECard>
-            )}
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-[var(--color-text-primary)]">Tus gastos básicos mensuales ($)</label>
-              <input type="number" value={gastosMensuales} onChange={(e) => setGastosMensuales(e.target.value)} min={0} className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm" />
-              <p className="text-xs text-[var(--color-text-secondary)]">Lo mínimo para vivir un mes difícil: comida, transporte, servicios</p>
-            </div>
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-[var(--color-text-primary)]">¿Cuánto puedes apartar mensualmente? ($)</label>
-              <input type="number" value={aportacion} onChange={(e) => setAportacion(e.target.value)} min={0} className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm" />
-            </div>
-            {canCalculate && (
-              <div className="space-y-3">
-                <FECard variant="flat" className="border-2" style={{ borderColor: successColor, backgroundColor: successBg }}>
-                  <p className="text-sm font-bold">Meta mínima (3 meses):</p>
-                  <p className="text-3xl font-black">${metaMinima.toLocaleString()}</p>
-                  <p className="text-xs text-[var(--color-text-secondary)]">Lo alcanzas en {mesesMinima} meses apartando ${aportNum.toLocaleString()}/mes</p>
-                </FECard>
-                <FECard variant="flat" className="border" style={{ borderColor: warnColor, backgroundColor: warnBg }}>
-                  <p className="text-sm font-bold">Meta ideal (6 meses):</p>
-                  <p className="text-3xl font-black">${metaIdeal.toLocaleString()}</p>
-                  <p className="text-xs text-[var(--color-text-secondary)]">Lo alcanzas en {mesesIdeal} meses</p>
-                </FECard>
-              </div>
-            )}
-            {metaData?.nombre && (
-              <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-                <p className="text-xs text-[var(--color-text-secondary)]">Finni recomienda: primero el fondo mínimo (${metaMinima.toLocaleString()}), luego tu meta de "{metaData.nombre}"</p>
-              </FECard>
-            )}
-            {canCalculate && (
-              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => void handleCalcular()}>
-                Guardar mi meta del fondo →
+    <LessonShell
+      id="L08"
+      title="Tu red de seguridad: fondo de emergencias"
+      showGreeting={false}
+      completion={{ ready: draft.stage === 'complete', score: 100 }}
+    >
+      <ActivityFrame
+        label="Constructor de fondo de emergencias"
+        className="savings-protection"
+        busy={busy}
+        title={
+          reviewing
+            ? 'Revisa tu primera referencia.'
+            : draft.stage === 'size'
+              ? 'Define el tamaño y una regla de uso.'
+              : 'Identifica qué necesita tu red.'
+        }
+        description="Construye una referencia personal a partir de gastos esenciales, sin imponer una meta universal."
+        progressLabel="Etapas completadas"
+        progressValue={draft.stage === 'identify' ? 0 : draft.stage === 'size' ? 1 : 2}
+        progressMax={2}
+        stepLabel={
+          reviewing
+            ? 'Paso 3 de 3 · Revisar'
+            : draft.stage === 'size'
+              ? 'Paso 2 de 3 · Calcular'
+              : 'Paso 1 de 3 · Identificar'
+        }
+        focusKey={draft.stage}
+        advice={{
+          title: 'Puedes empezar por una capa pequeña',
+          text: 'Un primer objetivo puede cubrir un imprevisto frecuente y crecer después. El número de meses depende de tu contexto.',
+          tone: 'info',
+        }}
+        adviceCue={null}
+        error={error}
+        status={busy ? 'Guardando…' : dirty ? 'Cambios sin guardar.' : 'Tu avance está guardado.'}
+        actions={
+          <div className="spr-actions">
+            {draft.stage === 'identify' && (
+              <button
+                className="ca-primary"
+                onClick={() => void persist({ ...draft, stage: 'size' })}
+              >
+                Calcular mi referencia
               </button>
             )}
+            {draft.stage === 'size' && (
+              <button
+                className="ca-primary"
+                disabled={!valid || busy}
+                onClick={() => void persist({ ...draft, stage: 'review' })}
+              >
+                Revisar mi fondo
+              </button>
+            )}
+            {draft.stage === 'review' && (
+              <>
+                <button
+                  className="spr-secondary"
+                  onClick={() => {
+                    setDraft((value) => ({ ...value, stage: 'size' }));
+                    setDirty(true);
+                  }}
+                >
+                  Ajustar
+                </button>
+                <button
+                  className="ca-primary"
+                  onClick={() => void persist({ ...draft, stage: 'complete' }, true)}
+                >
+                  Guardar y terminar
+                </button>
+              </>
+            )}
           </div>
+        }
+      >
+        {draft.stage === 'identify' && (
+          <section className="spr-select">
+            <p>¿Qué situaciones quieres contemplar? Puedes continuar sin elegir ninguna.</p>
+            {SITUATIONS.map((item) => (
+              <label key={item.id}>
+                <input
+                  type="checkbox"
+                  checked={draft.situations.includes(item.id)}
+                  onChange={() => {
+                    setDraft((value) => ({
+                      ...value,
+                      situations: value.situations.includes(item.id)
+                        ? value.situations.filter((id) => id !== item.id)
+                        : [...value.situations, item.id],
+                    }));
+                    setDirty(true);
+                  }}
+                />
+                {item.label}
+              </label>
+            ))}
+          </section>
         )}
-
-        {/* Pantalla 3 — Confirmacion */}
-        {step === 3 && (
-          <div className="space-y-6">
-            <FECard variant="flat" className="border-2 text-center py-4" style={{ borderColor: successColor, backgroundColor: successBg }}>
-              <p className="text-3xl">Fondo de emergencias</p>
-              <div className="flex gap-2 justify-center mt-2 flex-wrap">
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>Meta mínima: ${metaMinima.toLocaleString()}</span>
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: warnColor }}>Meta ideal: ${metaIdeal.toLocaleString()}</span>
+        {draft.stage === 'size' && (
+          <section className="spr-form">
+            <label>
+              Gastos esenciales de un mes
+              <span className="spr-money">
+                <b>$</b>
+                <input
+                  aria-label="Gastos esenciales mensuales"
+                  type="number"
+                  min="1"
+                  value={draft.essentials}
+                  onChange={(event) => {
+                    setDraft((value) => ({ ...value, essentials: event.target.value }));
+                    setDirty(true);
+                  }}
+                />
+              </span>
+            </label>
+            <label>
+              Meses de cobertura para esta etapa: <strong>{draft.months}</strong>
+              <input
+                aria-label="Meses de cobertura"
+                type="range"
+                min="1"
+                max="6"
+                value={draft.months}
+                onChange={(event) => {
+                  setDraft((value) => ({ ...value, months: Number(event.target.value) }));
+                  setDirty(true);
+                }}
+              />
+            </label>
+            <label>
+              Aportación mensual posible
+              <span className="spr-money">
+                <b>$</b>
+                <input
+                  aria-label="Aportación mensual al fondo"
+                  type="number"
+                  min="1"
+                  value={draft.contribution}
+                  onChange={(event) => {
+                    setDraft((value) => ({ ...value, contribution: event.target.value }));
+                    setDirty(true);
+                  }}
+                />
+              </span>
+            </label>
+            {target > 0 && contribution > 0 && (
+              <div className="spr-result">
+                <span>Referencia del fondo</span>
+                <strong>${target.toLocaleString()}</strong>
+                <small>
+                  Aproximadamente {buildMonths} {buildMonths === 1 ? 'mes' : 'meses'} para
+                  construirlo.
+                </small>
               </div>
-            </FECard>
-            <FinniMessage variant="success" title="No necesitas llegar de golpe" message="Construye el fondo gradualmente. Incluso $500 ahorrados ya te protegen de pequeños imprevistos." />
-            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="text-sm font-bold">Dónde guardarlo:</p>
-              {aportNum < 500
-                ? <p className="text-sm">Cuenta de ahorro básica (sin comisiones)</p>
-                : <p className="text-sm">CETES a 28 días — cetesdirecto.com (rendimiento adicional)</p>
-              }
-            </FECard>
-          </div>
+            )}
+            <fieldset>
+              <legend>Usaré el fondo cuando el gasto sea:</legend>
+              <label>
+                <input
+                  type="radio"
+                  name="rule"
+                  checked={draft.rule === 'essential'}
+                  onChange={() => {
+                    setDraft((value) => ({ ...value, rule: 'essential' }));
+                    setDirty(true);
+                  }}
+                />
+                Necesario para cubrir algo esencial
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="rule"
+                  checked={draft.rule === 'unexpected'}
+                  onChange={() => {
+                    setDraft((value) => ({ ...value, rule: 'unexpected' }));
+                    setDirty(true);
+                  }}
+                />
+                Imprevisto y difícil de posponer
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="rule"
+                  checked={draft.rule === 'both'}
+                  onChange={() => {
+                    setDraft((value) => ({ ...value, rule: 'both' }));
+                    setDirty(true);
+                  }}
+                />
+                Ambas condiciones
+              </label>
+            </fieldset>
+          </section>
         )}
-      </div>
+        {reviewing && (
+          <section className="spr-review">
+            <span>Tu primera referencia</span>
+            <h3>${target.toLocaleString()}</h3>
+            <p>
+              {draft.months} {draft.months === 1 ? 'mes' : 'meses'} de gastos esenciales · $
+              {contribution.toLocaleString()} al mes · plazo estimado de {buildMonths}{' '}
+              {buildMonths === 1 ? 'mes' : 'meses'}.
+            </p>
+          </section>
+        )}
+      </ActivityFrame>
     </LessonShell>
   );
 }

@@ -27,7 +27,7 @@ function renderL11() {
   return render(
     <MemoryRouter>
       <L11 />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -68,7 +68,7 @@ describe('L11 ahorro — micro-reto con días reales', () => {
     await completarDia(1, '50');
 
     await waitFor(() => expect(screen.getByText(/Día 1\/3 completado/)).toBeInTheDocument());
-    expect(screen.getByText(/Vuelve mañana para el día 2/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Vuelve mañana para el día 2/).length).toBeGreaterThan(0);
     expect(screen.queryByPlaceholderText('$0')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Completar día 2' })).not.toBeInTheDocument();
 
@@ -139,7 +139,7 @@ describe('L11 ahorro — micro-reto con días reales', () => {
 
     await waitFor(() => expect(screen.getByText(/Día 1\/3 completado/)).toBeInTheDocument());
     expect(screen.getByText(/Apartado el /)).toBeInTheDocument();
-    expect(screen.getByText(/Día 2\/3: toca completar/)).toBeInTheDocument();
+    expect(screen.getByText('Siguiente registro')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('$0')).toBeInTheDocument();
   });
 });

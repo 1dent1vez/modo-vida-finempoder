@@ -1,266 +1,321 @@
-import { useState, useEffect, useMemo } from 'react';
-
-import { Trophy } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
-import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
-import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
-import { MX, fmtFecha } from '@/lib/datos-mx';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/savings-progress.css';
 
-const successColor = 'var(--color-brand-success)';
-const successBg    = 'var(--color-brand-success-bg)';
-const warnColor    = 'var(--color-brand-warning)';
-const warnBg       = 'var(--color-brand-warning-bg)';
-const errorColor   = 'var(--color-brand-error)';
-const errorBg      = 'var(--color-brand-error-bg)';
-const infoColor    = 'var(--color-brand-info)';
-const infoBg       = 'var(--color-brand-info-bg)';
-
-type MetaData = { nombre?: string; monto?: number; aportacionMensual?: number } | null;
-type PlanData = { totalPlanado?: number; horizon?: number } | null;
-type RetoData = { totalAcumulado?: number; dayAmounts?: number[] } | null;
-type QuizAnswer = string | null;
-
-const PREGUNTAS = [
-  { id: 1, tipo: 'opcion',       pregunta: '¿Qué significa "pagarte primero a ti mismo"?',                                  opciones: ['A) Gastar en lo que quieres antes que en necesidades', 'B) Apartar el ahorro antes de gastar', 'C) Invertir en tu educación primero'], correcta: 'B) Apartar el ahorro antes de gastar',                                      feedback: 'Pagarte primero significa que el ahorro va antes que cualquier gasto.' },
-  { id: 2, tipo: 'vf',           pregunta: 'El ahorro informal no tiene ninguna ventaja.',                                   opciones: ['Verdadero', 'Falso'],                                                                                                             correcta: 'Falso',                                                                       feedback: 'El ahorro informal tiene ventaja en acceso inmediato, aunque carece de protección.' },
-  { id: 3, tipo: 'opcion',       pregunta: '¿Qué protege el IPAB?',                                                         opciones: ['A) Inversiones en bolsa', `B) Depósitos en bancos autorizados hasta ≈ $3.5 millones (${fmtFecha(MX.ipab)})`, 'C) Fondos de inversión'],             correcta: `B) Depósitos en bancos autorizados hasta ≈ $3.5 millones (${fmtFecha(MX.ipab)})`,              feedback: `El IPAB protege depósitos bancarios en instituciones autorizadas hasta ≈ $3.5 millones (${fmtFecha(MX.ipab)}).` },
-  { id: 4, tipo: 'situacion',    pregunta: 'Tu ingreso varía entre $800 y $3,500 al mes. ¿Mejor estrategia de ahorro?',     opciones: ['A) Ahorrar un monto fijo de $300 siempre', 'B) Ahorrar un porcentaje fijo (ej. 20%) de lo que ganes', 'C) Ahorrar solo en meses buenos'], correcta: 'B) Ahorrar un porcentaje fijo (ej. 20%) de lo que ganes',                  feedback: 'El porcentaje fijo se adapta automáticamente a lo que ganes cada mes.' },
-  { id: 5, tipo: 'completar',    pregunta: 'El interés compuesto gana interés sobre el capital MÁS ___.',                   opciones: ['A) Las comisiones bancarias', 'B) Los intereses anteriores', 'C) El saldo mínimo'],                                              correcta: 'B) Los intereses anteriores',                                                 feedback: 'Eso es exactamente el interés compuesto: intereses que generan más intereses.' },
-  { id: 6, tipo: 'opcion',       pregunta: '¿Cuántos meses de gastos básicos recomienda tener en un fondo de emergencias si tienes apoyo familiar?', opciones: ['A) 1 mes', 'B) 3 meses', 'C) 12 meses'],                                                            correcta: 'B) 3 meses',                                                                  feedback: 'Con apoyo familiar, 3 meses es la meta mínima recomendada para el fondo.' },
-  { id: 7, tipo: 'vf',           pregunta: 'Una meta de ahorro específica ayuda a ahorrar más.',                             opciones: ['Verdadero', 'Falso'],                                                                                                             correcta: 'Verdadero',                                                                   feedback: 'Con meta específica se ahorra en promedio 3 veces más. No es motivación, es estructura.' },
-  { id: 8, tipo: 'opcion',       pregunta: '¿Cuál NO está cubierto por el IPAB?',                                           opciones: ['A) Cuenta de ahorro en banco autorizado', 'B) Inversiones en bolsa', 'C) Cuenta de cheques'],                                 correcta: 'B) Inversiones en bolsa',                                                     feedback: 'Las inversiones en bolsa no son depósitos bancarios, por lo que el IPAB no las cubre.' },
-  { id: 9, tipo: 'autoevaluacion', pregunta: '¿Cómo calificarías tu hábito de ahorro en este módulo?',                      opciones: ['1 — Prácticamente no ahorré', '2 — Ahorré un poco', '3 — Ahorré regular', '4 — Ahorré con constancia', '5 — Superé mi meta'], correcta: null,                                                                          feedback: 'La autoevaluación honesta es el primer paso para mejorar.' },
-  { id: 10, tipo: 'situacion',   pregunta: 'Rodrigo quiere ahorrar $6,000 en 6 meses. ¿Cuánto debe apartar por mes?',       opciones: ['A) $500', 'B) $750', 'C) $1,000'],                                                                                               correcta: 'C) $1,000',                                                                   feedback: '$6,000 ÷ 6 meses = $1,000 por mes.' },
-];
+type Stage = 'intro' | 'quiz' | 'review' | 'complete';
+type Draft = {
+  version: 1;
+  stage: Stage;
+  question: number;
+  pending: number | null;
+  answers: Record<number, number>;
+};
+const KEY = 'savings_l14:quiz:v1';
+const QUESTIONS = [
+  {
+    text: '¿Qué significa “pagarte primero”?',
+    options: [
+      'Apartar ahorro antes de distribuir el resto',
+      'Comprar algo personal antes de pagar necesidades',
+      'Invertir sin conservar liquidez',
+    ],
+    correct: 0,
+    feedback:
+      'Se trata de incluir el ahorro desde el inicio de la distribución, con un monto que puedas sostener.',
+  },
+  {
+    text: '¿Qué criterio distingue mejor una opción formal de ahorro?',
+    options: [
+      'Siempre ofrece el mayor rendimiento',
+      'Tiene una institución, contrato y registro verificables',
+      'Nunca tiene costos ni condiciones',
+    ],
+    correct: 1,
+    feedback:
+      'Conviene verificar institución, producto, costos, acceso, contrato y protección aplicable.',
+  },
+  {
+    text: 'Si tus ingresos varían, ¿qué estrategia puede adaptarse mejor?',
+    options: [
+      'Una regla flexible basada en cada ingreso',
+      'La misma cantidad aunque falte para lo esencial',
+      'Ahorrar solo cuando sobre por casualidad',
+    ],
+    correct: 0,
+    feedback:
+      'Una regla flexible puede adaptarse, siempre que proteja primero gastos esenciales y compromisos.',
+  },
+  {
+    text: '¿Qué significa una proyección con interés compuesto?',
+    options: [
+      'Una promesa del saldo final',
+      'Un escenario condicionado a tasa, plazo y aportaciones',
+      'Una garantía para cualquier producto',
+    ],
+    correct: 1,
+    feedback:
+      'El resultado depende de supuestos y puede cambiar por comisiones, impuestos, inflación, tasa y mercado.',
+  },
+  {
+    text: '¿Cómo verificas la protección de un depósito?',
+    options: [
+      'Memorizando una cifra en pesos',
+      'Revisando institución, producto y límite vigente en la fuente oficial',
+      'Confiando solo en el nombre comercial',
+    ],
+    correct: 1,
+    feedback:
+      'La ruta estable es institución, producto y límite vigente; la equivalencia puede cambiar.',
+  },
+] as const;
+const initial = (): Draft => ({
+  version: 1,
+  stage: 'intro',
+  question: 0,
+  pending: null,
+  answers: {},
+});
+function parse(raw: unknown): Draft | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const v = raw as Draft;
+  if (
+    v.version !== 1 ||
+    !['intro', 'quiz', 'review', 'complete'].includes(v.stage) ||
+    !Number.isInteger(v.question) ||
+    v.question < 0 ||
+    v.question >= QUESTIONS.length ||
+    (v.pending !== null && ![0, 1, 2].includes(v.pending)) ||
+    !v.answers ||
+    (['review', 'complete'].includes(v.stage) && Object.keys(v.answers).length !== QUESTIONS.length)
+  )
+    return null;
+  return v;
+}
 
 export default function L14() {
-  const [step, setStep] = useState(0);
-
-  const resume = useLessonResume('ahorro', 'L14');
-  const [resumeHandled, setResumeHandled] = useState(false);
-
-  useEffect(() => {
-    if (step > 0) resume.save({ step });
-  }, [step, resume]);
+  const [draft, setDraft] = useState<Draft>(initial);
   const [loading, setLoading] = useState(true);
-  const [metaData, setMetaData] = useState<MetaData>(null);
-  const [planData, setPlanData] = useState<PlanData>(null);
-  const [retoData, setRetoData] = useState<RetoData>(null);
-  const [answers, setAnswers] = useState<Record<number, QuizAnswer>>({});
-
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
   useEffect(() => {
-    const load = async () => {
-      const meta = await lessonDataRepository.load<MetaData>('ahorro', 'l5_meta');
-      const plan = await lessonDataRepository.load<PlanData>('ahorro', 'l6_plan');
-      const reto = await lessonDataRepository.load<RetoData>('ahorro', 'l11_reto');
-      setMetaData(meta); setPlanData(plan); setRetoData(reto);
-      setLoading(false);
+    mounted.current = true;
+    setLoading(true);
+    setLoadError(false);
+    void lessonDataRepository
+      .load('ahorro', KEY)
+      .then((raw) => {
+        if (mounted.current) {
+          setDraft(parse(raw) ?? initial());
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (mounted.current) {
+          setLoading(false);
+          setLoadError(true);
+        }
+      });
+    return () => {
+      mounted.current = false;
     };
-    void load();
-  }, []);
-
-  const totalAcumulado = retoData?.totalAcumulado ?? 0;
-  const totalPlanado = planData?.totalPlanado ?? 0;
-  const pctMeta = metaData?.monto && metaData.monto > 0 ? Math.min(100, (totalAcumulado / metaData.monto) * 100) : 0;
-  const diasConsec = retoData?.dayAmounts?.length ?? 0;
-  const quizDone = PREGUNTAS.every((p) => answers[p.id] !== undefined);
-
-  const score = useMemo(() => {
-    return PREGUNTAS.filter((p) => p.tipo === 'autoevaluacion' || answers[p.id] === p.correcta).length;
-  }, [answers]);
-
-  const pctScore = score / PREGUNTAS.length;
-  const badgeUnlocked = pctScore >= 0.7;
-  const progress = step === 0 ? 0 : step === 1 ? 33 : step === 2 ? 66 : 100;
-
-  if (loading) {
+  }, [attempt]);
+  const persist = async (next: Draft, final = false) => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (final) {
+        await lessonDataRepository.saveBatch('ahorro', [
+          {
+            key: 'l14_quiz_result',
+            data: {
+              answers: next.answers,
+              score: QUESTIONS.filter((item, index) => next.answers[index] === item.correct).length,
+              total: QUESTIONS.length,
+            },
+          },
+          { key: KEY, data: next },
+        ]);
+      } else {
+        await lessonDataRepository.save('ahorro', KEY, next);
+      }
+      if (mounted.current) {
+        setDraft(next);
+        setDirty(false);
+      }
+    } catch {
+      if (mounted.current) setError('No pudimos guardar. Tus respuestas siguen en pantalla.');
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
+  };
+  if (loading)
     return (
-      <LessonShell id="L14" title="Evalúa tu hábito de ahorro" completion={{ ready: false }}>
-        <p className="text-sm text-[var(--color-text-secondary)]">Cargando estadísticas...</p>
+      <LessonShell id="L14" title="Evalúa lo aprendido" completion={{ ready: false }}>
+        <ActivityLoading />
       </LessonShell>
     );
-  }
-
+  if (loadError)
+    return (
+      <LessonShell id="L14" title="Evalúa lo aprendido" completion={{ ready: false }}>
+        <ActivityLoadError
+          message="No pudimos recuperar tus respuestas."
+          onRetry={() => setAttempt((value) => value + 1)}
+        />
+      </LessonShell>
+    );
+  const current = QUESTIONS[draft.question];
+  const feedback = draft.pending === null ? null : draft.pending === current.correct;
+  const score = QUESTIONS.filter((item, index) => draft.answers[index] === item.correct).length;
+  const reviewing = draft.stage === 'review' || draft.stage === 'complete';
+  const confirm = () => {
+    if (draft.pending === null) return;
+    const answers = { ...draft.answers, [draft.question]: draft.pending };
+    const last = draft.question === QUESTIONS.length - 1;
+    void persist({
+      ...draft,
+      answers,
+      pending: null,
+      question: last ? draft.question : draft.question + 1,
+      stage: last ? 'review' : 'quiz',
+    });
+  };
   return (
-    <LessonShell id="L14" title="Evalúa tu hábito de ahorro" completion={{ ready: quizDone, score: pctScore }}>
-      <div className="p-1">
-        {resume.hasSaved && !resumeHandled && (
-          <LessonResumeBanner
-            step={resume.savedStep ?? 0}
-            onContinue={() => {
-              const snapshot = resume.accept();
-              if (snapshot) setStep(snapshot.step);
-              setResumeHandled(true);
-            }}
-            onRestart={() => {
-              resume.ignore();
-              setResumeHandled(true);
-            }}
-          />
-        )}
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
-        </div>
-
-        {/* Pantalla 0 — Estadísticas del módulo */}
-        {step === 0 && (
-          <div className="space-y-6">
-            <FinniMessage variant="coach" title="¡Casi llegamos al final del Módulo 2!" message="Primero vamos a ver tus estadísticas del módulo. Luego el quiz. Las dos cosas van a sorprenderte." />
-            <p className="font-bold">Tus estadísticas del módulo:</p>
-            <div className="space-y-3">
-              <FECard variant="flat" className="border" style={{ backgroundColor: successBg, borderColor: successColor }}>
-                <div className="flex justify-between">
-                  <p className="text-sm">Total ahorrado en el módulo:</p>
-                  <p className="text-sm font-bold" style={{ color: successColor }}>${totalAcumulado.toLocaleString()}</p>
-                </div>
-              </FECard>
-              <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-                <div className="flex justify-between items-center">
-                  <p className="text-sm">Días con registro consecutivo:</p>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: diasConsec >= 3 ? successBg : warnBg, color: diasConsec >= 3 ? successColor : warnColor, border: `1px solid ${diasConsec >= 3 ? successColor : warnColor}` }}>
-                    {diasConsec} días
-                  </span>
-                </div>
-              </FECard>
-              <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-                <p className="text-sm mb-1">Progreso hacia la meta: {pctMeta.toFixed(0)}%{metaData?.nombre ? ` — "${metaData.nombre}"` : ''}</p>
-                <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2">
-                  <div className="h-2 rounded-full transition-all" style={{ width: `${pctMeta}%`, backgroundColor: successColor }} />
-                </div>
-              </FECard>
-              <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-                <div className="flex justify-between">
-                  <p className="text-sm">Plan inicial:</p>
-                  <p className="text-sm">${totalPlanado.toLocaleString()} planeados</p>
-                </div>
-                {totalPlanado > 0 && (
-                  <p className="text-xs mt-1" style={{ color: totalAcumulado >= totalPlanado * 0.5 ? successColor : warnColor }}>
-                    {totalAcumulado >= totalPlanado * 0.5 ? 'En camino' : 'Por debajo del plan'}
-                  </p>
-                )}
-              </FECard>
-            </div>
-            <FinniMessage variant="coach" title="Mira todo lo que hiciste" message="Esas son tus decisiones, no las mías." />
-            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
-              Empezar el quiz de 10 preguntas →
-            </button>
-          </div>
-        )}
-
-        {/* Pantalla 1 — Quiz de 10 preguntas */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <p className="font-bold">Quiz de 10 preguntas</p>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: successBg, color: successColor, border: `1px solid ${successColor}` }}>
-                {Object.keys(answers).length}/10
-              </span>
-            </div>
-            <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2">
-              <div className="h-2 rounded-full transition-all" style={{ width: `${(Object.keys(answers).length / 10) * 100}%`, backgroundColor: successColor }} />
-            </div>
-            <div className="space-y-4">
-              {PREGUNTAS.map((p) => {
-                const ans = answers[p.id];
-                const isCorrect = p.tipo === 'autoevaluacion' ? true : ans === p.correcta;
-                return (
-                  <FECard
-                    key={p.id}
-                    variant="flat"
-                    className="border"
-                    style={{ borderColor: ans !== undefined ? (isCorrect ? successColor : errorColor) : 'var(--color-neutral-200)' }}
-                  >
-                    <p className="text-sm font-bold mb-2">{p.id}. {p.pregunta}</p>
-                    <div className="space-y-2">
-                      {p.opciones.map((opt) => {
-                        const isSelected = ans === opt;
-                        let style: React.CSSProperties = { borderColor: successColor, color: successColor };
-                        if (ans !== undefined) {
-                          if (p.tipo === 'autoevaluacion' && isSelected) style = { backgroundColor: successBg, borderColor: successColor, color: successColor };
-                          else if (isSelected && isCorrect) style = { backgroundColor: successBg, borderColor: successColor, color: successColor };
-                          else if (isSelected && !isCorrect) style = { backgroundColor: errorBg, borderColor: errorColor, color: errorColor };
-                          else style = { borderColor: 'var(--color-neutral-200)', color: 'var(--color-text-secondary)' };
-                        } else {
-                          style = isSelected ? { backgroundColor: successBg, borderColor: successColor, color: successColor } : { borderColor: successColor, color: successColor };
-                        }
-                        return (
-                          <button
-                            key={opt}
-                            className="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold border transition-colors disabled:cursor-not-allowed"
-                            style={style}
-                            disabled={ans !== undefined}
-                            onClick={() => {
-                              if (ans === undefined) setAnswers((prev) => ({ ...prev, [p.id]: opt }));
-                            }}
-                          >
-                            {opt}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {ans !== undefined && (
-                      <p className="text-xs mt-2" style={{ color: isCorrect ? successColor : errorColor }}>
-                        {p.feedback}
-                      </p>
-                    )}
-                  </FECard>
-                );
-              })}
-            </div>
-            {quizDone && (
-              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(2)}>
-                Ver resultado →
+    <LessonShell
+      id="L14"
+      title="Evalúa lo aprendido sobre ahorro"
+      showGreeting={false}
+      completion={{ ready: draft.stage === 'complete', score: score / QUESTIONS.length }}
+    >
+      <ActivityFrame
+        label="Quiz de criterios de ahorro"
+        className="savings-progress"
+        busy={busy}
+        title={
+          reviewing
+            ? 'Revisa lo que ya puedes decidir.'
+            : draft.stage === 'quiz'
+              ? 'Elige y recibe contexto inmediato.'
+              : 'Comprueba cinco criterios útiles.'
+        }
+        description="Responde una situación por pantalla. Puedes reconsiderar antes de confirmar."
+        progressLabel="Preguntas respondidas"
+        progressValue={Object.keys(draft.answers).length}
+        progressMax={QUESTIONS.length}
+        stepLabel={
+          reviewing
+            ? 'Revisión final'
+            : draft.stage === 'quiz'
+              ? `Pregunta ${draft.question + 1} de ${QUESTIONS.length}`
+              : 'Antes de empezar'
+        }
+        focusKey={`${draft.stage}-${draft.question}`}
+        advice={{
+          title:
+            feedback === null
+              ? 'Finni te acompaña'
+              : feedback
+                ? 'Criterio bien aplicado'
+                : 'Mira la condición que falta',
+          text:
+            feedback === null
+              ? 'Busca la opción que conserva capacidad de ajuste y pide verificar las condiciones reales.'
+              : current.feedback,
+          tone: feedback === null ? 'info' : feedback ? 'success' : 'review',
+        }}
+        adviceCue={cue}
+        error={error}
+        status={
+          busy ? 'Guardando…' : dirty ? 'Respuesta sin confirmar.' : 'Tu avance está guardado.'
+        }
+        actions={
+          <div className="spg-actions">
+            {draft.stage === 'intro' && (
+              <button
+                className="ca-primary"
+                onClick={() => void persist({ ...draft, stage: 'quiz' })}
+              >
+                Empezar evaluación
+              </button>
+            )}
+            {draft.stage === 'quiz' && (
+              <button
+                className="ca-primary"
+                disabled={draft.pending === null || busy}
+                onClick={confirm}
+              >
+                {draft.question === QUESTIONS.length - 1
+                  ? 'Confirmar y revisar'
+                  : 'Confirmar respuesta'}
+              </button>
+            )}
+            {draft.stage === 'review' && (
+              <button
+                className="ca-primary"
+                onClick={() => void persist({ ...draft, stage: 'complete' }, true)}
+              >
+                Guardar resultado y terminar
               </button>
             )}
           </div>
+        }
+      >
+        {draft.stage === 'intro' && (
+          <section className="spg-concept">
+            <article>
+              <span>Formato</span>
+              <strong>5 decisiones breves</strong>
+              <p>Una pregunta por pantalla.</p>
+            </article>
+            <article>
+              <span>Objetivo</span>
+              <strong>Aplicar criterios</strong>
+              <p>El puntaje muestra aprendizaje, no valor personal.</p>
+            </article>
+          </section>
         )}
-
-        {/* Pantalla 2 — Resultado */}
-        {step === 2 && (
-          <div className="space-y-6">
-            <FECard
-              variant="flat"
-              className="text-center py-6 border-2"
-              style={{
-                backgroundColor: badgeUnlocked ? warnBg : infoBg,
-                borderColor: badgeUnlocked ? warnColor : infoColor,
-              }}
-            >
-              {badgeUnlocked && <Trophy className="h-12 w-12 mx-auto mb-2" aria-hidden="true" />}
-              <p className="text-2xl font-bold mt-1">{score}/10</p>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                {badgeUnlocked ? 'Badge "Evaluado" desbloqueado' : `${(pctScore * 100).toFixed(0)}% — necesitas 70% para el badge`}
-              </p>
-            </FECard>
-            <FinniMessage
-              variant="success"
-              title={badgeUnlocked ? '¡Badge Evaluado desbloqueado!' : 'Buen intento'}
-              message={badgeUnlocked ? 'Demostraste que entiendes los conceptos clave del ahorro.' : 'Puedes repasar las lecciones con más errores. El aprendizaje es el objetivo.'}
-            />
-            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="text-sm font-bold mb-2">Tus respuestas:</p>
-              <div className="flex flex-wrap gap-2">
-                {PREGUNTAS.map((p) => {
-                  const ans = answers[p.id];
-                  const isCorrect = p.tipo === 'autoevaluacion' ? true : ans === p.correcta;
-                  return (
-                    <span
-                      key={p.id}
-                      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold"
-                      style={{ backgroundColor: isCorrect ? successBg : errorBg, color: isCorrect ? successColor : errorColor, border: `1px solid ${isCorrect ? successColor : errorColor}` }}
-                    >
-                      P{p.id}
-                    </span>
-                  );
-                })}
-              </div>
-            </FECard>
-          </div>
+        {draft.stage === 'quiz' && (
+          <section className="spg-question">
+            <h3>{current.text}</h3>
+            {current.options.map((option, index) => (
+              <button
+                key={option}
+                className={draft.pending === index ? 'is-selected' : ''}
+                aria-pressed={draft.pending === index}
+                onClick={() => {
+                  setDraft((value) => ({ ...value, pending: index }));
+                  setCue(option);
+                  setDirty(true);
+                }}
+              >
+                {option}
+              </button>
+            ))}
+          </section>
         )}
-      </div>
+        {reviewing && (
+          <section className="spg-review">
+            <span>Resultado</span>
+            <h3>
+              {score} de {QUESTIONS.length} criterios aplicados
+            </h3>
+            <p>
+              Puedes volver a las lecciones cuando quieras. El resultado queda guardado solo al
+              cerrar.
+            </p>
+          </section>
+        )}
+      </ActivityFrame>
     </LessonShell>
   );
 }

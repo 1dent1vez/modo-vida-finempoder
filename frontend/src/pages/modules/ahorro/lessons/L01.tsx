@@ -1,291 +1,346 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
-import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
-import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
+import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/savings-first.css';
 
-type BridgeAnswer = 'nada' | 'algo' | 'planeado' | null;
-type ReflexAnswer = 'a' | 'b' | 'depende' | null;
-type Quiz1 = 'a' | 'b' | 'c' | null;
-type Quiz2 = 'a' | 'b' | 'c' | null;
-
-const successColor = 'var(--color-brand-success)';
-const successBg = 'var(--color-brand-success-bg)';
-const errorColor = 'var(--color-brand-error)';
-const errorBg = 'var(--color-brand-error-bg)';
-
-const RUTAS = [
+type Stage = 'compare' | 'project' | 'quiz' | 'review' | 'complete';
+type Draft = {
+  version: 1;
+  stage: Stage;
+  weekly: number;
+  question: number;
+  pending: number | null;
+  answers: Record<number, number>;
+};
+const KEY = 'savings_l1:first:v1';
+const QUESTIONS = [
   {
-    id: 'a',
-    label: 'RUTA A — Gasto primero',
-    borderColor: errorColor,
-    bgExpanded: errorBg,
-    steps: ['Dinero llega', 'Gastos necesidades', 'Gastos deseos', 'Intento de ahorro', '$0 ahorrado'],
-    proyeccion: { m3: 0, m6: 0, m12: 0 },
-    chipColor: errorColor,
+    text: '¿Qué significa “ahorrar primero” en esta práctica?',
+    options: [
+      'Guardar únicamente lo que sobre',
+      'Separar una cantidad planeada antes de otros gastos ajustables',
+      'Evitar cualquier gasto durante el mes',
+    ],
+    correct: 1,
+    feedback:
+      'La intención es asignar una cantidad desde el inicio, sin descuidar necesidades ni compromisos.',
   },
   {
-    id: 'b',
-    label: 'RUTA B — Ahorro primero',
-    borderColor: successColor,
-    bgExpanded: successBg,
-    steps: ['Dinero llega', 'Aparta ahorro YA', 'Gasta el resto', 'Ahorro constante'],
-    proyeccion: { m3: 1300, m6: 2600, m12: 5200 },
-    chipColor: successColor,
+    text: '¿Qué muestra esta proyección?',
+    options: [
+      'Una garantía de rendimiento',
+      'Una suma simple si se mantiene la aportación',
+      'El saldo real de una cuenta bancaria',
+    ],
+    correct: 1,
+    feedback: 'La cifra suma aportaciones; no incluye intereses, inflación, pausas ni comisiones.',
   },
-];
+] as const;
+const initial = (): Draft => ({
+  version: 1,
+  stage: 'compare',
+  weekly: 100,
+  question: 0,
+  pending: null,
+  answers: {},
+});
+function parse(raw: unknown): Draft | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const v = raw as Draft;
+  if (
+    v.version !== 1 ||
+    !['compare', 'project', 'quiz', 'review', 'complete'].includes(v.stage) ||
+    !Number.isFinite(v.weekly) ||
+    v.weekly < 50 ||
+    v.weekly > 1000 ||
+    !Number.isInteger(v.question) ||
+    v.question < 0 ||
+    v.question > 1 ||
+    (v.pending !== null && ![0, 1, 2].includes(v.pending)) ||
+    !v.answers ||
+    (['review', 'complete'].includes(v.stage) && Object.keys(v.answers).length !== 2)
+  )
+    return null;
+  return v;
+}
 
 export default function L01() {
-  const [step, setStep] = useState(0);
-
-  const resume = useLessonResume('ahorro', 'L01');
-  const [resumeHandled, setResumeHandled] = useState(false);
-
+  const [draft, setDraft] = useState<Draft>(initial);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
   useEffect(() => {
-    if (step > 0) resume.save({ step });
-  }, [step, resume]);
-  const [bridge, setBridge] = useState<BridgeAnswer>(null);
-  const [rutaExpanded, setRutaExpanded] = useState<string | null>(null);
-  const [reflex, setReflex] = useState<ReflexAnswer>(null);
-  const [monto, setMonto] = useState(100);
-  const [q1, setQ1] = useState<Quiz1>(null);
-  const [q2, setQ2] = useState<Quiz2>(null);
-
-  const quizDone = q1 !== null && q2 !== null;
-  const progress = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 50 : step === 3 ? 75 : 100;
-
+    mounted.current = true;
+    setLoading(true);
+    setLoadError(false);
+    void lessonDataRepository
+      .load('ahorro', KEY)
+      .then((raw) => {
+        if (mounted.current) {
+          setDraft(parse(raw) ?? initial());
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (mounted.current) {
+          setLoading(false);
+          setLoadError(true);
+        }
+      });
+    return () => {
+      mounted.current = false;
+    };
+  }, [loadAttempt]);
+  const persist = async (next: Draft, final = false) => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (final) {
+        await lessonDataRepository.saveBatch('ahorro', [
+          {
+            key: 'l1_savings_first',
+            data: {
+              weekly: next.weekly,
+              answers: next.answers,
+              projectionType: 'simple-contributions',
+            },
+          },
+          { key: KEY, data: next },
+        ]);
+      } else {
+        await lessonDataRepository.save('ahorro', KEY, next);
+      }
+      if (mounted.current) {
+        setDraft(next);
+        setDirty(false);
+      }
+    } catch {
+      if (mounted.current) setError('No pudimos guardar. Tu elección sigue en pantalla.');
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
+  };
+  const q = QUESTIONS[draft.question];
+  const feedback = draft.pending === null ? null : draft.pending === q.correct;
+  const reviewing = draft.stage === 'review' || draft.stage === 'complete';
+  const confirmQuestion = () => {
+    if (draft.pending === null) return;
+    const answers = { ...draft.answers, [draft.question]: draft.pending };
+    const last = draft.question === 1;
+    void persist({
+      ...draft,
+      answers,
+      pending: null,
+      question: last ? 1 : 1,
+      stage: last ? 'review' : 'quiz',
+    });
+  };
+  if (loading)
+    return (
+      <LessonShell id="L01" title="Ahorro primero" completion={{ ready: false }}>
+        <ActivityLoading />
+      </LessonShell>
+    );
+  if (loadError)
+    return (
+      <LessonShell id="L01" title="Ahorro primero" completion={{ ready: false }}>
+        <ActivityLoadError
+          message="No pudimos recuperar tu avance. Revisa tu conexión e inténtalo de nuevo."
+          onRetry={() => setLoadAttempt((value) => value + 1)}
+        />
+      </LessonShell>
+    );
   return (
-    <LessonShell id="L01" title="Ahorro primero: el hábito que cambia todo" completion={{ ready: quizDone }}>
-      <div className="p-1">
-        {resume.hasSaved && !resumeHandled && (
-          <LessonResumeBanner
-            step={resume.savedStep ?? 0}
-            onContinue={() => {
-              const snapshot = resume.accept();
-              if (snapshot) setStep(snapshot.step);
-              setResumeHandled(true);
-            }}
-            onRestart={() => {
-              resume.ignore();
-              setResumeHandled(true);
-            }}
-          />
-        )}
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
-        </div>
-
-        {/* Pantalla 0 — Bienvenida + pregunta puente */}
-        {step === 0 && (
-          <div className="space-y-6">
-            <FinniMessage variant="coach" title="¡Bienvenido al Módulo 2!" message="En el módulo anterior construiste tu presupuesto. Ahora vamos a hacer que ese dinero trabaje para ti, no solo para sobrevivir el mes." />
-            <FECard variant="flat" className="border-2" style={{ borderColor: successColor }}>
-              <p className="font-bold mb-3">¿Cuánto lograste ahorrar el mes pasado?</p>
-              <div className="space-y-2">
-                {[
-                  { key: 'nada', label: 'Nada' },
-                  { key: 'algo', label: 'Algo' },
-                  { key: 'planeado', label: 'Lo que planeé' },
-                ].map((o) => (
-                  <button
-                    key={o.key}
-                    onClick={() => setBridge(o.key as BridgeAnswer)}
-                    className="w-full text-left px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors"
-                    style={{
-                      borderColor: successColor,
-                      backgroundColor: bridge === o.key ? successColor : 'transparent',
-                      color: bridge === o.key ? 'white' : 'inherit',
-                    }}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-            </FECard>
-            {bridge && (
-              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
-                Ver la diferencia →
+    <LessonShell
+      id="L01"
+      title="Ahorro primero: el hábito que cambia todo"
+      showGreeting={false}
+      completion={{ ready: draft.stage === 'complete', score: 100 }}
+    >
+      <ActivityFrame
+        label="Práctica de ahorro primero"
+        className="savings-first"
+        busy={busy}
+        title={
+          reviewing
+            ? 'Revisa tu punto de partida.'
+            : draft.stage === 'quiz'
+              ? 'Comprueba la idea principal.'
+              : draft.stage === 'project'
+                ? 'Explora una aportación posible.'
+                : 'Compara el orden de las decisiones.'
+        }
+        description="Trabaja con un ejemplo y una proyección simple; puedes cambiar el monto."
+        progressLabel="Etapas completadas"
+        progressValue={
+          draft.stage === 'compare'
+            ? 0
+            : draft.stage === 'project'
+              ? 1
+              : draft.stage === 'quiz'
+                ? 2 + Object.keys(draft.answers).length
+                : 4
+        }
+        progressMax={4}
+        stepLabel={
+          reviewing
+            ? 'Paso 4 de 4 · Revisar'
+            : draft.stage === 'quiz'
+              ? `Paso 3 de 4 · Pregunta ${draft.question + 1} de 2`
+              : draft.stage === 'project'
+                ? 'Paso 2 de 4 · Proyectar'
+                : 'Paso 1 de 4 · Comparar'
+        }
+        focusKey={`${draft.stage}-${draft.question}`}
+        advice={{
+          title:
+            feedback === null
+              ? 'La constancia admite ajustes'
+              : feedback
+                ? 'Lectura correcta'
+                : 'Mira el matiz',
+          text:
+            feedback === null
+              ? 'Separar primero ayuda cuando la cantidad respeta tus necesidades y puede sostenerse.'
+              : q.feedback,
+          tone: feedback === null ? 'info' : feedback ? 'success' : 'review',
+        }}
+        adviceCue={cue}
+        error={error}
+        status={busy ? 'Guardando…' : dirty ? 'Cambios sin guardar.' : 'Tu avance está guardado.'}
+        actions={
+          <div className="sf-actions">
+            {draft.stage === 'compare' && (
+              <button
+                className="ca-primary"
+                onClick={() => void persist({ ...draft, stage: 'project' })}
+              >
+                Explorar una aportación
               </button>
             )}
-          </div>
-        )}
-
-        {/* Pantalla 1 — Dos rutas */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <p className="text-sm text-[var(--color-text-secondary)] italic">"La diferencia no está en el monto. Está en el orden. Cuando ahorras primero, el ahorro deja de ser opcional."</p>
-            <div className="space-y-3">
-              {RUTAS.map((r) => (
-                <FECard
-                  key={r.id}
-                  variant="flat"
-                  className="border-2 cursor-pointer"
-                  style={{
-                    borderColor: r.borderColor,
-                    backgroundColor: rutaExpanded === r.id ? r.bgExpanded : 'white',
+            {draft.stage === 'project' && (
+              <button
+                className="ca-primary"
+                onClick={() => void persist({ ...draft, stage: 'quiz' })}
+              >
+                Comprobar lo aprendido
+              </button>
+            )}
+            {draft.stage === 'quiz' && (
+              <button
+                className="ca-primary"
+                disabled={busy || draft.pending === null}
+                onClick={confirmQuestion}
+              >
+                {draft.question === 1 ? 'Confirmar y revisar' : 'Confirmar respuesta'}
+              </button>
+            )}
+            {draft.stage === 'review' && (
+              <>
+                <button
+                  className="sf-secondary"
+                  onClick={() => {
+                    setDraft((v) => ({ ...v, stage: 'project' }));
+                    setDirty(true);
                   }}
-                  onClick={() => setRutaExpanded(rutaExpanded === r.id ? null : r.id)}
-                  role="button"
-                  tabIndex={0}
                 >
-                  <div className="flex justify-between items-center">
-                    <p className="font-bold" style={{ color: r.borderColor }}>{r.label}</p>
-                    <span className="text-xs">{rutaExpanded === r.id ? '▲' : '▼'}</span>
-                  </div>
-                  {rutaExpanded === r.id && (
-                    <div className="space-y-1 mt-3">
-                      {r.steps.map((s, i) => <p key={i} className="text-sm">{i + 1}. {s}</p>)}
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {[
-                          { label: `3 meses: $${r.proyeccion.m3.toLocaleString()}` },
-                          { label: `6 meses: $${r.proyeccion.m6.toLocaleString()}` },
-                          { label: `12 meses: $${r.proyeccion.m12.toLocaleString()}` },
-                        ].map(({ label }) => (
-                          <span key={label} className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: r.chipColor }}>{label}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </FECard>
+                  Ajustar monto
+                </button>
+                <button
+                  className="ca-primary"
+                  onClick={() => void persist({ ...draft, stage: 'complete' }, true)}
+                >
+                  Guardar y terminar
+                </button>
+              </>
+            )}
+          </div>
+        }
+      >
+        {draft.stage === 'compare' && (
+          <section className="sf-card">
+            <h3>Ejemplo: llegan $2,000</h3>
+            <div className="sf-compare">
+              <div>
+                <strong>Gastar y esperar</strong>
+                <p>El ahorro depende de que quede dinero al final.</p>
+              </div>
+              <div>
+                <strong>Separar una cantidad planeada</strong>
+                <p>El resto disponible queda claro desde el inicio.</p>
+              </div>
+            </div>
+          </section>
+        )}
+        {draft.stage === 'project' && (
+          <section className="sf-card">
+            <label htmlFor="weekly-saving">
+              <strong>Aportación semanal: ${draft.weekly}</strong>
+            </label>
+            <input
+              id="weekly-saving"
+              type="range"
+              min="50"
+              max="1000"
+              step="50"
+              value={draft.weekly}
+              onChange={(e) => {
+                setDraft((v) => ({ ...v, weekly: Number(e.target.value) }));
+                setDirty(true);
+              }}
+            />
+            <div className="sf-projection">
+              {[13, 26, 52].map((weeks) => (
+                <div key={weeks}>
+                  <strong>${(draft.weekly * weeks).toLocaleString()}</strong>
+                  <span>{weeks} semanas</span>
+                </div>
               ))}
             </div>
-            <FinniMessage variant="coach" title="La Ruta B tiene un nombre" message="Pagarte primero a ti mismo. Es el hábito más poderoso de las finanzas personales." />
-            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(2)}>
-              Reflexionar →
-            </button>
-          </div>
+            <p>Es una suma simple de aportaciones, sin rendimiento.</p>
+          </section>
         )}
-
-        {/* Pantalla 2 — Reflexion + slider */}
-        {step === 2 && (
-          <div className="space-y-6">
-            <FECard variant="flat" className="border-2" style={{ borderColor: successColor }}>
-              <p className="font-bold mb-3">¿En cuál de las dos rutas te identificas normalmente?</p>
-              <div className="space-y-2">
-                {[
-                  { key: 'a', label: 'Ruta A — primero gasto' },
-                  { key: 'b', label: 'Ruta B — primero ahorro' },
-                  { key: 'depende', label: 'Depende del mes' },
-                ].map((o) => (
-                  <button
-                    key={o.key}
-                    onClick={() => setReflex(o.key as ReflexAnswer)}
-                    className="w-full text-left px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors"
-                    style={{
-                      borderColor: successColor,
-                      backgroundColor: reflex === o.key ? successColor : 'transparent',
-                      color: reflex === o.key ? 'white' : 'inherit',
-                    }}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-            </FECard>
-
-            <FECard variant="flat" className="border" style={{ borderColor: successColor }}>
-              <p className="font-bold mb-1">Tu proyección personalizada</p>
-              <p className="text-xs text-[var(--color-text-secondary)]">Si apartas ${monto}/semana desde hoy...</p>
-              <input
-                type="range"
-                min={50}
-                max={1000}
-                step={50}
-                value={monto}
-                onChange={(e) => setMonto(Number(e.target.value))}
-                className="w-full my-4 accent-[var(--color-brand-success)]"
-              />
-              <div className="flex flex-wrap gap-1">
-                {[
-                  `1 año: $${(monto * 52).toLocaleString()}`,
-                  `5 años: $${(monto * 52 * 5).toLocaleString()}`,
-                  `10 años: $${(monto * 52 * 10).toLocaleString()}`,
-                ].map((label) => (
-                  <span key={label} className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>{label}</span>
-                ))}
-              </div>
-            </FECard>
-
-            {reflex && (
-              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(3)}>
-                Quiz rápido →
-              </button>
-            )}
-          </div>
+        {draft.stage === 'quiz' && (
+          <section className="sf-card">
+            <h3>{q.text}</h3>
+            <div className="sf-options">
+              {q.options.map((option, index) => (
+                <button
+                  key={option}
+                  className="sf-option"
+                  aria-pressed={draft.pending === index}
+                  onClick={() => {
+                    setDraft((v) => ({ ...v, pending: index }));
+                    setDirty(true);
+                    setCue(`${draft.question}-${index}`);
+                  }}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </section>
         )}
-
-        {/* Pantalla 3 — Quiz */}
-        {step === 3 && (
-          <div className="space-y-6">
-            <p className="text-2xl font-bold">Quiz rápido</p>
-
-            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="font-bold mb-3">1. ¿Qué es el ahorro?</p>
-              <div className="space-y-2">
-                {[
-                  { key: 'a', label: 'A) Guardar lo que sobra' },
-                  { key: 'b', label: 'B) Apartar una parte antes de gastar' },
-                  { key: 'c', label: 'C) No gastar nada' },
-                ].map((o) => (
-                  <button
-                    key={o.key}
-                    onClick={() => { if (!q1) setQ1(o.key as Quiz1); }}
-                    disabled={q1 !== null}
-                    className="w-full text-left px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors disabled:cursor-default"
-                    style={{
-                      borderColor: q1 === o.key ? (o.key === 'b' ? successColor : errorColor) : 'var(--color-neutral-200)',
-                      backgroundColor: q1 === o.key ? (o.key === 'b' ? successBg : errorBg) : 'transparent',
-                    }}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-              {q1 && (
-                <p className="text-xs mt-2 font-semibold" style={{ color: q1 === 'b' ? successColor : errorColor }}>
-                  {q1 === 'b' ? '¡Correcto! Ahorrar es separar intencionalmente.' : 'El ahorro es planificado, no lo que sobra.'}
-                </p>
-              )}
-            </FECard>
-
-            {q1 && (
-              <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-                <p className="font-bold mb-3">2. ¿Cuándo se ahorra más fácilmente?</p>
-                <div className="space-y-2">
-                  {[
-                    { key: 'a', label: 'A) Cuando sobra dinero' },
-                    { key: 'b', label: 'B) Cuando se automatiza' },
-                    { key: 'c', label: 'C) Cuando el ingreso es alto' },
-                  ].map((o) => (
-                    <button
-                      key={o.key}
-                      onClick={() => { if (!q2) setQ2(o.key as Quiz2); }}
-                      disabled={q2 !== null}
-                      className="w-full text-left px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors disabled:cursor-default"
-                      style={{
-                        borderColor: q2 === o.key ? (o.key === 'b' ? successColor : errorColor) : 'var(--color-neutral-200)',
-                        backgroundColor: q2 === o.key ? (o.key === 'b' ? successBg : errorBg) : 'transparent',
-                      }}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
-                {q2 && (
-                <p className="text-xs mt-2 font-semibold" style={{ color: q2 === 'b' ? successColor : errorColor }}>
-                  {q2 === 'b' ? '¡Correcto! La automatización elimina la fuerza de voluntad.' : 'La automatización es la clave, no el monto.'}
-                  </p>
-                )}
-              </FECard>
-            )}
-
-            {quizDone && (
-              <FinniMessage variant="success" title="En este módulo vas a construir tu hábito" message="Empieza con lo que puedas, no con lo que idealmente quisieras." />
-            )}
-          </div>
+        {reviewing && (
+          <section className="sf-card">
+            <h3>${draft.weekly} por semana</h3>
+            <p>
+              En 52 semanas sumarían ${(draft.weekly * 52).toLocaleString()} si mantuvieras todas
+              las aportaciones. Puedes ajustar la cantidad cuando cambie tu situación.
+            </p>
+          </section>
         )}
-      </div>
+      </ActivityFrame>
     </LessonShell>
   );
 }

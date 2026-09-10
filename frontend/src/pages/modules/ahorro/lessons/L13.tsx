@@ -1,234 +1,323 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
-import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
-import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/savings-progress.css';
 
-type MetaData = { nombre?: string; monto?: number; aportacionMensual?: number } | null;
-type PlanData = { totalPlanado?: number; horizon?: number } | null;
-type RetoData = { totalAcumulado?: number; dayAmounts?: number[] } | null;
-type IndicadorColor = 'success' | 'warning' | 'error';
-
-type Indicador = {
-  label: string;
-  valor: string;
-  color: IndicadorColor;
-  comentario: string;
+type Stage = 'evidence' | 'reflect' | 'review' | 'complete';
+type Source = {
+  meta?: { nombre?: string; monto?: number };
+  plan?: { totalPlanado?: number; horizon?: number };
+  challenge?: {
+    days?: string[];
+    dayAmounts?: number[];
+    totalAcumulado?: number;
+    completedAt?: string;
+  };
 };
-
-const COLOR_MAP: Record<IndicadorColor, { main: string; bg: string; dark: string }> = {
-  success: { main: 'var(--color-brand-success)', bg: 'var(--color-brand-success-bg)', dark: 'var(--color-brand-success)' },
-  warning: { main: 'var(--color-brand-warning)', bg: 'var(--color-brand-warning-bg)', dark: 'var(--color-brand-warning)' },
-  error:   { main: 'var(--color-brand-error)',   bg: 'var(--color-brand-error-bg)',   dark: 'var(--color-brand-error)' },
-};
-
-function buildIndicadores(meta: MetaData, plan: PlanData, reto: RetoData): Indicador[] {
-  const montoMeta = meta?.monto ?? 0;
-  const totalAcumulado = reto?.totalAcumulado ?? 0;
-  const totalPlanado = plan?.totalPlanado ?? 0;
-  const pct = montoMeta > 0 ? Math.min(100, (totalAcumulado / montoMeta) * 100) : 0;
-
-  const dayAmounts = reto?.dayAmounts ?? [];
-  const consistencia: IndicadorColor = dayAmounts.length >= 3 ? 'success' : dayAmounts.length >= 1 ? 'warning' : 'error';
-  const progreso: IndicadorColor = pct >= 50 ? 'success' : pct >= 20 ? 'warning' : 'error';
-  const promedio = dayAmounts.length > 0 ? totalAcumulado / dayAmounts.length : 0;
-  const promedioColor: IndicadorColor = promedio >= (meta?.aportacionMensual ?? 0) * 0.8 ? 'success' : promedio > 0 ? 'warning' : 'error';
-  const tendenciaColor: IndicadorColor = totalAcumulado >= totalPlanado * 0.5 ? 'success' : totalAcumulado > 0 ? 'warning' : 'error';
-
-  return [
-    {
-      label: 'Consistencia',
-      valor: `${dayAmounts.length} días registrados`,
-      color: consistencia,
-      comentario: consistencia === 'success' ? 'Completaste los 3 días del micro-reto. Excelente consistencia.' : consistencia === 'warning' ? 'Has empezado. Sigue registrando para consolidar el hábito.' : 'Aún no has registrado ahorro. ¿Qué necesita cambiar para que funcione?',
-    },
-    {
-      label: 'Progreso hacia la meta',
-      valor: `${pct.toFixed(0)}% de "${meta?.nombre ?? 'tu meta'}"`,
-      color: progreso,
-      comentario: progreso === 'success' ? '¡Vas en tiempo! Un ajuste pequeño y lo logras.' : progreso === 'warning' ? 'Has avanzado. Con constancia llegas.' : 'Aun no has acumulado ahorro hacia la meta. Cada peso cuenta.',
-    },
-    {
-      label: 'Monto promedio',
-      valor: promedio > 0 ? `$${promedio.toFixed(0)}/día` : 'Sin datos',
-      color: promedioColor,
-      comentario: promedioColor === 'success' ? 'Tu promedio está cerca o supera lo planeado. ¡Sigue así!' : promedioColor === 'warning' ? 'Tu promedio es menor al planeado pero ya hay avance.' : 'Comienza a registrar ahorros diarios para ver tu promedio.',
-    },
-    {
-      label: 'Tendencia',
-      valor: tendenciaColor === 'success' ? 'Al alza' : tendenciaColor === 'warning' ? 'Estable' : 'Sin registro',
-      color: tendenciaColor,
-      comentario: tendenciaColor === 'success' ? 'Tu ritmo de ahorro se mantiene o mejora. Excelente.' : tendenciaColor === 'warning' ? 'Hay avance pero puedes acelerar el ritmo.' : 'Empieza el reto de 3 días para ver tu tendencia.',
-    },
-  ];
+type Draft = { version: 1; stage: Stage; viewed: string[]; difficulty: string; adjustment: string };
+const KEY = 'savings_l13:review:v1';
+const CARD_IDS = ['goal', 'plan', 'days', 'amount'];
+const initial = (): Draft => ({
+  version: 1,
+  stage: 'evidence',
+  viewed: [],
+  difficulty: '',
+  adjustment: '',
+});
+function parse(raw: unknown): Draft | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const v = raw as Draft;
+  if (
+    v.version !== 1 ||
+    !['evidence', 'reflect', 'review', 'complete'].includes(v.stage) ||
+    !Array.isArray(v.viewed) ||
+    v.viewed.some((id) => !CARD_IDS.includes(id)) ||
+    typeof v.difficulty !== 'string' ||
+    typeof v.adjustment !== 'string' ||
+    (['review', 'complete'].includes(v.stage) &&
+      (v.difficulty.trim().length < 3 || v.adjustment.trim().length < 3))
+  )
+    return null;
+  return v;
 }
+const money = (v: number) => v.toLocaleString('es-MX', { maximumFractionDigits: 0 });
 
 export default function L13() {
-  const [step, setStep] = useState(0);
-
-  const resume = useLessonResume('ahorro', 'L13');
-  const [resumeHandled, setResumeHandled] = useState(false);
-
-  useEffect(() => {
-    if (step > 0) resume.save({ step });
-  }, [step, resume]);
+  const [source, setSource] = useState<Source>({});
+  const [draft, setDraft] = useState<Draft>(initial);
   const [loading, setLoading] = useState(true);
-  const [indicadores, setIndicadores] = useState<Indicador[]>([]);
-  const [expanded, setExpanded] = useState<Set<number>>(new Set());
-  const [allViewed, setAllViewed] = useState(false);
-  const [dificultad, setDificultad] = useState('');
-  const [answered, setAnswered] = useState(false);
-
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
   useEffect(() => {
-    const load = async () => {
-      const meta = await lessonDataRepository.load<MetaData>('ahorro', 'l5_meta');
-      const plan = await lessonDataRepository.load<PlanData>('ahorro', 'l6_plan');
-      const reto = await lessonDataRepository.load<RetoData>('ahorro', 'l11_reto');
-      setIndicadores(buildIndicadores(meta, plan, reto));
-      setLoading(false);
+    mounted.current = true;
+    setLoading(true);
+    setLoadError(false);
+    void Promise.all([
+      lessonDataRepository.load('ahorro', 'l5_meta'),
+      lessonDataRepository.load('ahorro', 'l6_plan'),
+      lessonDataRepository.load('ahorro', 'l11_reto'),
+      lessonDataRepository.load('ahorro', KEY),
+    ])
+      .then(([meta, plan, challenge, saved]) => {
+        if (mounted.current) {
+          setSource({
+            meta: meta as Source['meta'],
+            plan: plan as Source['plan'],
+            challenge: challenge as Source['challenge'],
+          });
+          setDraft(parse(saved) ?? initial());
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (mounted.current) {
+          setLoading(false);
+          setLoadError(true);
+        }
+      });
+    return () => {
+      mounted.current = false;
     };
-    void load();
-  }, []);
-
-  const toggleExpanded = (i: number) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(i)) next.delete(i); else next.add(i);
-      if (next.size >= 4) setAllViewed(true);
-      return next;
-    });
+  }, [attempt]);
+  const persist = async (next: Draft, final = false) => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (final) {
+        await lessonDataRepository.saveBatch('ahorro', [
+          {
+            key: 'l13_dificultad',
+            data: {
+              dificultad: next.difficulty,
+              ajuste: next.adjustment,
+              savedAt: new Date().toISOString(),
+            },
+          },
+          { key: KEY, data: next },
+        ]);
+      } else {
+        await lessonDataRepository.save('ahorro', KEY, next);
+      }
+      if (mounted.current) {
+        setDraft(next);
+        setDirty(false);
+      }
+    } catch {
+      if (mounted.current) setError('No pudimos guardar. Tu revisión sigue en pantalla.');
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
   };
-
-  const handleSave = async () => {
-    await lessonDataRepository.save('ahorro', 'l13_dificultad', {
-      dificultad,
-      savedAt: new Date().toISOString(),
-    });
-    setAnswered(true);
-    setStep(2);
-  };
-
-  const progress = step === 0 ? 0 : step === 1 ? 50 : 100;
-
-  if (loading) {
+  if (loading)
     return (
-      <LessonShell id="L13" title="Finni dice: cómo vas con tu ahorro" completion={{ ready: false }}>
-        <p className="text-sm text-[var(--color-text-secondary)]">Cargando tu progreso...</p>
+      <LessonShell id="L13" title="Seguimiento con Finni" completion={{ ready: false }}>
+        <ActivityLoading />
       </LessonShell>
     );
-  }
-
+  if (loadError)
+    return (
+      <LessonShell id="L13" title="Seguimiento con Finni" completion={{ ready: false }}>
+        <ActivityLoadError
+          message="No pudimos recuperar tus registros."
+          onRetry={() => setAttempt((v) => v + 1)}
+        />
+      </LessonShell>
+    );
+  const dayCount =
+    source.challenge?.days?.length ??
+    source.challenge?.dayAmounts?.length ??
+    (source.challenge?.completedAt ? 3 : 0);
+  const amount =
+    source.challenge?.totalAcumulado ??
+    (source.challenge?.dayAmounts ?? []).reduce((sum, value) => sum + value, 0);
+  const cards = [
+    {
+      id: 'goal',
+      label: 'Meta de referencia',
+      value: source.meta?.nombre || 'Sin meta guardada',
+      detail: source.meta?.monto
+        ? `Monto de referencia: $${money(source.meta.monto)}`
+        : 'Puedes crear una meta cuando tengas suficiente información.',
+    },
+    {
+      id: 'plan',
+      label: 'Plan disponible',
+      value: source.plan ? 'Con datos' : 'Sin datos',
+      detail: source.plan?.horizon
+        ? `Horizonte registrado: ${source.plan.horizon} meses.`
+        : 'No hay un plan previo para comparar.',
+    },
+    {
+      id: 'days',
+      label: 'Días registrados',
+      value: `${dayCount} día${dayCount === 1 ? '' : 's'}`,
+      detail: 'Cuenta registros disponibles; no califica tu constancia.',
+    },
+    {
+      id: 'amount',
+      label: 'Monto registrado',
+      value: `$${money(amount)}`,
+      detail: 'Es evidencia registrada, no una evaluación de tu capacidad.',
+    },
+  ];
+  const reviewing = draft.stage === 'review' || draft.stage === 'complete';
+  const view = (id: string) => {
+    setDraft((v) => ({ ...v, viewed: v.viewed.includes(id) ? v.viewed : [...v.viewed, id] }));
+    setCue(cards.find((card) => card.id === id)?.detail ?? null);
+    setDirty(true);
+  };
   return (
-    <LessonShell id="L13" title="Finni dice: cómo vas con tu ahorro" completion={{ ready: allViewed && answered }}>
-      <div className="p-1">
-        {resume.hasSaved && !resumeHandled && (
-          <LessonResumeBanner
-            step={resume.savedStep ?? 0}
-            onContinue={() => {
-              const snapshot = resume.accept();
-              if (snapshot) setStep(snapshot.step);
-              setResumeHandled(true);
-            }}
-            onRestart={() => {
-              resume.ignore();
-              setResumeHandled(true);
-            }}
-          />
-        )}
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: 'var(--color-brand-success)' }} />
-        </div>
-
-        {/* Pantalla 0 — Dashboard de progreso */}
-        {step === 0 && (
-          <div className="space-y-6">
-            <FinniMessage variant="coach" title="Revisión de hábito" message="Es momento de ver cómo vas con tu hábito de ahorro. No para juzgar, sino para ayudarte a llegar a tu meta." />
-            <p className="text-base font-bold">4 indicadores — toca cada uno para ver el análisis:</p>
-            <div className="space-y-4">
-              {indicadores.map((ind, i) => {
-                const c = COLOR_MAP[ind.color];
-                return (
-                  <FECard
-                    key={i}
-                    variant="flat"
-                    className="border-2 cursor-pointer"
-                    style={{
-                      borderColor: c.main,
-                      backgroundColor: expanded.has(i) ? c.bg : 'white',
-                    }}
-                    onClick={() => toggleExpanded(i)}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm font-bold">{ind.label}</p>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: c.main }}>{ind.valor}</span>
-                        <span className="text-xs">{expanded.has(i) ? '▲' : '▼'}</span>
-                      </div>
-                    </div>
-                    {expanded.has(i) && (
-                      <p className="text-sm mt-2 italic" style={{ color: c.dark }}>{ind.comentario}</p>
-                    )}
-                  </FECard>
-                );
-              })}
-            </div>
-            {(allViewed || expanded.size >= 4) && (
-              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: 'var(--color-brand-success)' }} onClick={() => setStep(1)}>
-                Responder la pregunta de Finni →
+    <LessonShell
+      id="L13"
+      title="Finni dice: cómo vas con tu ahorro"
+      showGreeting={false}
+      completion={{ ready: draft.stage === 'complete', score: 100 }}
+    >
+      <ActivityFrame
+        label="Revisión de evidencia de ahorro"
+        className="savings-progress"
+        busy={busy}
+        title={
+          reviewing
+            ? 'Elige un ajuste que sí puedas probar.'
+            : draft.stage === 'reflect'
+              ? 'Convierte la observación en un cambio pequeño.'
+              : 'Mira tus registros sin convertirlos en una calificación.'
+        }
+        description="Finni organiza la evidencia disponible y te ayuda a decidir el siguiente paso."
+        progressLabel="Etapas completadas"
+        progressValue={draft.stage === 'evidence' ? 0 : draft.stage === 'reflect' ? 1 : 2}
+        progressMax={2}
+        stepLabel={
+          reviewing
+            ? 'Paso 3 de 3 · Revisar'
+            : draft.stage === 'reflect'
+              ? 'Paso 2 de 3 · Ajustar'
+              : 'Paso 1 de 3 · Observar'
+        }
+        focusKey={draft.stage}
+        advice={{
+          title:
+            draft.stage === 'evidence'
+              ? 'Los datos describen, no juzgan'
+              : 'Haz el ajuste específico',
+          text:
+            draft.stage === 'evidence'
+              ? 'Abre cada tarjeta. Si falta información, eso solo indica qué dato podrías registrar después.'
+              : 'Elige un cambio pequeño que puedas probar esta semana y revisar después.',
+          tone: 'info',
+        }}
+        adviceCue={cue}
+        error={error}
+        status={busy ? 'Guardando…' : dirty ? 'Cambios sin guardar.' : 'Tu avance está guardado.'}
+        actions={
+          <div className="spg-actions">
+            {draft.stage === 'evidence' && (
+              <button
+                className="ca-primary"
+                disabled={draft.viewed.length !== cards.length || busy}
+                onClick={() => void persist({ ...draft, stage: 'reflect' })}
+              >
+                Elegir un ajuste
               </button>
             )}
+            {draft.stage === 'reflect' && (
+              <button
+                className="ca-primary"
+                disabled={
+                  draft.difficulty.trim().length < 3 || draft.adjustment.trim().length < 3 || busy
+                }
+                onClick={() => void persist({ ...draft, stage: 'review' })}
+              >
+                Revisar respuesta
+              </button>
+            )}
+            {draft.stage === 'review' && (
+              <>
+                <button
+                  className="spg-secondary"
+                  onClick={() => {
+                    setDraft((v) => ({ ...v, stage: 'reflect' }));
+                    setDirty(true);
+                  }}
+                >
+                  Editar
+                </button>
+                <button
+                  className="ca-primary"
+                  onClick={() => void persist({ ...draft, stage: 'complete' }, true)}
+                >
+                  Guardar y terminar
+                </button>
+              </>
+            )}
           </div>
+        }
+      >
+        {draft.stage === 'evidence' && (
+          <section className="spg-evidence">
+            {cards.map((card) => (
+              <button
+                key={card.id}
+                className={draft.viewed.includes(card.id) ? 'is-viewed' : ''}
+                onClick={() => view(card.id)}
+              >
+                <span>{card.label}</span>
+                <strong>{card.value}</strong>
+                <small>
+                  {draft.viewed.includes(card.id) ? card.detail : 'Toca para ver el contexto'}
+                </small>
+              </button>
+            ))}
+          </section>
         )}
-
-        {/* Pantalla 1 — Pregunta abierta */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <FinniMessage variant="coach" title="Una pregunta honesta" message="¿Hay algo que te esté dificultando ahorrar esta semana? No te preguntes por qué fallaste — pregúntate qué necesita cambiar para que funcione." />
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-[var(--color-text-primary)]">Tu respuesta (privada, solo para ti)</label>
+        {draft.stage === 'reflect' && (
+          <section className="spg-reflect">
+            <label>
+              ¿Qué está dificultando ahorrar esta semana?
               <textarea
-                value={dificultad}
-                onChange={(e) => setDificultad(e.target.value)}
-                rows={4}
-                placeholder="Puede ser un gasto inesperado, un cambio de rutina, o simplemente que olvidaste..."
-                className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm resize-none"
+                value={draft.difficulty}
+                rows={3}
+                placeholder="Por ejemplo: olvidé separar el dinero al recibirlo"
+                onChange={(e) => {
+                  setDraft((v) => ({ ...v, difficulty: e.target.value }));
+                  setDirty(true);
+                }}
               />
-            </div>
-            <button
-              className="w-full min-h-11 text-white rounded-xl font-semibold text-sm disabled:opacity-50"
-              style={{ backgroundColor: 'var(--color-brand-success)' }}
-              onClick={() => void handleSave()}
-              disabled={dificultad.trim().length < 3}
-            >
-              Guardar y cerrar la revisión →
-            </button>
-          </div>
+            </label>
+            <label>
+              ¿Qué ajuste pequeño probarás?
+              <textarea
+                value={draft.adjustment}
+                rows={3}
+                placeholder="Por ejemplo: programar un recordatorio el día de pago"
+                onChange={(e) => {
+                  setDraft((v) => ({ ...v, adjustment: e.target.value }));
+                  setDirty(true);
+                }}
+              />
+            </label>
+          </section>
         )}
-
-        {/* Pantalla 2 — Cierre */}
-        {step === 2 && answered && (
-          <div className="space-y-6">
-            <FinniMessage variant="success" title="Revisión completada" message="Conoces dónde estás. Eso ya es un paso enorme. El siguiente paso es hacer un ajuste, por pequeño que sea." />
-            <FECard variant="flat" className="border" style={{ borderColor: 'var(--color-brand-success)', backgroundColor: 'var(--color-brand-success-bg)' }}>
-              <p className="text-sm font-bold mb-2">Estado general:</p>
-              <div className="space-y-2">
-                {indicadores.map((ind, i) => {
-                  const c = COLOR_MAP[ind.color];
-                  return (
-                    <div key={i} className="flex gap-2 items-center">
-                      <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: c.main }}>{ind.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </FECard>
-          </div>
+        {reviewing && (
+          <section className="spg-review">
+            <span>Próximo experimento</span>
+            <h3>{draft.adjustment}</h3>
+            <p>Dificultad observada: {draft.difficulty}</p>
+            <small>Después podrás revisar si este ajuste te ayudó y cambiarlo sin culpa.</small>
+          </section>
         )}
-      </div>
+      </ActivityFrame>
     </LessonShell>
   );
 }
