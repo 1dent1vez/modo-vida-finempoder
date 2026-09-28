@@ -5,6 +5,7 @@ import type { ModKey } from '../store/progress';
 import { db } from './finempoderDb';
 import type { LessonProgress } from './finempoderDb';
 import { trackModuleCompleted } from '@/shared/utils/analytics';
+import { SyncManager } from '../lib/sync/SyncManager';
 
 const currentUserId = () => useAuth.getState().user?.id ?? 'local';
 
@@ -31,8 +32,6 @@ export const lessonProgressRepository = {
   /** Legacy: write local + direct API call (kept for existing LessonShell usage) */
   async setCompleted(moduleId: ModKey, lessonId: string): Promise<void> {
     await this.setCompletedLocal(moduleId, lessonId);
-    // SyncManager handles the backend sync — imported lazily to avoid circular deps
-    const { SyncManager } = await import('../lib/sync/SyncManager');
     const userId = currentUserId();
     if (userId !== 'local') {
       await SyncManager.enqueue('lesson_progress', userId, {

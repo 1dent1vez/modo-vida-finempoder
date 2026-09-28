@@ -5,6 +5,7 @@ import ActivityFrame, {
   ActivityLoading,
 } from '../../../../module-kit/activities/ActivityFrame';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { LessonRange } from '../../../../module-kit/components/activities';
 import '../../../../module-kit/activities/classification.css';
 import '../../../../module-kit/activities/savings-progress.css';
 
@@ -277,53 +278,41 @@ export default function L12() {
         )}
         {draft.stage === 'simulate' && (
           <section className="spg-simulator">
-            <label>
-              Capital inicial <strong>${money(draft.capital)}</strong>
-              <input
-                aria-label="Capital inicial"
-                type="range"
-                min="0"
-                max="50000"
-                step="500"
-                value={draft.capital}
-                onChange={(e) => update('capital', Number(e.target.value))}
-              />
-            </label>
-            <label>
-              Aportación mensual <strong>${money(draft.monthly)}</strong>
-              <input
-                aria-label="Aportación mensual"
-                type="range"
-                min="0"
-                max="5000"
-                step="100"
-                value={draft.monthly}
-                onChange={(e) => update('monthly', Number(e.target.value))}
-              />
-            </label>
-            <label>
-              Tasa anual hipotética <strong>{draft.rate}%</strong>
-              <input
-                aria-label="Tasa anual hipotética"
-                type="range"
-                min="0"
-                max="15"
-                step="0.5"
-                value={draft.rate}
-                onChange={(e) => update('rate', Number(e.target.value))}
-              />
-            </label>
-            <label>
-              Plazo <strong>{draft.years} años</strong>
-              <input
-                aria-label="Plazo"
-                type="range"
-                min="1"
-                max="20"
-                value={draft.years}
-                onChange={(e) => update('years', Number(e.target.value))}
-              />
-            </label>
+            <LessonRange
+              label="Capital inicial"
+              display={`$${money(draft.capital)}`}
+              min={0}
+              max={50000}
+              step={500}
+              value={draft.capital}
+              onChange={(value) => update('capital', value)}
+            />
+            <LessonRange
+              label="Aportación mensual"
+              display={`$${money(draft.monthly)}`}
+              min={0}
+              max={5000}
+              step={100}
+              value={draft.monthly}
+              onChange={(value) => update('monthly', value)}
+            />
+            <LessonRange
+              label="Tasa anual hipotética"
+              display={`${draft.rate}%`}
+              min={0}
+              max={15}
+              step={0.5}
+              value={draft.rate}
+              onChange={(value) => update('rate', value)}
+            />
+            <LessonRange
+              label="Plazo"
+              display={`${draft.years} años`}
+              min={1}
+              max={20}
+              value={draft.years}
+              onChange={(value) => update('years', value)}
+            />
             <div className="spg-result">
               <span>Saldo proyectado</span>
               <strong>${money(projected)}</strong>

@@ -6,3 +6,4 @@ export type { QuizQuestionProps, QuizOption } from './QuizQuestion';
 
 export { ModuleSlider } from './ModuleSlider';
 export type { ModuleSliderProps } from './ModuleSlider';
+export { LessonRange } from './LessonRange';

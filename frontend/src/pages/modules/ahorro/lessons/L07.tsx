@@ -5,6 +5,7 @@ import ActivityFrame, {
   ActivityLoading,
 } from '../../../../module-kit/activities/ActivityFrame';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { LessonRange } from '../../../../module-kit/components/activities';
 import '../../../../module-kit/activities/classification.css';
 import '../../../../module-kit/activities/savings-plan.css';
 
@@ -317,20 +318,17 @@ export default function L07() {
                 </div>
               </div>
             )}
-            <label>
-              Porcentaje para explorar: <strong>{draft.percent}%</strong>
-              <input
-                aria-label="Porcentaje para explorar"
-                type="range"
-                min="1"
-                max="30"
-                value={draft.percent}
-                onChange={(event) => {
-                  setDraft((value) => ({ ...value, percent: Number(event.target.value) }));
-                  setDirty(true);
-                }}
-              />
-            </label>
+            <LessonRange
+              label="Porcentaje para explorar:"
+              display={`${draft.percent}%`}
+              min={1}
+              max={30}
+              value={draft.percent}
+              onChange={(percent) => {
+                setDraft((value) => ({ ...value, percent }));
+                setDirty(true);
+              }}
+            />
             {hasReference && (
               <p className="sp-note">
                 Con el menor ingreso de la muestra, {draft.percent}% serían aproximadamente $

@@ -1,5 +1,6 @@
 import path from 'path';
 import { defineConfig } from 'vitest/config';
+import { loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import mdx from '@mdx-js/rollup';
 import remarkFrontmatter from 'remark-frontmatter';
@@ -8,6 +9,26 @@ import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import viteCompression from 'vite-plugin-compression';
 import { ViteImageOptimizer } from 'vite-plugin-image-optimizer';
+import { buildContentSecurityPolicy } from './security-policy.mjs';
+
+function contentSecurityPolicy(): Plugin {
+  let mode = 'production';
+  return {
+    name: 'finempoder-content-security-policy',
+    apply: 'build',
+    configResolved(config) {
+      mode = config.mode;
+    },
+    transformIndexHtml(html) {
+      const env = loadEnv(mode, process.cwd(), 'VITE_');
+      const policy = buildContentSecurityPolicy(env);
+      return html.replace(
+        '<head>',
+        `<head>\n    <meta http-equiv="Content-Security-Policy" content="${policy}" />`,
+      );
+    },
+  };
+}
 
 export default defineConfig({
   resolve: {
@@ -16,6 +37,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    contentSecurityPolicy(),
     // MDX must come before react() so JSX transform applies correctly
     { enforce: 'pre', ...mdx({ remarkPlugins: [remarkFrontmatter, remarkMdxFrontmatter] }) },
     react(),

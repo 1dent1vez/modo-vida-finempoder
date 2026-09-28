@@ -4,12 +4,22 @@ Fecha del corte: 10 de septiembre de 2026
 Rama revisada: `qa-identivezz`  
 Decisión actual: **NO-GO temporal** hasta cerrar los bloqueadores operativos de esta página.
 
+## Actualización técnica · 28 de septiembre de 2026
+
+- El frontend genera una CSP en `index.html` para vistas previas locales y una cabecera HTTP CSP en Vercel con los mismos orígenes configurados. La cabecera añade `frame-ancestors 'none'`. Verificarla en el dominio final antes de publicar.
+- El build falla si algún chunk JavaScript supera 100 KiB Brotli. El build local pasa con este presupuesto.
+- Se eliminó la importación dinámica redundante de `SyncManager` y su advertencia de build.
+- Las dependencias de desarrollo del frontend se actualizaron; `npm audit` informa 0 vulnerabilidades en frontend y backend. La suite del frontend pasó con 395 pruebas y el E2E de rutas pasó las 45 lecciones en escritorio y móvil.
+- Los rangos equivalentes de los simuladores ya usan `LessonRange` del `module-kit` en seis lecciones. Los controles específicos de cada actividad conservan su composición.
+
+El estado **NO-GO** sigue vigente: estas verificaciones son locales y no sustituyen la confirmación remota de migraciones, variables, proveedores, pagos ni smoke test del despliegue.
+
 ## Estado verificado
 
 | Área | Estado | Evidencia local |
 |---|---|---|
 | 45 lecciones | Lista | Las 15 rutas de Presupuesto, Ahorro e Inversión cargan en desktop y Pixel 7. |
-| Frontend unitario | Lista | 96 archivos y 443 pruebas aprobadas. |
+| Frontend unitario | Lista | 91 archivos y 395 pruebas aprobadas en la verificación del 28 de septiembre. |
 | Convenciones de módulos | Lista | Guardas y checklists estáticos de los tres módulos aprobados. |
 | Build frontend | Lista | TypeScript y build Vite de producción aprobados. |
 | Backend | Lista | 22 pruebas aprobadas: 8 de API y 14 de newsletter; build TypeScript de producción aprobado. |
@@ -93,10 +103,7 @@ order by tablename, policyname;
 
 ## Riesgos no bloqueantes
 
-- Vite avisa que `SyncManager` tiene importación estática y dinámica; afecta la separación de chunks, no la corrección.
-- Siete alertas permanecen en herramientas locales de desarrollo: Vitest, `brace-expansion`, Sharp y el parser TOML transitivo de `remark-mdx-frontmatter`. No forman parte del árbol instalado con `--omit=dev`; actualizar Sharp implica un salto mayor y TOML aún no tiene corrección publicada.
-- El bundle inicial sin comprimir ronda 337 kB y el chunk compartido de módulos 263 kB; los tamaños comprimidos son razonables, aunque conviene fijar presupuestos de rendimiento en una fase posterior.
-- La política CSP del frontend aún no está definida. Debe diseñarse con los dominios finales de Supabase, Railway, Sentry y PostHog para evitar romper conexiones legítimas.
+- El presupuesto de 100 KiB Brotli controla chunks individuales; aún falta medir tiempos de carga en dispositivos y redes reales.
 
 ## Criterio de GO
 

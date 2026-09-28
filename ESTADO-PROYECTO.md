@@ -46,8 +46,6 @@ Estado de UI actual en QA: Home réplica del mockup + camino + gamificación + s
 | D2 | Producción sin desplegar (app.finempoder.com.mx sigue pre-F0) | Decisión | Autorización del dueño → deploy + site_url en Supabase (hoy localhost:3000) |
 | D3 | Newsletter integrado al primer release | Producto/negocio | Implementado; pendiente validación externa de Stripe, Resend, cron, términos y compra de prueba |
 | D4 | Analytics sin clave PostHog (wrapper listo en f6) | Humano | Crear cuenta PostHog free → `VITE_POSTHOG_KEY` en .env → build |
-| D5 | ~~Onboarding de 3 pantallas~~ | Producto | ✅ CERRADO en F7 (e6a2304); pendiente: validar en tu celular el flujo completo desde cero |
-| D6 | Refactor al `module-kit` (pulido único propagado) | Técnica | Pendiente; las lecciones reimplementan controles |
 | D7 | Kit de lanzamiento: placeholders `[LINK_APP]`, `[FECHA]`, `[ENLACE_NEWSLETTER]` | Negocio | Decidir fecha y resolver links (`KIT_LANZAMIENTO_FINEMPODER.md`) |
 | D8 | Sonidos/hápticos (opcional, con toggle) | Opcional | Plan F2.3 |
 | D9 | Módulo nuevo (Deudas o Crédito y buró) | Futuro | Decidir con datos de uso (requiere D4 activo) |
@@ -114,3 +112,4 @@ vercel alias set <URL> qa.finempoder.com.mx --scope ghaels-projects
 2. OAuth Google (D1) cuando se demande.
 3. Autorizar deploy a producción (D2).
 4. Decidir proveedor de newsletter (D3) y fecha de lanzamiento (D7).
+5. Validar en un celular el onboarding completo desde cero.

@@ -5,6 +5,7 @@ import ActivityFrame, {
   ActivityLoading,
 } from '../../../../module-kit/activities/ActivityFrame';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { LessonRange } from '../../../../module-kit/components/activities';
 import '../../../../module-kit/activities/classification.css';
 import '../../../../module-kit/activities/savings-protection.css';
 
@@ -265,20 +266,18 @@ export default function L08() {
                 />
               </span>
             </label>
-            <label>
-              Meses de cobertura para esta etapa: <strong>{draft.months}</strong>
-              <input
-                aria-label="Meses de cobertura"
-                type="range"
-                min="1"
-                max="6"
-                value={draft.months}
-                onChange={(event) => {
-                  setDraft((value) => ({ ...value, months: Number(event.target.value) }));
-                  setDirty(true);
-                }}
-              />
-            </label>
+            <LessonRange
+              label="Meses de cobertura para esta etapa:"
+              ariaLabel="Meses de cobertura"
+              display={draft.months}
+              min={1}
+              max={6}
+              value={draft.months}
+              onChange={(months) => {
+                setDraft((value) => ({ ...value, months }));
+                setDirty(true);
+              }}
+            />
             <label>
               Aportación mensual posible
               <span className="spr-money">

@@ -5,6 +5,7 @@ import ActivityFrame, {
   ActivityLoading,
 } from '../../../../module-kit/activities/ActivityFrame';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { LessonRange } from '../../../../module-kit/components/activities';
 import '../../../../module-kit/activities/classification.css';
 import '../../../../module-kit/activities/investment-foundations.css';
 
@@ -294,50 +295,41 @@ export default function L01() {
         )}
         {draft.stage === 'explore' && (
           <section className="if-simulator">
-            <label>
-              Plazo <strong>{draft.years} años</strong>
-              <input
-                aria-label="Plazo"
-                type="range"
-                min="1"
-                max="20"
-                value={draft.years}
-                onChange={(event) => {
-                  setDraft((value) => ({ ...value, years: Number(event.target.value) }));
-                  setDirty(true);
-                }}
-              />
-            </label>
-            <label>
-              Rendimiento anual hipotético <strong>{draft.rate}%</strong>
-              <input
-                aria-label="Rendimiento anual hipotético"
-                type="range"
-                min="-10"
-                max="15"
-                step="1"
-                value={draft.rate}
-                onChange={(event) => {
-                  setDraft((value) => ({ ...value, rate: Number(event.target.value) }));
-                  setDirty(true);
-                }}
-              />
-            </label>
-            <label>
-              Inflación anual hipotética <strong>{draft.inflation}%</strong>
-              <input
-                aria-label="Inflación anual hipotética"
-                type="range"
-                min="0"
-                max="15"
-                step="1"
-                value={draft.inflation}
-                onChange={(event) => {
-                  setDraft((value) => ({ ...value, inflation: Number(event.target.value) }));
-                  setDirty(true);
-                }}
-              />
-            </label>
+            <LessonRange
+              label="Plazo"
+              display={`${draft.years} años`}
+              min={1}
+              max={20}
+              value={draft.years}
+              onChange={(years) => {
+                setDraft((value) => ({ ...value, years }));
+                setDirty(true);
+              }}
+            />
+            <LessonRange
+              label="Rendimiento anual hipotético"
+              display={`${draft.rate}%`}
+              min={-10}
+              max={15}
+              step={1}
+              value={draft.rate}
+              onChange={(rate) => {
+                setDraft((value) => ({ ...value, rate }));
+                setDirty(true);
+              }}
+            />
+            <LessonRange
+              label="Inflación anual hipotética"
+              display={`${draft.inflation}%`}
+              min={0}
+              max={15}
+              step={1}
+              value={draft.inflation}
+              onChange={(inflation) => {
+                setDraft((value) => ({ ...value, inflation }));
+                setDirty(true);
+              }}
+            />
             <div className="if-result">
               <span>Saldo nominal del escenario</span>
               <strong>${money(nominal)}</strong>

@@ -5,6 +5,7 @@ import ActivityFrame, {
   ActivityLoading,
 } from '../../../../module-kit/activities/ActivityFrame';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { LessonRange } from '../../../../module-kit/components/activities';
 import '../../../../module-kit/activities/classification.css';
 import '../../../../module-kit/activities/investment-foundations.css';
 type Stage = 'read' | 'simulate' | 'verify' | 'review' | 'complete';
@@ -228,41 +229,32 @@ export default function L06() {
         )}
         {d.stage === 'simulate' && (
           <section className="if-simulator">
-            <label>
-              Monto hipotético <strong>${d.amount.toLocaleString('es-MX')}</strong>
-              <input
-                aria-label="Monto hipotético"
-                type="range"
-                min="100"
-                max="10000"
-                step="100"
-                value={d.amount}
-                onChange={(e) => setD({ ...d, amount: Number(e.target.value) })}
-              />
-            </label>
-            <label>
-              Plazo hipotético <strong>{d.days} días</strong>
-              <input
-                aria-label="Plazo hipotético"
-                type="range"
-                min="30"
-                max="365"
-                step="5"
-                value={d.days}
-                onChange={(e) => setD({ ...d, days: Number(e.target.value) })}
-              />
-            </label>
-            <label>
-              Tasa anual hipotética <strong>{d.rate}%</strong>
-              <input
-                aria-label="Tasa anual hipotética"
-                type="range"
-                min="0"
-                max="20"
-                value={d.rate}
-                onChange={(e) => setD({ ...d, rate: Number(e.target.value) })}
-              />
-            </label>
+            <LessonRange
+              label="Monto hipotético"
+              display={`$${d.amount.toLocaleString('es-MX')}`}
+              min={100}
+              max={10000}
+              step={100}
+              value={d.amount}
+              onChange={(amount) => setD({ ...d, amount })}
+            />
+            <LessonRange
+              label="Plazo hipotético"
+              display={`${d.days} días`}
+              min={30}
+              max={365}
+              step={5}
+              value={d.days}
+              onChange={(days) => setD({ ...d, days })}
+            />
+            <LessonRange
+              label="Tasa anual hipotética"
+              display={`${d.rate}%`}
+              min={0}
+              max={20}
+              value={d.rate}
+              onChange={(rate) => setD({ ...d, rate })}
+            />
             <div className="if-result">
               <span>Interés bruto estimado</span>
               <strong>${gross.toFixed(2)}</strong>

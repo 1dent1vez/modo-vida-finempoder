@@ -5,6 +5,7 @@ import ActivityFrame, {
   ActivityLoading,
 } from '../../../../module-kit/activities/ActivityFrame';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { LessonRange } from '../../../../module-kit/components/activities';
 import '../../../../module-kit/activities/classification.css';
 import '../../../../module-kit/activities/savings-return.css';
 
@@ -305,51 +306,42 @@ export default function L03() {
         )}
         {draft.stage === 'simulate' && (
           <section className="sr-simulator">
-            <label>
-              Monto inicial: <strong>${draft.amount.toLocaleString()}</strong>
-              <input
-                aria-label="Monto inicial"
-                type="range"
-                min="500"
-                max="50000"
-                step="500"
-                value={draft.amount}
-                onChange={(event) => {
-                  setDraft((value) => ({ ...value, amount: Number(event.target.value) }));
-                  setDirty(true);
-                }}
-              />
-            </label>
-            <label>
-              Tasa anual ilustrativa: <strong>{draft.rate}%</strong>
-              <input
-                aria-label="Tasa anual ilustrativa"
-                type="range"
-                min="0"
-                max="15"
-                step=".5"
-                value={draft.rate}
-                onChange={(event) => {
-                  setDraft((value) => ({ ...value, rate: Number(event.target.value) }));
-                  setDirty(true);
-                }}
-              />
-            </label>
-            <label>
-              Plazo: <strong>{draft.months} meses</strong>
-              <input
-                aria-label="Plazo"
-                type="range"
-                min="3"
-                max="60"
-                step="3"
-                value={draft.months}
-                onChange={(event) => {
-                  setDraft((value) => ({ ...value, months: Number(event.target.value) }));
-                  setDirty(true);
-                }}
-              />
-            </label>
+            <LessonRange
+              label="Monto inicial:"
+              display={`$${draft.amount.toLocaleString()}`}
+              min={500}
+              max={50000}
+              step={500}
+              value={draft.amount}
+              onChange={(amount) => {
+                setDraft((value) => ({ ...value, amount }));
+                setDirty(true);
+              }}
+            />
+            <LessonRange
+              label="Tasa anual ilustrativa:"
+              display={`${draft.rate}%`}
+              min={0}
+              max={15}
+              step={0.5}
+              value={draft.rate}
+              onChange={(rate) => {
+                setDraft((value) => ({ ...value, rate }));
+                setDirty(true);
+              }}
+            />
+            <LessonRange
+              label="Plazo:"
+              display={`${draft.months} meses`}
+              min={3}
+              max={60}
+              step={3}
+              value={draft.months}
+              onChange={(months) => {
+                setDraft((value) => ({ ...value, months }));
+                setDirty(true);
+              }}
+            />
             <div className="sr-result">
               <span>Saldo estimado</span>
               <strong>${estimate.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong>
