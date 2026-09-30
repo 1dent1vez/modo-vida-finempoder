@@ -1,6 +1,6 @@
 # FinEMPODER — Estado del Proyecto (documento maestro)
 
-> Última actualización: 2026-08-25 · Mantenedor: Skere (orquestador)
+> Última actualización: 2026-09-30 · Mantenedor: Skere (orquestador)
 > Fuente de verdad operativa: este doc + `QA_RAMA.md` + el doc por ola (F*.md en la raíz).
 > Regla del dueño: **todo cambio queda documentado**; los docs viven en el repo, no en conversaciones.
 
@@ -17,7 +17,7 @@ PWA gratuita de finanzas personales para México (45 lecciones interactivas en 3
 | App QA (pruebas del dueño) | https://qa.finempoder.com.mx (alias Vercel fijo) |
 | Producción | https://app.finempoder.com.mx (NO desplegada con F0-F6; ver pendientes) |
 | Landing | www.finempoder.com.mx |
-| Supabase (restaurado 2026-08-25) | pxjxktpdxnqiulfyskuk.supabase.co · proyecto "FinEmpoder" (ACTIVE_HEALTHY) |
+| Supabase | pxjxktpdxnqiulfyskuk.supabase.co · 002 corregida y 004 aplicadas manualmente el 2026-09-28; RLS y API verificadas |
 | Rama QA permanente | `qa-identivezz` · PIN admin: 2026 (solo esta rama) |
 | MCP Supabase | conectado y autorizado (OAuth) en perfil skere |
 | Vigía de loops | cron cada 10 min → Telegram (veredictos Lupa y fin de agentes) |
@@ -37,14 +37,17 @@ PWA gratuita de finanzas personales para México (45 lecciones interactivas en 3
 | F6 — Analytics | Wrapper tipado (11 eventos), PostHog opcional (no-op sin clave), identify con dedupe por id, H3 (Depósito sin promesa falsa) | `f6-analytics` (hasta b5b068c) | 2 retests (identify cableado + dedupe) → PASS |
 | F7 — Onboarding | 3 pantallas con valor (chips de confianza → meta diaria → primera lección), guest-compatible, skip siempre, tildes corregidas, analytics cableado | `f7-onboarding` (e6a2304) | PASS_WITH_WARNINGS (H1 menor → fix directo; H2/H3 cola) |
 
-Estado de UI actual en QA: Home réplica del mockup + camino + gamificación + share + newsletter + onboarding con valor. Ligas queda fuera del primer release.
+Estado de UI actual en QA: Home réplica del mockup + camino + gamificación + share + newsletter + onboarding con valor. Ligas y el newsletter de pago quedan fuera de la primera salida a producción.
 ## 4. Deuda abierta (priorizada)
 
 | # | Deuda | Tipo | Estado / acción |
 |---|---|---|---|
-| D1 | Google OAuth sin activar (código listo) | Humano | Crear OAuth Client en Google Cloud → Supabase Providers + redirect URLs (`F0_CAMBIOS.md` §4) |
-| D2 | Producción sin desplegar (app.finempoder.com.mx sigue pre-F0) | Decisión | Autorización del dueño → deploy + site_url en Supabase (hoy localhost:3000) |
-| D3 | Newsletter integrado al primer release | Producto/negocio | Implementado; pendiente validación externa de Stripe, Resend, cron, términos y compra de prueba |
+| D1 | Google OAuth sin activar (código listo) | Humano | Crear OAuth Client en Google Cloud → Supabase Providers + redirect URLs (`F0_CAMBIOS.md` §4). Para el primer lanzamiento por correo, configurar además SMTP transaccional propio en Supabase Auth; el servicio incorporado no sirve para producción. |
+| D2 | Producción sin desplegar (app.finempoder.com.mx sigue pre-F0) | Decisión | El alias aún apunta a `modo-vida-finempoder`, mientras QA usa `frontend`; el nuevo proyecto no tiene variables de Production y la URL pública conocida de Railway devuelve 404 en `/api/health`. Confirmar backend y destino antes de mover el dominio; verificar `site_url` en Supabase. |
+| D14 | Historial de migraciones y respaldo de Supabase | Operación | El panel confirmó que solo registra `20260826024609 003_league_schema` y el plan Free no ofrece respaldos administrados. Obtener y verificar una exportación antes de reconciliar 001/002/004 o aplicar nuevas migraciones de datos. |
+| D3 | Billete Bajo Control posterior al primer release | Producto/negocio | Esquema 004 aplicado y verificado; interfaz y asistente editorial local listos. La primera salida lo mantiene oculto y apagado. Antes de activarlo: validar Stripe, Resend, cron, términos, compra de prueba y generación con clave real. |
+| D15 | Automatización editorial autónoma | Producto/operación | La etapa inicial genera borradores bajo demanda con investigación, redacción y revisión automática; faltan cola persistente de temas, calendario, expediente auditable, límite de gasto y ejecución programada. Requiere resolver D14 antes de una nueva migración. |
+| D16 | Consola administrativa ampliada | Producto/seguridad | Primera etapa implementada en `/app/admin`: rol verificado por backend, resumen, workflow editorial, cuentas en solo consulta y configuración operativa. Pendientes auditoría de acciones, doble confirmación y permisos granulares antes de administrar cuentas, contenido educativo o ajustes desde la consola. |
 | D4 | Analytics sin clave PostHog (wrapper listo en f6) | Humano | Crear cuenta PostHog free → `VITE_POSTHOG_KEY` en .env → build |
 | D7 | Kit de lanzamiento: placeholders `[LINK_APP]`, `[FECHA]`, `[ENLACE_NEWSLETTER]` | Negocio | Decidir fecha y resolver links (`KIT_LANZAMIENTO_FINEMPODER.md`) |
 | D8 | Sonidos/hápticos (opcional, con toggle) | Opcional | Plan F2.3 |
@@ -61,7 +64,8 @@ Estado de UI actual en QA: Home réplica del mockup + camino + gamificación + s
 - **Cero emojis** en toda la UI (iconos lucide); **cero marcas de IA** en copy (sin rayas largas, sin "no es X es Y").
 - **Honestidad absoluta**: la app dice lo que hace (fix de promesas rotas F5; copys de newsletter/notificaciones verificados).
 - **Datos macro centralizados** en `datos-mx.ts` con fecha+fuente por dato; gobernanza como test (falla si falta fecha/fuente).
-- **Modo admin solo en rama QA** (PIN 2026); producción jamás lo recibe.
+- **PIN QA y rol administrativo separados**: el PIN 2026 solo controla herramientas locales de QA. `/app/admin` exige `profiles.role = 'admin'` verificado por el backend; el PIN no concede acceso.
+- **Lanzamiento por etapas**: primero la app educativa gratuita, con Billete Bajo Control oculto en el frontend y `NEWSLETTER_ENABLED=false` / `NEWSLETTER_PAYMENTS_ENABLED=false` en producción. D3, D15 y D16 no bloquean esa primera salida.
 
 ## 6. Runbook operativo
 
@@ -83,7 +87,7 @@ vercel alias set <URL> qa.finempoder.com.mx --scope ghaels-projects
 - Migraciones del release: 001, 002 y 004. La migración 003 de Ligas está fuera de esta rama y no debe aplicarse para este release.
 - El MCP de Supabase está conectado en el perfil skere (OAuth) — aplicar SQL/verificar estado sin dashboard.
 - OTP: `mailer_otp_length=6` (ajustado); template "Magic link or OTP" con `{{ .Token }}` (editado manualmente por el dueño).
-- Límite free: ~2 correos/hora → para producción conecta Resend (D3).
+- El SMTP incorporado de Supabase Auth solo sirve para pruebas y limita el envío; configurar un proveedor transaccional para OTP antes del primer GO. Las campañas de Resend para Billete Bajo Control son una etapa aparte (D3).
 
 ### Vigía de agentes
 - Cron cada 10 min: reporta a Telegram veredictos de Lupa y fin de corridas de agentes del proyecto FinEMPODER.
@@ -111,5 +115,5 @@ vercel alias set <URL> qa.finempoder.com.mx --scope ghaels-projects
 1. Crear cuenta PostHog (free) y dar la clave → analytics en vivo (D4).
 2. OAuth Google (D1) cuando se demande.
 3. Autorizar deploy a producción (D2).
-4. Decidir proveedor de newsletter (D3) y fecha de lanzamiento (D7).
+4. Definir la fecha de lanzamiento de la app gratuita (D7). Configurar y validar proveedores de Billete Bajo Control (D3) y la operación editorial autónoma (D15) para una etapa posterior.
 5. Validar en un celular el onboarding completo desde cero.

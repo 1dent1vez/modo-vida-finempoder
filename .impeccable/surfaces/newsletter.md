@@ -1,4 +1,4 @@
-# Newsletter — superficie implementada
+# Billete Bajo Control — superficie implementada
 
 ## Overview
 
@@ -32,10 +32,10 @@ Radios heredados: 16px para oferta, 12px para acción principal y mensajes, 8px 
 
 - **Cabecera y navegación:** reutiliza `PageHeader`, `Button` y `AppNavbar`; el enlace Editar depende de `membership.isEditor`.
 - **Oferta:** distingue invitado, pre lanzamiento, contratación disponible, piloto, suscripción, gracia y renovación cancelada. El invitado va a autenticación; el formulario disponible exige mayoría de edad y aceptación del cobro recurrente. La preferencia de correo es independiente de la cancelación del pago.
-- **Archivo:** filtros Todas, Antes de contratar, Fugas de dinero y La letra chiquita; selección con `aria-pressed`. El vacío inicial indica que se preparan las primeras ediciones; un filtro sin resultados tiene mensaje distinto. No presenta publicaciones ni testimonios inventados.
+- **Archivo:** filtros Todas, Antes de contratar, Fugas de dinero y La letra chiquita, más búsqueda por título, resumen y tema. Selección con `aria-pressed`. El vacío inicial indica que se preparan las primeras ediciones; una búsqueda sin resultados tiene mensaje distinto. No presenta publicaciones ni testimonios inventados.
 - **Lectura:** título, resumen, autor, fecha, texto por párrafos y fuentes enlazadas. La muestra y la edición protegida usan solicitudes diferentes; la interfaz retira el artículo al vencer el acceso conocido.
 - **Estados:** carga y avisos con `role="status"`, errores con `role="alert"` y reintento; pago pendiente espera confirmación del proveedor. Acciones ocupadas se deshabilitan. Foco visible azul de 3px con separación de 3px.
-- **Editor:** tabla de publicaciones y envíos; formulario de texto plano y fuentes; previsualización de lectura/correo, prueba por correo, aprobación de versión y programación. Incluye gestión de participantes del piloto y tabla de suscriptores. La UI consulta el permiso editorial al servidor; ocultar controles no sustituye la autorización de los endpoints.
+- **Editor:** encargo para generación asistida, tabla de publicaciones y envíos; formulario de texto plano y fuentes; previsualización de lectura/correo, prueba por correo, aprobación de versión y programación. Incluye gestión de participantes del piloto y tabla de suscriptores. La UI consulta el permiso editorial al servidor; ocultar controles no sustituye la autorización de los endpoints.
 
 ## Do's and Don'ts
 

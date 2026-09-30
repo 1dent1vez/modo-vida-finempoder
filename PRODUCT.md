@@ -18,9 +18,11 @@ Educación y herramientas financieras gratuitas. El newsletter de pago busca cub
 
 React SPA con modo invitado que debe conservarse. La contratación requiere cuenta y ocurre desde la app, nunca desde la landing independiente. $49 MXN mensuales, tres ediciones al mes, archivo y entrega por correo. Piloto cerrado sin tarjeta ni conversión automática. Revisión editorial humana obligatoria. No personalizar con movimientos financieros.
 
+La primera salida a producción se limita a la app educativa gratuita. Billete Bajo Control queda oculto y desactivado en ese release; pagos, correos y automatización editorial se habilitan en una etapa posterior, después de validar los proveedores y las condiciones comerciales.
+
 ## Brand Commitments
 
-Finempoder. Voz cercana, clara y precisa. Conservar componentes, tipografía y colores de la app existente.
+Finempoder. El newsletter de pago se llama Billete Bajo Control. Voz cercana, clara y precisa. Conservar componentes, tipografía y colores de la app existente.
 
 ## Evidence on Hand
 
