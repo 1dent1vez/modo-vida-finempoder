@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/store/auth';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { Button } from '@/shared/components/ui/button';
 import { client } from '@/api/client';
 import { newsletterApi as api, errorMessage, dateLabel } from './api';
-import type { Edition, Membership } from './api';
+import type { Edition, GeneratedDraft, Membership } from './api';
 import './newsletter.css';
 
 const empty = {
@@ -37,6 +37,8 @@ export default function NewsletterAdmin() {
   return <Editor key={id} />;
 }
 function Editor() {
+  const location = useLocation();
+  const fromAdmin = location.pathname.startsWith('/app/admin/');
   const token = useAuth((s) => s.token);
   const [allowed, setAllowed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -45,6 +47,9 @@ function Editor() {
   const [current, setCurrent] = useState<Edition | null>(null);
   const [form, setForm] = useState(empty);
   const [sources, setSources] = useState('');
+  const [brief, setBrief] = useState({ topic: '', angle: '', category: empty.category });
+  const [generated, setGenerated] = useState<GeneratedDraft | null>(null);
+  const [generatedChanged, setGeneratedChanged] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [reviewed, setReviewed] = useState(false);
   const [at, setAt] = useState('');
@@ -126,6 +131,8 @@ function Editor() {
     setReviewed(false);
     setNotice('');
     setEmailPreview('');
+    setGenerated(null);
+    setGeneratedChanged(false);
   }
   const locked = !!current && ['sending', 'published', 'failed'].includes(current.status ?? '');
   const touch = (patch: Partial<typeof form>) => {
@@ -133,6 +140,7 @@ function Editor() {
     setDirty(true);
     setReviewed(false);
     setEmailPreview('');
+    if (generated) setGeneratedChanged(true);
   };
   async function save() {
     const parsed = sources
@@ -152,6 +160,35 @@ function Editor() {
     setCurrent(row);
     setDirty(false);
     setReviewed(false);
+    setGenerated(null);
+  }
+  async function generate() {
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      const draft = await api.post<GeneratedDraft>('/admin/ai-draft', brief);
+      setCurrent(null);
+      setForm({
+        title: draft.title,
+        summary: draft.summary,
+        category: draft.category,
+        author: '',
+        body: draft.body,
+        is_sample: false,
+      });
+      setSources(draft.sources.map((source) => `${source.title} | ${source.url}`).join('\n'));
+      setGenerated(draft);
+      setGeneratedChanged(false);
+      setReviewed(false);
+      setDirty(true);
+      setEmailPreview('');
+      setNotice('Borrador preparado. Verifica cada fuente, cifra y condición antes de guardarlo.');
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
   }
   if (loading)
     return (
@@ -162,7 +199,7 @@ function Editor() {
   if (!allowed)
     return (
       <div className="nl-container">
-        <h1>Panel editorial</h1>
+        <h1>Billete Bajo Control · Editorial</h1>
         <p>{error || 'Necesitas una cuenta autorizada como responsable editorial.'}</p>
         <button className="nl-text-link" onClick={() => setReload((n) => n + 1)}>
           Volver a comprobar
@@ -174,14 +211,15 @@ function Editor() {
   return (
     <div className="newsletter-page">
       <PageHeader
-        title="Panel editorial"
+        title="Editorial"
         rightSlot={
-          <Link className="nl-text-link" to="/app/newsletter">
-            Ver newsletter
+          <Link className="nl-text-link" to={fromAdmin ? '/app/admin' : '/app/newsletter'}>
+            {fromAdmin ? 'Centro de control' : 'Ver publicaciones'}
           </Link>
         }
       />
       <div className="nl-container nl-admin">
+        <h2 className="nl-editor-name">Billete Bajo Control</h2>
         {error && (
           <p className="nl-message" role="alert">
             {error}
@@ -192,6 +230,92 @@ function Editor() {
             {notice}
           </p>
         )}
+        <section className="nl-agent-panel" aria-labelledby="nl-agent-heading">
+          <h2 id="nl-agent-heading">Preparar contenido</h2>
+          <p className="nl-muted">
+            Toda edición requiere revisión y aprobación editorial antes de programarse.
+          </p>
+          <form
+            className="nl-admin-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void generate();
+            }}
+          >
+            <label>
+              Tema de investigación
+              <input
+                required
+                minLength={10}
+                maxLength={180}
+                value={brief.topic}
+                onChange={(event) => setBrief({ ...brief, topic: event.target.value })}
+                placeholder="Por ejemplo: cómo comparar el costo de una tarjeta"
+              />
+            </label>
+            <label>
+              Enfoque editorial
+              <textarea
+                maxLength={500}
+                value={brief.angle}
+                onChange={(event) => setBrief({ ...brief, angle: event.target.value })}
+                placeholder="Qué pregunta debe responder la edición"
+              />
+            </label>
+            <label>
+              Tema del archivo
+              <select
+                value={brief.category}
+                onChange={(event) => setBrief({ ...brief, category: event.target.value })}
+              >
+                {['Antes de contratar', 'Fugas de dinero', 'La letra chiquita'].map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+            <Button type="submit" disabled={busy || dirty || brief.topic.trim().length < 10}>
+              {busy ? 'Preparando borrador…' : 'Investigar y preparar borrador'}
+            </Button>
+            {dirty && (
+              <p className="nl-muted">
+                Guarda o descarta los cambios actuales para preparar otro borrador.
+              </p>
+            )}
+          </form>
+          {generated && (
+            <div className="nl-agent-result" role="status">
+              <h3>Revisión automática</h3>
+              <p>
+                {generated.review.passed
+                  ? 'Sin alertas automáticas. Aún requiere revisión humana.'
+                  : 'Hay puntos que requieren atención antes de aprobar.'}
+              </p>
+              {generatedChanged && (
+                <p>
+                  La revisión automática corresponde al borrador original; los cambios posteriores
+                  no se han revisado.
+                </p>
+              )}
+              {generated.review.issues.length > 0 && (
+                <ul>
+                  {generated.review.issues.map((issue) => (
+                    <li key={issue}>{issue}</li>
+                  ))}
+                </ul>
+              )}
+              <h3>Fuentes localizadas</h3>
+              <ul>
+                {generated.sources.map((source) => (
+                  <li key={source.url}>
+                    <a href={source.url} target="_blank" rel="noopener noreferrer">
+                      {source.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
         <section>
           <h2>Publicaciones</h2>
           <p className="nl-muted">
@@ -328,6 +452,7 @@ function Editor() {
                   setSources(e.target.value);
                   setDirty(true);
                   setReviewed(false);
+                  if (generated) setGeneratedChanged(true);
                 }}
               />
               <span className="nl-muted">Una por línea: título, separador | y URL HTTPS.</span>

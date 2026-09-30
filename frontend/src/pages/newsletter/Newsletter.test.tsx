@@ -69,12 +69,24 @@ describe('Newsletter integrado', () => {
   it('preserva invitados: muestra legible y contratación mediante inicio de sesión', async () => {
     show();
     expect(
+      await screen.findByRole('heading', { name: 'Billete Bajo Control' }),
+    ).toBeInTheDocument();
+    expect(
       await screen.findByRole('link', { name: /Iniciar sesión para suscribirme/ }),
     ).toHaveAttribute('href', '/auth');
     expect(screen.getByText('Para suscriptores')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Leer muestra/ }));
     expect(await screen.findByText('Cuerpo de la muestra.')).toBeInTheDocument();
     expect(mocks.get).not.toHaveBeenCalledWith('/editions/paid');
+  });
+  it('busca ediciones por título y conserva los filtros', async () => {
+    show();
+    const search = await screen.findByRole('searchbox', { name: 'Buscar ediciones' });
+    fireEvent.change(search, { target: { value: 'pago' } });
+    expect(screen.getByText('Edición de pago')).toBeInTheDocument();
+    expect(screen.queryByText('Muestra de prueba')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Fugas de dinero' }));
+    expect(screen.getByText('No hay ediciones que coincidan.')).toBeInTheDocument();
   });
   it('exige mayoría de edad y aceptación antes de iniciar el cobro', async () => {
     useAuth.setState({ user: { id: 'reader', email: 'test@example.com' }, token: 'test' });

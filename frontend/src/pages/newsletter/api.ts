@@ -34,6 +34,15 @@ export type Catalog = {
   price: number;
   supportEmail: string;
 };
+export type GeneratedDraft = {
+  title: string;
+  summary: string;
+  body: string;
+  category: string;
+  sources: { title: string; url: string }[];
+  review: { passed: boolean; issues: string[] };
+  researchedAt: string;
+};
 export const newsletterApi = {
   get: async <T>(path: string, signal?: AbortSignal) =>
     (await client.get<T>(`/newsletter${path}`, { signal })).data,

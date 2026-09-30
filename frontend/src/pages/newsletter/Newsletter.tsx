@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, BookOpen, LockKeyhole, Mail } from 'lucide-react';
+import { ArrowRight, BookOpen, LockKeyhole, Mail, Search } from 'lucide-react';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { Button } from '@/shared/components/ui/button';
 import { useAuth } from '@/store/auth';
@@ -21,6 +21,7 @@ function NewsletterContent() {
   const [membership, setMembership] = useState<Membership | null>(null);
   const [selected, setSelected] = useState<Edition | null>(null);
   const [category, setCategory] = useState('Todas');
+  const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -100,13 +101,21 @@ function NewsletterContent() {
     });
   }
   const categories = ['Todas', 'Antes de contratar', 'Fugas de dinero', 'La letra chiquita'];
+  const normalizedQuery = query.trim().toLocaleLowerCase('es-MX');
   const editions =
-    catalog?.editions.filter((row) => category === 'Todas' || row.category === category) ?? [];
+    catalog?.editions.filter(
+      (row) =>
+        (category === 'Todas' || row.category === category) &&
+        (!normalizedQuery ||
+          `${row.title} ${row.summary} ${row.category}`
+            .toLocaleLowerCase('es-MX')
+            .includes(normalizedQuery)),
+    ) ?? [];
 
   return (
     <div className="newsletter-page">
       <PageHeader
-        title="Newsletter"
+        title="Billete Bajo Control"
         rightSlot={
           membership?.isEditor ? (
             <Link className="nl-text-link" to="/app/newsletter/editor">
@@ -150,13 +159,14 @@ function NewsletterContent() {
         ) : selected ? (
           <article className="nl-article">
             <button className="nl-text-link" type="button" onClick={() => setSelected(null)}>
-              Volver a las ediciones
+              Volver al archivo
             </button>
+            <p className="nl-article-meta">
+              {selected.category} · {dateLabel(selected.published_at)}
+            </p>
             <h2>{selected.title}</h2>
             <p className="nl-lead">{selected.summary}</p>
-            <p className="nl-muted">
-              Por {selected.author} · {dateLabel(selected.published_at)}
-            </p>
+            <p className="nl-muted">Por {selected.author} · Billete Bajo Control</p>
             <div className="nl-article-body">
               {selected.body?.split(/\n\s*\n/).map((paragraph, i) => (
                 <p key={i}>{paragraph}</p>
@@ -177,10 +187,10 @@ function NewsletterContent() {
           <>
             <section className="nl-intro">
               <div>
-                <h2>Entiende la letra chiquita de tu dinero.</h2>
+                <h2>Billete Bajo Control</h2>
                 <p className="nl-lead">
-                  Tarjetas, productos bancarios y gastos que pasan desapercibidos. Una decisión a la
-                  vez, con ejemplos de México.
+                  Entiende la letra chiquita de tu dinero. Tarjetas, productos bancarios y gastos
+                  que pasan desapercibidos, con ejemplos de México.
                 </p>
                 <p className="nl-format">
                   <Mail size={18} aria-hidden="true" /> Tres ediciones al mes, en tu correo y aquí.
@@ -201,7 +211,7 @@ function NewsletterContent() {
                         ? 'Prueba gratuita, sin renovación automática.'
                         : membership.cancelAtPeriodEnd
                           ? 'La renovación está cancelada.'
-                          : 'Newsletter Finempoder · $49 MXN al mes.'}
+                          : 'Billete Bajo Control · $49 MXN al mes.'}
                     </p>
                     <p className="nl-muted">Acceso hasta el {dateLabel(membership.accessUntil)}.</p>
                     {membership.inGrace && (
@@ -373,7 +383,20 @@ function NewsletterContent() {
               </div>
             </section>
             <section className="nl-archive" aria-labelledby="editions-heading">
-              <h2 id="editions-heading">Ediciones</h2>
+              <div className="nl-archive-heading">
+                <h2 id="editions-heading">Archivo de ediciones</h2>
+                <span className="nl-muted">{catalog?.editions.length ?? 0} publicadas</span>
+              </div>
+              <label className="nl-search">
+                <Search size={18} aria-hidden="true" />
+                <span className="sr-only">Buscar ediciones</span>
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Buscar ediciones"
+                  type="search"
+                />
+              </label>
               <div className="nl-filters" aria-label="Filtrar por tema">
                 {categories.map((item) => (
                   <button
@@ -391,7 +414,7 @@ function NewsletterContent() {
                   <BookOpen size={28} aria-hidden="true" />
                   <h3>
                     {catalog?.editions.length
-                      ? 'Todavía no hay ediciones de este tema.'
+                      ? 'No hay ediciones que coincidan.'
                       : 'Estamos preparando las primeras ediciones.'}
                   </h3>
                   <p>

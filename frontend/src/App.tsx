@@ -12,6 +12,7 @@ import { NamePromptDialog } from './shared/components/auth/NamePromptDialog';
 import { isAdminMode } from './lib/adminMode';
 import { isOnboarded } from '@/shared/utils/onboarding';
 import { LessonWrapper } from '@/features/lessons/components/LessonWrapper';
+import { newsletterEnabled } from '@/lib/newsletterFeature';
 
 // ── Auth (static — needed at first load) ──────────────
 import LoginPage from './pages/auth/Login';
@@ -25,6 +26,7 @@ const Screen3 = lazy(() => import('./pages/onboarding/Screen3'));
 const Terms = lazy(() => import('./pages/legal/Terms'));
 const Privacy = lazy(() => import('./pages/legal/Privacy'));
 const AdminPage = lazy(() => import('./pages/admin/AdminPage'));
+const AdminConsole = lazy(() => import('./pages/admin/AdminConsole'));
 
 const NotFound = lazy(() => import('./pages/errors/NotFound'));
 const Home = lazy(() => import('./pages/home/Home'));
@@ -110,8 +112,10 @@ export default function App() {
             <Route path="/app" element={<Home />} />
             <Route path="/app/achievements" element={<Achievements />} />
             <Route path="/app/profile" element={<Profile />} />
-            <Route path="/app/newsletter" element={<Newsletter />} />
-            <Route path="/app/newsletter/editor" element={<NewsletterAdmin />} />
+            <Route path="/app/newsletter" element={newsletterEnabled() ? <Newsletter /> : <Navigate to="/app" replace />} />
+            <Route path="/app/newsletter/editor" element={newsletterEnabled() ? <NewsletterAdmin /> : <Navigate to="/app" replace />} />
+            <Route path="/app/admin" element={<AdminConsole />} />
+            <Route path="/app/admin/newsletter" element={newsletterEnabled() ? <NewsletterAdmin /> : <Navigate to="/app/admin" replace />} />
             <Route path="/app/settings" element={<Settings />} />
 
             {/* Overviews de módulos */}

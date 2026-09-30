@@ -1,4 +1,5 @@
-import { LogOut, ExternalLink } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { LogOut, ExternalLink, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../shared/components/PageHeader';
@@ -6,6 +7,8 @@ import FECard from '../../shared/components/FECard';
 import { Button } from '../../shared/components/ui/button';
 import { useAuth } from '../../store/auth';
 import { supabase } from '../../lib/supabase';
+import { client } from '../../api/client';
+import { newsletterEnabled } from '../../lib/newsletterFeature';
 import {
   DAILY_GOAL_META,
   DAILY_GOAL_ORDER,
@@ -19,8 +22,19 @@ const APP_VERSION = '1.0.0';
 export default function Settings() {
   const navigate = useNavigate();
   const user = useAuth((s) => s.user);
+  const token = useAuth((s) => s.token);
+  const [isAdmin, setIsAdmin] = useState(false);
   const goalLevel = useDailyGoal((s) => s.level);
   const setGoalLevel = useDailyGoal((s) => s.setLevel);
+
+  useEffect(() => {
+    if (!token) { setIsAdmin(false); return; }
+    const controller = new AbortController();
+    client.get('/admin/me', { signal: controller.signal })
+      .then(() => { if (!controller.signal.aborted) setIsAdmin(true); })
+      .catch(() => { if (!controller.signal.aborted) setIsAdmin(false); });
+    return () => controller.abort();
+  }, [token]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut({ scope: 'local' });
@@ -83,12 +97,19 @@ export default function Settings() {
           </div>
         </FECard>
 
-        <FECard variant="flat">
-          <h2 className="text-base font-bold mb-3">Newsletter</h2>
+        {newsletterEnabled() && <FECard variant="flat">
+          <h2 className="text-base font-bold mb-3">Billete Bajo Control</h2>
           <Link to="/app/newsletter" className="text-[var(--color-brand-primary)] font-semibold">
             Administrar mi suscripción y correos
           </Link>
-        </FECard>
+        </FECard>}
+
+        {isAdmin && <FECard variant="flat">
+          <h2 className="text-base font-bold mb-3">Administración</h2>
+          <Link to="/app/admin" className="flex items-center justify-between text-[var(--color-brand-primary)] font-semibold text-sm">
+            Centro de control <ArrowRight className="h-4 w-4" />
+          </Link>
+        </FECard>}
 
         {/* Datos y privacidad */}
         <FECard variant="flat">
