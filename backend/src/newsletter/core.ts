@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 
 export const PRICE_CENTS = 4900;
+export const NEWSLETTER_NAME = 'Billete Bajo Control';
 export const GRACE_MS = 3 * 24 * 60 * 60 * 1000;
 export type Membership = {
   status: string; paid_until: string | null; pilot_until: string | null;
@@ -42,5 +43,5 @@ export const escapeHtml = (value: string) => value.replace(/[&<>"']/g, char =>
 
 export function emailHtml(edition: EditionInput) {
   const body = edition.body.split(/\n\s*\n/).map(p => `<p style="margin:0 0 20px;white-space:pre-line">${escapeHtml(p)}</p>`).join('');
-  return `<!doctype html><html lang="es-MX"><meta charset="utf-8"><body style="margin:0;background:#f8fafc;color:#0f172a;font-family:Arial,sans-serif"><main style="max-width:640px;margin:auto;padding:32px 24px;background:white"><p style="color:#1b4fd8;font-weight:bold">Finempoder</p><h1>${escapeHtml(edition.title)}</h1><p>${escapeHtml(edition.summary)}</p><p>Por ${escapeHtml(edition.author)}</p><div style="font-size:17px;line-height:1.7">${body}</div><h2>Fuentes</h2><ul>${edition.sources.map(s => `<li><a href="${escapeHtml(s.url)}">${escapeHtml(s.title)}</a></li>`).join('')}</ul><p>Contenido educativo. Tres ediciones al mes.</p><p><a href="{{{RESEND_UNSUBSCRIBE_URL}}}">Dejar de recibir el newsletter por correo</a>. Esto no cancela tu suscripción de pago; puedes administrarla desde la app.</p></main></body></html>`;
+  return `<!doctype html><html lang="es-MX"><meta charset="utf-8"><body style="margin:0;background:#f8fafc;color:#0f172a;font-family:Arial,sans-serif"><main style="max-width:640px;margin:auto;padding:32px 24px;background:white"><p style="color:#1b4fd8;font-weight:bold">${NEWSLETTER_NAME} · Finempoder</p><h1>${escapeHtml(edition.title)}</h1><p>${escapeHtml(edition.summary)}</p><p>Por ${escapeHtml(edition.author)}</p><div style="font-size:17px;line-height:1.7">${body}</div><h2>Fuentes</h2><ul>${edition.sources.map(s => `<li><a href="${escapeHtml(s.url)}">${escapeHtml(s.title)}</a></li>`).join('')}</ul><p>Contenido educativo. Tres ediciones al mes.</p><p><a href="{{{RESEND_UNSUBSCRIBE_URL}}}">Dejar de recibir el newsletter por correo</a>. Esto no cancela tu suscripción de pago; puedes administrarla desde la app.</p></main></body></html>`;
 }

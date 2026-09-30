@@ -3,7 +3,13 @@
 -- ──────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "profiles: service role inserta" ON public.profiles;
 CREATE POLICY "profiles: usuario crea el suyo" ON public.profiles
-  FOR INSERT WITH CHECK (auth.uid() = id);
+  FOR INSERT TO authenticated WITH CHECK (auth.uid() = id AND role = 'student');
+
+-- RLS limita filas, no columnas: impedir que un usuario se asigne role = 'admin'.
+REVOKE ALL ON public.profiles FROM anon;
+REVOKE INSERT, UPDATE, DELETE ON public.profiles FROM authenticated;
+GRANT INSERT (id, name, career, age, phone) ON public.profiles TO authenticated;
+GRANT UPDATE (name, career, age, phone) ON public.profiles TO authenticated;
 
 -- ──────────────────────────────────────────────────────
 -- FIX: lesson_progress — usuarios solo gestionan sus propios datos
@@ -38,36 +44,31 @@ CREATE POLICY "budgets: usuario gestiona el suyo" ON public.budgets
   WITH CHECK (auth.uid() = user_id);
 
 -- ──────────────────────────────────────────────────────
--- Admin: permitir a admins leer datos de investigación
+-- La consulta de admin no debe leer profiles como invoker desde su propia policy.
 -- ──────────────────────────────────────────────────────
-CREATE POLICY "lesson_progress: admin lee todo" ON public.lesson_progress
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
-    )
+CREATE SCHEMA finempoder_private;
+REVOKE ALL ON SCHEMA finempoder_private FROM PUBLIC;
+GRANT USAGE ON SCHEMA finempoder_private TO authenticated;
+
+CREATE FUNCTION finempoder_private.is_admin()
+RETURNS BOOLEAN LANGUAGE SQL STABLE SECURITY DEFINER SET search_path = '' AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = (SELECT auth.uid()) AND role = 'admin'
   );
+$$;
+REVOKE ALL ON FUNCTION finempoder_private.is_admin() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION finempoder_private.is_admin() TO authenticated;
+
+-- Admin: permitir a admins leer datos de investigación.
+CREATE POLICY "lesson_progress: admin lee todo" ON public.lesson_progress
+  FOR SELECT TO authenticated USING ((SELECT finempoder_private.is_admin()));
 
 CREATE POLICY "questionnaire: admin lee todo" ON public.questionnaire_results
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
-    )
-  );
+  FOR SELECT TO authenticated USING ((SELECT finempoder_private.is_admin()));
 
 CREATE POLICY "gamification: admin lee todo" ON public.gamification
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
-    )
-  );
+  FOR SELECT TO authenticated USING ((SELECT finempoder_private.is_admin()));
 
 CREATE POLICY "profiles: admin lee todo" ON public.profiles
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid() AND p.role = 'admin'
-    )
-  );
+  FOR SELECT TO authenticated USING ((SELECT finempoder_private.is_admin()));

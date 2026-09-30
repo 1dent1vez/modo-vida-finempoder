@@ -42,7 +42,7 @@ grant all on public.newsletter_memberships, public.newsletter_editions, public.n
 -- Atomically deduplicate provider events and preserve the latest known paid period.
 create function public.newsletter_apply_event(p_event_id text, p_created bigint, p_user uuid,
   p_subscription text, p_status text, p_paid_until timestamptz, p_cancel boolean)
-returns void language plpgsql security definer set search_path = public as $$
+returns void language plpgsql security definer set search_path = '' as $$
 declare existing public.newsletter_memberships;
 begin
   select * into existing from public.newsletter_memberships where user_id = p_user for update;
@@ -61,7 +61,7 @@ revoke all on function public.newsletter_apply_event(text,bigint,uuid,text,text,
 grant execute on function public.newsletter_apply_event(text,bigint,uuid,text,text,timestamptz,boolean) to service_role;
 
 create function public.newsletter_checkout_claim(p_user uuid)
-returns table(request_key uuid, expires_at timestamptz) language plpgsql security definer set search_path = public as $$
+returns table(request_key uuid, expires_at timestamptz) language plpgsql security definer set search_path = '' as $$
 begin
   perform 1 from public.newsletter_memberships where user_id = p_user for update;
   update public.newsletter_memberships set checkout_key = gen_random_uuid(),
@@ -73,7 +73,7 @@ revoke all on function public.newsletter_checkout_claim(uuid) from public, anon,
 grant execute on function public.newsletter_checkout_claim(uuid) to service_role;
 
 create function public.newsletter_claim_publication(p_id uuid) returns boolean
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = '' as $$
 begin
   perform pg_advisory_xact_lock(490003);
   if exists(select 1 from public.newsletter_editions where status in ('sending','failed')) then return false; end if;

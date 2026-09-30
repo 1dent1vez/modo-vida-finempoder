@@ -14,6 +14,8 @@ const configSchema = z.object({
   STRIPE_NEWSLETTER_PRICE_ID: z.string().default(''),
   RESEND_API_KEY: z.string().default(''),
   RESEND_NEWSLETTER_SEGMENT_ID: z.string().default(''),
+  OPENAI_API_KEY: z.string().default(''),
+  NEWSLETTER_AI_MODEL: z.string().default('gpt-5'),
 });
 export const newsletterConfig = () => configSchema.parse(process.env);
 export function httpError(status: number, message: string) { return Object.assign(new Error(message), { status }); }

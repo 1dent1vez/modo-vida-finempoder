@@ -1,14 +1,17 @@
 import express from 'express';
 import type { Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import { timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import { authGuard } from '../middlewares/auth.js';
 import { supabase } from '../lib/supabase.js';
-import { PRICE_CENTS, accessFor, editionSchema, emailHtml, verifyStripeSignature } from './core.js';
+import { PRICE_CENTS, accessFor, editionSchema, emailHtml, NEWSLETTER_NAME, verifyStripeSignature } from './core.js';
 import { checked, edition, member, META } from './store.js';
-import { stripe, newsletterConfig, paymentsReady, isEditor, httpError, appUrl, resend } from './providers.js';
+import { stripe, newsletterConfig, paymentsReady, httpError, appUrl, resend } from './providers.js';
 import { publishDue, reconcileDelivery } from './delivery.js';
 import { syncSubscription, reconcileBilling } from './billing.js';
+import { createEditorialDraft } from './agents.js';
+import { canEditNewsletter } from '../admin/access.js';
 
 export const newsletterRouter = express.Router();
 newsletterRouter.use((_req, res, next) => {
@@ -43,7 +46,7 @@ newsletterRouter.get('/me', async (req, res) => {
   res.json({ ...accessFor(row), status: row?.status ?? 'none', cancelAtPeriodEnd: row?.cancel_at_period_end ?? false,
     emailEnabled: row?.email_enabled ?? false, canManage: !!row?.stripe_subscription_id,
     canSubscribe: !row?.stripe_subscription_id || ['canceled', 'incomplete_expired'].includes(row.status),
-    isEditor: isEditor(req.user!.sub) });
+    isEditor: await canEditNewsletter(req.user!.sub) });
 });
 newsletterRouter.get('/editions/:id', async (req, res) => {
   const row = await edition(z.uuid().parse(req.params.id));
@@ -112,9 +115,17 @@ newsletterRouter.post('/cancel', async (req, res) => {
   res.json({ ok: true });
 });
 
-newsletterRouter.use('/admin', (req, _res, next) => {
-  if (!isEditor(req.user!.sub)) throw httpError(403, 'Solo el responsable editorial puede acceder.');
+newsletterRouter.use('/admin', async (req, _res, next) => {
+  if (!await canEditNewsletter(req.user!.sub)) throw httpError(403, 'Solo el responsable editorial puede acceder.');
   next();
+});
+const generationLimit = rateLimit({ windowMs: 60 * 60 * 1000, limit: 5,
+  keyGenerator: req => req.user!.sub,
+  message: { error: 'Llegaste al límite de borradores de esta hora. Inténtalo más tarde.' },
+  skip: () => process.env.NODE_ENV === 'test',
+});
+newsletterRouter.post('/admin/ai-draft', generationLimit, async (req, res) => {
+  res.json(await createEditorialDraft(req.body));
 });
 newsletterRouter.get('/admin/editions', async (_req, res) => {
   res.json(checked(await supabase.from('newsletter_editions').select('*').order('created_at', { ascending: false }).limit(100)));
@@ -173,7 +184,7 @@ newsletterRouter.post('/admin/editions/:id/test', async (req, res) => {
   const row = await edition(z.uuid().parse(req.params.id));
   if (!newsletterConfig().NEWSLETTER_FROM) throw httpError(503, 'Configura el remitente.');
   const html = emailHtml(editionSchema.parse(row)).replaceAll('{{{RESEND_UNSUBSCRIBE_URL}}}', appUrl('/app/newsletter'));
-  await resend('emails', 'POST', { from: newsletterConfig().NEWSLETTER_FROM, to: [req.user!.email], subject: `[PRUEBA] ${row.title}`, html });
+  await resend('emails', 'POST', { from: newsletterConfig().NEWSLETTER_FROM, to: [req.user!.email], subject: `[PRUEBA] ${NEWSLETTER_NAME}: ${row.title}`, html });
   res.json({ ok: true });
 });
 newsletterRouter.get('/admin/editions/:id/preview', async (req, res) => {

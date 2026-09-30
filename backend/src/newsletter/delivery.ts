@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase.js';
-import { accessFor, emailHtml, editionSchema } from './core.js';
+import { accessFor, emailHtml, editionSchema, NEWSLETTER_NAME } from './core.js';
 import { checked, type Member, type Edition } from './store.js';
 import { newsletterConfig, resend, httpError } from './providers.js';
 
@@ -62,7 +62,7 @@ export async function publishDue() {
     }
     const campaign = await resend<{ id: string }>('broadcasts', 'POST', {
       segment_id: c.RESEND_NEWSLETTER_SEGMENT_ID, from: c.NEWSLETTER_FROM,
-      subject: row.title, name: `Finempoder ${row.id}`, html: emailHtml(row),
+      subject: `${NEWSLETTER_NAME}: ${row.title}`, name: `${NEWSLETTER_NAME} ${row.id}`, html: emailHtml(row),
     });
     checked(await supabase.from('newsletter_editions').update({ broadcast_id: campaign.id, delivery_status: 'sending' }).eq('id', row.id));
     await resend(`broadcasts/${campaign.id}/send`, 'POST', {});

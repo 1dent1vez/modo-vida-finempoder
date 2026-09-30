@@ -45,4 +45,5 @@ test('editorial schema rejects executable URLs and email HTML escapes user conte
   assert.equal(html.includes('<script>'), false);
   assert.equal(html.includes('&lt;script&gt;'), true);
   assert.equal(html.includes('{{{RESEND_UNSUBSCRIBE_URL}}}'), true);
+  assert.equal(html.includes('Billete Bajo Control'), true);
 });

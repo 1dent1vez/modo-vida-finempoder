@@ -1,6 +1,7 @@
 import express from 'express';
 import { ZodError } from 'zod';
 import { newsletterRouter, stripeWebhook } from './newsletter/router.js';
+import { adminRouter } from './admin/router.js';
 import { Sentry } from './lib/sentry.js';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -83,6 +84,7 @@ app.get('/api/health', (_req, res) => {
 
 // ── Rutas ──────────────────────────────────────────────
 app.use('/api/newsletter', newsletterRouter);
+app.use('/api/admin', adminRouter);
 app.use('/api/progress', progressRouter);
 app.use('/api/questionnaire', questionnaireRouter);
 app.use('/api/research', researchRouter);

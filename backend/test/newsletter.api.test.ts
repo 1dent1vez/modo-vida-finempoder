@@ -55,6 +55,7 @@ test('guest direct requests cannot read paid bodies or admin data', async () => 
 test('signed-in non-editor cannot read administration', async () => {
   assert.equal((await get('/admin/editions', 'reader')).status, 403);
   assert.equal((await get('/admin/editions', 'editor')).status, 200);
+  assert.equal((await get('/admin/ai-draft', 'reader')).status, 403);
 });
 test('reader access is determined server-side and expires immediately', async () => {
   const response = await get(`/editions/${editionId}`, 'reader');
