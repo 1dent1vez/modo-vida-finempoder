@@ -37,12 +37,12 @@ export const BUDGET_MODULE_CONFIG = {
     { id: 'L05', title: 'Clasifica tus gastos (Drag & Drop)', kind: 'simulator' },
     { id: 'L06', title: 'Calculo de balance mensual (mini-calculadora)', kind: 'simulator' },
     { id: 'L07', title: 'Ajuste del presupuesto (simulacion de decisiones)', kind: 'simulator' },
-    { id: 'L08', title: 'Fugas financieras y crisis (podcast interactivo)', kind: 'content' },
-    { id: 'L09', title: 'La regla 50-30-20 (infografia dinamica)', kind: 'content' },
-    { id: 'L10', title: 'Plan de metas financieras SMART (reto guiado)', kind: 'challenge' },
+    { id: 'L08', title: 'Reconoce el gasto emocional', kind: 'simulator' },
+    { id: 'L09', title: 'Construye una meta financiera SMART', kind: 'challenge' },
+    { id: 'L10', title: 'Finanzas en tiempos difíciles', kind: 'content' },
     { id: 'L11', title: 'Presupuesto familiar y app digital (tutorial)', kind: 'content' },
     { id: 'L12', title: 'Presupuesto en tiempos de crisis (simulacion)', kind: 'simulator' },
-    { id: 'L13', title: 'Retroalimentacion con Finni (micro-feedback)', kind: 'content' },
+    { id: 'L13', title: 'Finni analiza tu presupuesto', kind: 'content' },
     { id: 'L14', title: 'Evaluacion: Controlas tus finanzas? (quiz)', kind: 'quiz' },
     { id: 'L15', title: 'Reto final: Crea tu presupuesto real', kind: 'challenge' },
   ],
@@ -76,7 +76,10 @@ export function getPreviousLessonPath(lessonId: string): string | null {
   return getPreviousLessonPathGeneric(BUDGET_MODULE_CONFIG, lessonId);
 }
 
-export function getRequiredLessonId(lessonId: string, completedMap: Record<string, boolean>): string | null {
+export function getRequiredLessonId(
+  lessonId: string,
+  completedMap: Record<string, boolean>,
+): string | null {
   return getRequiredLessonIdGeneric(BUDGET_MODULE_CONFIG, lessonId, completedMap);
 }
 
@@ -84,7 +87,10 @@ export function canAccessLesson(lessonId: string, completedMap: Record<string, b
   return canAccessLessonGeneric(BUDGET_MODULE_CONFIG, lessonId, completedMap);
 }
 
-export function buildModuleProgress(completedMap: Record<string, boolean>, nowIso = new Date().toISOString()) {
+export function buildModuleProgress(
+  completedMap: Record<string, boolean>,
+  nowIso = new Date().toISOString(),
+) {
   return buildProgressGeneric(BUDGET_MODULE_CONFIG, completedMap, nowIso);
 }
 

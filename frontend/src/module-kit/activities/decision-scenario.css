@@ -1,0 +1,218 @@
+.decision-intro {
+  max-width: 720px;
+  line-height: 1.7;
+}
+.decision-balance {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+.decision-balance svg {
+  color: #1b4fd8;
+}
+.decision-balance strong {
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+}
+.decision-balance span {
+  margin-left: auto;
+  color: #475569;
+  font-size: 13px;
+}
+.decision-intro ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.decision-intro li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 650;
+}
+.decision-intro li svg {
+  color: #047857;
+  width: 18px;
+}
+.decision-work {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: 28px 38px;
+}
+.decision-case {
+  background: #fff3ce;
+  padding: 26px;
+  border-radius: 14px;
+  align-self: start;
+}
+.decision-case h3 {
+  margin: 0 0 14px;
+  font-size: 25px;
+  line-height: 1.25;
+}
+.decision-case p {
+  color: #654b22;
+  line-height: 1.65;
+}
+.decision-case div {
+  border-top: 1px dashed #c8b37e;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 16px;
+  margin-top: 22px;
+}
+.decision-case div span {
+  color: #654b22;
+  font-size: 13px;
+}
+.decision-case div strong {
+  font-size: 19px;
+}
+.decision-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.decision-options button {
+  min-height: 68px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  padding: 14px 16px;
+  border: 1px solid #94a3b8;
+  border-radius: 12px;
+  background: #fff;
+  color: #0f172a;
+  line-height: 1.45;
+}
+.decision-options button:hover,
+.decision-options button[aria-checked='true'] {
+  border-color: #1b4fd8;
+  background: #eef2ff;
+}
+.decision-options button svg {
+  flex: 0 0 auto;
+  color: #1b4fd8;
+}
+.decision-consequence {
+  grid-column: 1/-1;
+  padding: 22px 0;
+  border-top: 1px solid #e2e8f0;
+}
+.decision-consequence h3,
+.decision-summary h3 {
+  font-size: 23px;
+  margin: 0 0 10px;
+  font-weight: 750;
+}
+.decision-consequence > p {
+  line-height: 1.65;
+}
+.decision-consequence dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+.decision-consequence dt {
+  color: #475569;
+  font-size: 12px;
+}
+.decision-consequence dd {
+  margin: 7px 0 0;
+  font-weight: 700;
+}
+.decision-reconsider {
+  margin-top: 22px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: 1px solid #94a3b8;
+  border-radius: 10px;
+  background: white;
+  color: #143774;
+}
+.decision-summary {
+  max-width: 760px;
+  margin: auto;
+}
+.decision-summary > svg {
+  color: #1b4fd8;
+}
+.decision-summary > p {
+  color: #475569;
+  line-height: 1.7;
+}
+.decision-summary ol {
+  list-style: none;
+  padding: 0;
+}
+.decision-summary li {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 7px 20px;
+  padding: 17px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+.decision-summary li span {
+  color: #475569;
+}
+.decision-summary li small {
+  grid-column: 2;
+  color: #475569;
+}
+.decision-activity .finni-assistant,
+.decision-activity .ca-footer {
+  position: relative;
+  bottom: auto;
+}
+.decision-load {
+  line-height: 1.7;
+}
+@media (max-width: 700px) {
+  .decision-work {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .decision-consequence {
+    grid-column: 1;
+  }
+  .decision-consequence dl {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .decision-balance {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .decision-balance span {
+    width: 100%;
+    margin: 0;
+  }
+  .decision-intro ul {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .decision-summary li {
+    grid-template-columns: 1fr;
+  }
+  .decision-summary li small {
+    grid-column: 1;
+  }
+  .decision-options button {
+    min-height: 72px;
+  }
+  .decision-case {
+    padding: 21px;
+  }
+  .decision-case h3 {
+    font-size: 23px;
+  }
+}

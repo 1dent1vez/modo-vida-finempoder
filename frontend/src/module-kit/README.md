@@ -41,6 +41,10 @@ Use `module-kit/lessonContract.ts`:
 
 This keeps lessons declarative while preserving backward compatibility during migrations.
 
+## Shared activity controls
+
+Use `LessonRange` from `module-kit/components/activities` for simulator ranges that show a label and current value. It keeps the accessible name and numeric change handling consistent while each lesson owns its formula and visual context.
+
 4. In overview page:
 - render with `ModuleLessonList`
 - show `locked` reason from `getRequiredLessonId`

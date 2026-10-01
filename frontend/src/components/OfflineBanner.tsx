@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Spinner } from '@/shared/components/Spinner';
 import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
@@ -38,7 +39,8 @@ export default function OfflineBanner({ dense = false }: OfflineBannerProps) {
   if (syncStatus === 'synced') {
     return (
       <div role="status" className={cn(baseClass, py, 'bg-[var(--color-brand-success)]')}>
-        ✓ Progreso sincronizado
+        <Check className="h-4 w-4" aria-hidden="true" />
+        Progreso sincronizado
       </div>
     );
   }

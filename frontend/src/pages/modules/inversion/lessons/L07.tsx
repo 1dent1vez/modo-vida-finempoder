@@ -1,210 +1,314 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
-
-const PLATAFORMAS = [
-  { nombre: 'GBM+', minimo: '$200', tipo: 'Acciones + fondos', regulada: true },
-  { nombre: 'Kuspit', minimo: '$500', tipo: 'Acciones + fondos', regulada: true },
-  { nombre: 'Bursanet', minimo: '$200', tipo: 'Acciones + fondos', regulada: true },
-  { nombre: 'Flink', minimo: '$1', tipo: 'Micro-inversión', regulada: true },
-  { nombre: 'Nu Inversiones', minimo: '$1', tipo: 'Fondos', regulada: true },
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/investment-foundations.css';
+type Stage = 'model' | 'inspect' | 'check' | 'review' | 'complete';
+type Draft = {
+  version: 1;
+  stage: Stage;
+  viewed: string[];
+  choice: string | null;
+  answers: (number | null)[];
+  question: string;
+};
+const KEY = 'investment_l7:collective-vs-direct:v1';
+const initial = (): Draft => ({
+  version: 1,
+  stage: 'model',
+  viewed: [],
+  choice: null,
+  answers: [null, null, null],
+  question: '',
+});
+const MODELS = [
+  {
+    id: 'fund',
+    name: 'Vehículo colectivo',
+    text: 'Un administrador ejecuta una estrategia con recursos de varias personas. Revisa mandato, cartera, costos, valuación y retiros.',
+  },
+  {
+    id: 'direct',
+    name: 'Participación directa',
+    text: 'La persona elige valores específicos y asume la gestión de selección, concentración, costos y seguimiento.',
+  },
 ];
-
-const QUIZ = [
-  { pregunta: '¿Qué es un fondo de inversión?', opciones: ['Una cuenta de ahorro bancaria', 'Un grupo de personas que invierten colectivamente', 'Un préstamo al banco'], correcta: 1 },
-  { pregunta: '¿Qué pasa si la empresa en cuya acción invertiste tiene problemas?', opciones: ['Recibes el dinero garantizado', 'El valor de tu acción puede bajar', 'El gobierno te protege'], correcta: 1 },
-  { pregunta: '¿Cuál es el organismo que regula los fondos en México?', opciones: ['SAT', 'CNBV', 'IMSS'], correcta: 1 },
-  { pregunta: '¿Los fondos balanceados mezclan deuda y acciones?', opciones: ['Falso', 'Verdadero'], correcta: 1 },
-  { pregunta: '¿Desde cuánto puedes invertir en BMV con plataformas fintech?', opciones: ['$10,000', '$5,000', '$200-$500'], correcta: 2 },
+const Q = [
+  {
+    q: '¿Un vehículo colectivo elimina el riesgo?',
+    o: ['Sí', 'No; depende de su estrategia y activos'],
+    a: 1,
+  },
+  {
+    q: '¿Qué reduce la concentración?',
+    o: ['Distribuir exposición entre distintos activos', 'Comprar una sola empresa'],
+    a: 0,
+  },
+  {
+    q: '¿Una plataforma disponible hoy garantiza regulación futura?',
+    o: ['Sí', 'No; hay que verificar registros vigentes'],
+    a: 1,
+  },
 ];
-
-const infoColor = 'var(--color-brand-info)';
-const infoBg = 'var(--color-brand-info-bg)';
-const successColor = 'var(--color-brand-success)';
-const successBg = 'var(--color-brand-success-bg)';
-const warnColor = 'var(--color-brand-warning)';
-const warnBg = 'var(--color-brand-warning-bg)';
-const errorColor = 'var(--color-brand-error)';
-
+function parse(x: unknown): Draft | null {
+  if (!x || typeof x !== 'object') return null;
+  const v = x as Draft;
+  return v.version === 1 &&
+    ['model', 'inspect', 'check', 'review', 'complete'].includes(v.stage) &&
+    Array.isArray(v.viewed) &&
+    Array.isArray(v.answers) &&
+    typeof v.question === 'string'
+    ? v
+    : null;
+}
 export default function L07() {
-  const [step, setStep] = useState(0);
-  const [audioLeido, setAudioLeido] = useState(false);
-  const [pausaRespuesta, setPausaRespuesta] = useState('');
-  const [respuestas, setRespuestas] = useState<(number | null)[]>(Array(5).fill(null));
-  const [plataformasInteres, setPlataformasInteres] = useState<string[]>([]);
-  const [guardado, setGuardado] = useState(false);
-
-  const aciertos = respuestas.filter((r, i) => r === QUIZ[i]!.correcta).length;
-  const quizCompleto = respuestas.every((r) => r !== null);
-  const score = quizCompleto ? aciertos / 5 : 0;
-
-  const togglePlataforma = (nombre: string) => {
-    setPlataformasInteres((prev) => prev.includes(nombre) ? prev.filter((p) => p !== nombre) : [...prev, nombre]);
+  const [d, setD] = useState(initial);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    setLoading(true);
+    setFailed(false);
+    void lessonDataRepository
+      .load('inversion', KEY)
+      .then((x) => {
+        if (mounted.current) {
+          setD(parse(x) ?? initial());
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (mounted.current) {
+          setLoading(false);
+          setFailed(true);
+        }
+      });
+    return () => {
+      mounted.current = false;
+    };
+  }, [attempt]);
+  const save = async (n: Draft, final = false) => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (final) {
+        await lessonDataRepository.saveBatch('inversion', [
+          {
+            key: 'l07_models',
+            data: {
+              modelToInvestigate: n.choice,
+              answers: n.answers,
+              question: n.question,
+            },
+          },
+          { key: KEY, data: n },
+        ]);
+      } else {
+        await lessonDataRepository.save('inversion', KEY, n);
+      }
+      if (mounted.current) setD(n);
+    } catch {
+      if (mounted.current) setError('No pudimos guardar. Tu análisis sigue en pantalla.');
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
   };
-
-  const handleGuardar = async () => {
-    await lessonDataRepository.save('inversion', 'l07_plataformas', { plataformas: plataformasInteres });
-    setGuardado(true);
-  };
-
+  const score = d.answers.filter((x, i) => x === Q[i]!.a).length / 3;
+  const review = d.stage === 'review' || d.stage === 'complete';
+  if (loading)
+    return (
+      <LessonShell
+        id="L07"
+        title="Vehículos colectivos y participación directa"
+        completion={{ ready: false }}
+      >
+        <ActivityLoading />
+      </LessonShell>
+    );
+  if (failed)
+    return (
+      <LessonShell
+        id="L07"
+        title="Vehículos colectivos y participación directa"
+        completion={{ ready: false }}
+      >
+        <ActivityLoadError
+          message="No pudimos recuperar tu avance."
+          onRetry={() => setAttempt((x) => x + 1)}
+        />
+      </LessonShell>
+    );
   return (
-    <LessonShell id="L07" title="Fondos de inversión y Bolsa: cuando muchos invierten juntos" completion={{ ready: quizCompleto && guardado, score }}>
-      <div className="p-1">
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full transition-all" style={{ width: `${(step / 2) * 100}%`, backgroundColor: infoColor }} />
-        </div>
-
-        {/* Pantalla 0 — Explicación */}
-        {step === 0 && (
-          <div className="space-y-6">
-            <FinniMessage variant="coach" title="¿Quieres invertir en muchas empresas a la vez?" message="Los fondos de inversión hacen eso por ti. Hoy entendemos cómo funcionan los fondos y la bolsa." />
-            <FECard variant="flat" className="border" style={{ borderColor: warnColor, backgroundColor: warnBg }}>
-              <p className="font-extrabold mb-2">Fondos de Inversión — La olla común 🍲</p>
-              <div className="space-y-3">
-                <p className="text-sm">Imagina que tú y 999 personas más juntan $1,000 cada uno. Ahora tienen $1 millón para invertir. Un gestor profesional decide dónde y cómo. Las ganancias (y pérdidas) se distribuyen proporcionalmente.</p>
-                <p className="text-sm">Los fondos pueden invertir en <b>deuda</b> (más seguros), en <b>acciones</b> (más riesgo y potencial), o una mezcla de ambos (<b>balanceados</b>).</p>
-                <p className="text-sm">En México, los fondos regulados por la CNBV son accesibles desde $1,000-$5,000. Algunos desde $100 con plataformas fintech.</p>
-              </div>
-            </FECard>
-
-            {!audioLeido ? (
-              <div className="space-y-4">
-                <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
-                  <p className="font-bold mb-2">⏸ Pausa interactiva</p>
-                  <p className="text-sm mb-2">¿Qué te parece más atractivo hasta ahora: fondos o acciones? ¿Por qué?</p>
-                  <textarea
-                    value={pausaRespuesta}
-                    onChange={(e) => setPausaRespuesta(e.target.value)}
-                    rows={2}
-                    placeholder="Escribe tu reflexión..."
-                    className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm resize-none"
-                  />
-                </FECard>
-                {pausaRespuesta.trim().length >= 5 && (
-                  <button className="w-full min-h-11 rounded-xl font-semibold text-sm border-2" style={{ borderColor: infoColor, color: infoColor }} onClick={() => setAudioLeido(true)}>
-                    Continuar con la BMV →
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <FECard variant="flat" className="border" style={{ borderColor: successColor, backgroundColor: successBg }}>
-                  <p className="font-extrabold mb-2">La Bolsa Mexicana de Valores (BMV) 📊</p>
-                  <div className="space-y-3">
-                    <p className="text-sm">La BMV es el mercado donde se compran y venden acciones de empresas mexicanas. Cuando compras una acción, eres propietario de una pequeña parte de esa empresa.</p>
-                    <p className="text-sm">Si la empresa crece y genera utilidades, el valor de tu acción sube. Si tiene problemas, baja. A diferencia de los CETES, <b>no hay rendimiento garantizado</b>.</p>
-                    <p className="text-sm">Puedes invertir en acciones de la BMV desde plataformas como GBM+, Kuspit o Bursanet desde $200-$500 pesos.</p>
-                  </div>
-                </FECard>
-                <div className="p-4 rounded-xl bg-white border border-[var(--color-neutral-200)]">
-                  <p className="font-bold mb-2">Fondos vs Acciones individuales</p>
-                  <div className="space-y-0.5">
-                    {[
-                      { aspecto: 'Gestión', fondos: 'Profesional (gestor)', acciones: 'Tú decides' },
-                      { aspecto: 'Diversificación', fondos: 'Automática', acciones: 'Manual' },
-                      { aspecto: 'Monto mínimo', fondos: '$100-$5,000', acciones: '~$200' },
-                      { aspecto: 'Comisiones', fondos: '1-2% anual', acciones: 'Por operación' },
-                    ].map((row) => (
-                      <div key={row.aspecto} className="flex py-1.5 border-b border-[var(--color-neutral-200)]">
-                        <p className="text-xs font-bold w-[35%]">{row.aspecto}</p>
-                        <p className="text-xs w-[32.5%]" style={{ color: '#B45309' }}>{row.fondos}</p>
-                        <p className="text-xs w-[32.5%]" style={{ color: '#059669' }}>{row.acciones}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setStep(1)}>
-                  Quiz y plataformas →
-                </button>
-              </div>
+    <LessonShell
+      id="L07"
+      title="Vehículos colectivos y participación directa"
+      showGreeting={false}
+      completion={{ ready: d.stage === 'complete', score }}
+    >
+      <ActivityFrame
+        label="Comparador de modelos"
+        className="investment-foundations"
+        busy={busy}
+        title={
+          review
+            ? 'Conserva una pregunta para investigar.'
+            : d.stage === 'check'
+              ? 'Comprueba las diferencias.'
+              : d.stage === 'inspect'
+                ? 'Mira dentro antes de elegir.'
+                : 'Dos maneras de obtener exposición.'
+        }
+        description="Compara gestión colectiva y selección directa sin promocionar plataformas."
+        progressLabel="Etapas completadas"
+        progressValue={
+          d.stage === 'model' ? 0 : d.stage === 'inspect' ? 1 : d.stage === 'check' ? 2 : 3
+        }
+        progressMax={3}
+        stepLabel={
+          review
+            ? 'Paso 4 de 4 · Revisar'
+            : d.stage === 'check'
+              ? 'Paso 3 de 4 · Comprobar'
+              : d.stage === 'inspect'
+                ? 'Paso 2 de 4 · Investigar'
+                : 'Paso 1 de 4 · Comparar'
+        }
+        focusKey={d.stage}
+        advice={{
+          title: 'Finni pregunta qué hay dentro',
+          text:
+            cue ??
+            '“Fondo”, “acción” o “plataforma” no describen por sí solos diversificación, costos, liquidez ni regulación.',
+          tone: score === 1 ? 'success' : 'info',
+        }}
+        adviceCue={cue}
+        error={error}
+        status={busy ? 'Guardando…' : 'Tu avance está guardado.'}
+        actions={
+          <div className="if-actions">
+            {d.stage === 'model' && (
+              <button
+                className="ca-primary"
+                disabled={d.viewed.length < 2}
+                onClick={() => void save({ ...d, stage: 'inspect' })}
+              >
+                Preparar investigación
+              </button>
+            )}
+            {d.stage === 'inspect' && (
+              <button
+                className="ca-primary"
+                disabled={!d.choice || d.question.trim().length < 5}
+                onClick={() => void save({ ...d, stage: 'check' })}
+              >
+                Comprobar diferencias
+              </button>
+            )}
+            {d.stage === 'check' && (
+              <button
+                className="ca-primary"
+                disabled={d.answers.some((x) => x === null)}
+                onClick={() => void save({ ...d, stage: 'review' })}
+              >
+                Revisar análisis
+              </button>
+            )}
+            {d.stage === 'review' && (
+              <button
+                className="ca-primary"
+                onClick={() => void save({ ...d, stage: 'complete' }, true)}
+              >
+                Guardar y terminar
+              </button>
             )}
           </div>
+        }
+      >
+        {d.stage === 'model' && (
+          <section className="if-grid">
+            {MODELS.map((x) => (
+              <button
+                key={x.id}
+                className={d.viewed.includes(x.id) ? 'is-viewed' : ''}
+                onClick={() => {
+                  setD((v) => ({
+                    ...v,
+                    viewed: v.viewed.includes(x.id) ? v.viewed : [...v.viewed, x.id],
+                  }));
+                  setCue(x.text);
+                }}
+              >
+                <span>{x.name}</span>
+                <small>{d.viewed.includes(x.id) ? x.text : 'Toca para descubrir'}</small>
+              </button>
+            ))}
+          </section>
         )}
-
-        {/* Pantalla 1 — Quiz + plataformas */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <p className="text-2xl font-bold">Quiz de comprensión</p>
-            <div className="space-y-4">
-              {QUIZ.map((q, qi) => {
-                const resp = respuestas[qi];
-                const respondido = resp !== null;
-                const correcto = resp === q.correcta;
-                return (
-                  <FECard key={qi} variant="flat" className="border" style={{ borderColor: respondido ? (correcto ? successColor : errorColor) : 'var(--color-border)' }}>
-                    <p className="text-sm font-bold mb-2">{qi + 1}. {q.pregunta}</p>
-                    <div className="space-y-2">
-                      {q.opciones.map((op, oi) => (
-                        <button
-                          key={oi}
-                          onClick={() => { if (!respondido) setRespuestas((prev) => prev.map((r, i) => i === qi ? oi : r)); }}
-                          disabled={respondido}
-                          className="w-full text-left px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors disabled:cursor-default"
-                          style={{
-                            borderColor: resp === oi ? (oi === q.correcta ? successColor : errorColor) : (respondido ? 'var(--color-neutral-200)' : warnColor),
-                            backgroundColor: resp === oi ? (oi === q.correcta ? successBg : 'var(--color-brand-error-bg)') : 'transparent',
-                          }}
-                        >
-                          {op}
-                        </button>
-                      ))}
-                    </div>
-                    {respondido && (
-                      <p className="text-xs mt-1.5" style={{ color: correcto ? successColor : errorColor }}>
-                        {correcto ? '✓ Correcto' : `✗ La respuesta correcta era: "${q.opciones[q.correcta]}"`}
-                      </p>
-                    )}
-                  </FECard>
-                );
-              })}
-            </div>
-            {quizCompleto && (
-              <div className="space-y-4">
-                <FECard variant="flat" className="border-2 text-center" style={{ borderColor: aciertos >= 4 ? successColor : infoColor, backgroundColor: aciertos >= 4 ? successBg : infoBg }}>
-                  <p className="font-extrabold">{aciertos}/5 correctas</p>
-                </FECard>
-                <p className="text-xl font-bold">Plataformas autorizadas por CNBV</p>
-                <p className="text-sm text-[var(--color-text-secondary)]">Marca las que te generan interés:</p>
-                <div className="space-y-3">
-                  {PLATAFORMAS.map((p) => (
-                    <div
-                      key={p.nombre}
-                      onClick={() => togglePlataforma(p.nombre)}
-                      className="p-4 rounded-xl border-2 cursor-pointer transition-all"
-                      style={{
-                        borderColor: plataformasInteres.includes(p.nombre) ? warnColor : 'var(--color-border)',
-                        backgroundColor: plataformasInteres.includes(p.nombre) ? warnBg : 'var(--color-neutral-50)',
-                      }}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-bold">{p.nombre}</p>
-                          <p className="text-xs text-[var(--color-text-secondary)]">{p.tipo} · Desde {p.minimo}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>CNBV ✓</span>
-                          {plataformasInteres.includes(p.nombre) && <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: infoColor }}>★ Interés</span>}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <FinniMessage variant="coach" title="Fondos y bolsa son para plazos medianos-largos" message="La clave es entender en qué estás entrando antes de hacerlo. ¡Ya lo entiendes!" />
+        {d.stage === 'inspect' && (
+          <section className="if-form">
+            <div className="if-options">
+              <h3>¿Qué modelo quieres investigar?</h3>
+              {MODELS.map((x) => (
                 <button
-                  className="w-full min-h-11 text-white rounded-xl font-semibold text-sm disabled:opacity-50"
-                  style={{ backgroundColor: infoColor }}
-                  onClick={() => void handleGuardar()}
-                  disabled={guardado}
+                  key={x.id}
+                  className={d.choice === x.id ? 'is-selected' : ''}
+                  onClick={() => setD({ ...d, choice: x.id })}
                 >
-                  {guardado ? '✅ Intereses guardados — lección completada' : 'Guardar mis plataformas de interés'}
+                  {x.name}
                 </button>
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+            <label>
+              Escribe una pregunta para comparar
+              <input
+                value={d.question}
+                onChange={(e) => setD({ ...d, question: e.target.value })}
+                placeholder="Ej. ¿Qué costos y activos contiene?"
+              />
+            </label>
+          </section>
         )}
-      </div>
+        {d.stage === 'check' && (
+          <section className="if-options">
+            {Q.map((q, i) => (
+              <div className="if-case" key={q.q}>
+                <h3>{q.q}</h3>
+                {q.o.map((x, j) => (
+                  <button
+                    key={x}
+                    className={d.answers[i] === j ? 'is-selected' : ''}
+                    onClick={() => {
+                      setD((v) => ({ ...v, answers: v.answers.map((a, k) => (k === i ? j : a)) }));
+                      setCue(j === q.a ? 'Correcto.' : 'Revisa el alcance de esa afirmación.');
+                    }}
+                  >
+                    {x}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </section>
+        )}
+        {review && (
+          <section className="if-review">
+            <span>Pregunta guardada</span>
+            <h3>{d.question}</h3>
+            <p>
+              Verificaré estrategia, activos, concentración, costos, liquidez y registro vigente
+              antes de elegir.
+            </p>
+          </section>
+        )}
+      </ActivityFrame>
     </LessonShell>
   );
 }

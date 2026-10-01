@@ -1,210 +1,472 @@
-import { useMemo } from 'react';
-import { BookOpen, Flame, Trophy, Lightbulb, Play, PiggyBank, TrendingUp, School } from 'lucide-react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import {
+  BookOpen,
+  Check,
+  Coins,
+  Flame,
+  Lightbulb,
+  Lock,
+  PiggyBank,
+  Play,
+  TrendingUp,
+  Trophy,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { track, EVENTOS } from '../../lib/analytics';
 import { useProgress } from '../../store/progress';
 import { useAuth } from '../../store/auth';
-import { useGamification } from '../../hooks/gamification/useGamification';
-import FECard from '../../shared/components/FECard';
-import { StatCard } from '../../shared/components/StatCard';
-import { XPChip } from '../../shared/components/gamification/XPChip';
-import { StreakBadge } from '../../shared/components/gamification/StreakBadge';
+import { useDailyXp } from '../../hooks/gamification/useDailyXp';
+import { useWeekStats } from '../../hooks/gamification/useWeekStats';
+import { DAILY_GOAL_META, resolveDailyXpTarget, useDailyGoal } from '../../store/dailyGoal';
+import { localDayKey } from '../../lib/localDate';
+import { isAdminMode } from '../../lib/adminMode';
 import { Button } from '../../shared/components/ui/button';
 import { Progress } from '../../shared/components/ui/progress';
+import { DailyGoalRing } from '../../shared/components/gamification/DailyGoalRing';
+import FECard from '../../shared/components/FECard';
+import FinniMessage from '../../shared/components/FinniMessage';
+import { DailyGoalDialog } from './DailyGoalDialog';
+import { getDailyTip } from './dailyTips';
+import { FRASES_META_DIARIA, fraseAleatoria } from '../../lib/finniFrases';
 import {
   getLessonPath,
   getProgressPercent,
   loadModuleProgressSnapshot,
+  toCompletedMapFromProgress,
+  type ModuleFlowConfig,
+  type ModuleLesson,
 } from '../../module-kit/moduleFlow';
+import { getLessonNodeState } from '../../module-kit/lessonPathState';
 import { BUDGET_MODULE_CONFIG } from '../modules/presupuesto/lessonFlow';
 import { SAVINGS_MODULE_CONFIG } from '../modules/ahorro/lessonFlow';
 import { INVESTMENT_MODULE_CONFIG } from '../modules/inversion/lessonFlow';
 
-const DAILY_TIPS = [
-  'Separa el 10% de tu ingreso antes de gastar. Paga primero a tu yo futuro.',
-  'El gasto hormiga suma más de lo que crees: un café diario = $1,500 al mes.',
-  'La regla 50-30-20: 50% necesidades, 30% deseos, 20% ahorro e inversión.',
-  'Un fondo de emergencia de 3-6 meses de gastos es tu escudo financiero.',
-  'Antes de invertir, elimina deudas con tasas mayores al 15% anual.',
-  'Anota cada gasto hoy. En una semana verás patrones que no esperabas.',
-  'La inflación reduce el poder de tu dinero. Invertirlo lo protege.',
-  'Automatiza tu ahorro: transfiérelo el día que cobras, no lo que sobre.',
-  'Diversificar es no poner todos los huevos en una canasta.',
-  'El interés compuesto es magia: $1,000 al 10% anual = $2,594 en 10 años.',
-  'Define tu meta de ahorro con monto y fecha límite. Sin fecha, no es meta.',
-  'Revisa tus suscripciones cada mes. Las olvidadas cuestan más de $500/año.',
-  'El mejor momento para empezar a invertir fue ayer. El segundo mejor es hoy.',
-  'Conoce tu perfil de riesgo antes de elegir instrumento de inversión.',
+type ModuleAccent = 'warning' | 'success' | 'info';
+
+type ModuleMeta = {
+  config: ModuleFlowConfig;
+  title: string;
+  subtitle: string;
+  accent: ModuleAccent;
+  icon: React.ReactNode;
+};
+
+/** Rutas de overview por módulo (spec F1: /app/presupuesto, /app/ahorro,
+ *  /app/inversion — esta última redirige al overview real de inversión). */
+const MODULE_OVERVIEW: Record<string, string> = {
+  presupuesto: '/app/presupuesto',
+  ahorro: '/app/ahorro',
+  inversion: '/app/inversion',
+};
+
+const MODULES: ModuleMeta[] = [
+  {
+    config: BUDGET_MODULE_CONFIG,
+    title: 'Presupuestación',
+    subtitle: 'Organiza ingresos y gastos',
+    accent: 'warning',
+    icon: <PiggyBank />,
+  },
+  {
+    config: SAVINGS_MODULE_CONFIG,
+    title: 'Ahorro',
+    subtitle: 'Crea hábitos de ahorro',
+    accent: 'success',
+    icon: <Coins />,
+  },
+  {
+    config: INVESTMENT_MODULE_CONFIG,
+    title: 'Inversión',
+    subtitle: 'Haz crecer tu dinero',
+    accent: 'info',
+    icon: <TrendingUp />,
+  },
 ];
 
-function getDailyTip(): string {
-  const start = new Date(new Date().getFullYear(), 0, 0);
-  const dayOfYear = Math.floor((Date.now() - start.getTime()) / 86_400_000);
-  return DAILY_TIPS[dayOfYear % DAILY_TIPS.length];
-}
-
-type ModuleContinue = {
-  path: string;
-  lessonTitle: string;
-  moduleTitle: string;
-  color: 'warning' | 'success' | 'info';
-  progress: number;
-};
-
-function computeContinueCards(): ModuleContinue[] {
-  const modules = [
-    { config: BUDGET_MODULE_CONFIG, moduleTitle: 'Presupuestación', color: 'warning' as const },
-    { config: SAVINGS_MODULE_CONFIG, moduleTitle: 'Ahorro', color: 'success' as const },
-    { config: INVESTMENT_MODULE_CONFIG, moduleTitle: 'Inversión', color: 'info' as const },
-  ];
-  const results: ModuleContinue[] = [];
-  for (const { config, moduleTitle, color } of modules) {
-    const snapshot = loadModuleProgressSnapshot(config);
-    const progress = getProgressPercent(config, snapshot);
-    const next = (config.lessons as ReadonlyArray<{ id: string; title: string; kind: string }>)
-      .find((l) => snapshot.lessons[l.id] !== 'completed');
-    if (!next) continue;
-    results.push({ path: getLessonPath(config, next.id), lessonTitle: next.title, moduleTitle, color, progress });
-  }
-  return results.sort((a, b) => b.progress - a.progress);
-}
-
-function computeTotalCompleted(): number {
-  return [BUDGET_MODULE_CONFIG, SAVINGS_MODULE_CONFIG, INVESTMENT_MODULE_CONFIG].reduce((total, config) => {
-    const snapshot = loadModuleProgressSnapshot(config);
-    return total + Object.values(snapshot.lessons).filter((s) => s === 'completed').length;
-  }, 0);
-}
-
-const MODULE_BAR: Record<string, string> = {
-  warning: 'bg-[var(--color-brand-warning)]',
-  success: 'bg-[var(--color-brand-success)]',
-  info: 'bg-[var(--color-brand-info)]',
-};
-const MODULE_TEXT: Record<string, string> = {
+const ACCENT_TEXT: Record<ModuleAccent, string> = {
   warning: 'text-[var(--color-brand-warning)]',
   success: 'text-[var(--color-brand-success)]',
   info: 'text-[var(--color-brand-info)]',
 };
-const MODULE_BG: Record<string, string> = {
-  warning: 'bg-[var(--color-brand-warning-bg)] border-[var(--color-brand-warning)]',
-  success: 'bg-[var(--color-brand-success-bg)] border-[var(--color-brand-success)]',
-  info: 'bg-[var(--color-brand-info-bg)] border-[var(--color-brand-info)]',
-};
-const MODULE_BTN: Record<string, string> = {
-  warning: 'bg-[var(--color-brand-warning)] hover:bg-[var(--color-brand-secondary-dark)] text-white',
-  success: 'bg-[var(--color-brand-success)] hover:opacity-90 text-white',
-  info: '',
+
+const ACCENT_PILL: Record<ModuleAccent, string> = {
+  warning: 'bg-[var(--color-brand-warning-bg)] text-[var(--color-brand-warning)]',
+  success: 'bg-[var(--color-brand-success-bg)] text-[var(--color-brand-success)]',
+  info: 'bg-[var(--color-brand-info-bg)] text-[var(--color-brand-info)]',
 };
 
-type ModuleCardProps = {
-  title: string;
-  subtitle: string;
+const ACCENT_BAR: Record<ModuleAccent, string> = {
+  warning: 'bg-[var(--color-brand-warning)]',
+  success: 'bg-[var(--color-brand-success)]',
+  info: 'bg-[var(--color-brand-info)]',
+};
+
+const ACCENT_BUTTON: Record<ModuleAccent, string> = {
+  warning: 'bg-[var(--color-brand-warning)] hover:bg-[var(--color-brand-secondary-dark)]',
+  success: 'bg-[var(--color-brand-success)] hover:opacity-90',
+  info: 'bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-dark)]',
+};
+
+type ModuleState = {
+  meta: ModuleMeta;
+  completedMap: Record<string, boolean>;
   progress: number;
-  color: 'warning' | 'success' | 'info';
-  icon: React.ReactNode;
-  onOpen: () => void;
+  currentLesson: ModuleLesson | null;
 };
 
-function ModuleCard({ title, subtitle, progress, color, icon, onOpen }: ModuleCardProps) {
+/** Estado por módulo con la MISMA lógica que LessonPath (getLessonNodeState →
+ *  getRequiredLessonId + completedMap, única fuente de bloqueo por lección). */
+function computeModuleStates(): ModuleState[] {
+  return MODULES.map((meta) => {
+    const snapshot = loadModuleProgressSnapshot(meta.config);
+    const completedMap = toCompletedMapFromProgress(snapshot);
+    const currentId = meta.config.lessons.find(
+      (lesson) => getLessonNodeState(meta.config, lesson.id, completedMap) === 'current'
+    )?.id;
+    const currentLesson = currentId
+      ? (meta.config.lessons.find((lesson) => lesson.id === currentId) ?? null)
+      : null;
+    return {
+      meta,
+      completedMap,
+      progress: getProgressPercent(meta.config, snapshot),
+      currentLesson,
+    };
+  });
+}
+
+/** Candado ENTRE módulos (secuencia Presupuestación → Ahorro → Inversión):
+ *  el módulo queda bloqueado hasta completar la última lección del anterior.
+ *  En modo admin nunca hay candados. */
+function isModuleLocked(states: ModuleState[], index: number): boolean {
+  if (isAdminMode() || index === 0) return false;
+  const prev = states[index - 1];
+  const prevLastId = prev?.meta.config.lessons[prev.meta.config.lessons.length - 1]?.id;
+  return !prevLastId || prev.completedMap[prevLastId] !== true;
+}
+
+/** Módulo "en curso": el más avanzado con una lección disponible. */
+function computeContinueState(): ModuleState | null {
   return (
-    <FECard variant="elevated" clickable onClick={onOpen}>
-      <div className="flex items-center gap-3 mb-3">
-        <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl [&_svg]:h-5 [&_svg]:w-5', MODULE_BG[color])}>
-          {icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm">{title}</p>
-          <p className="text-xs text-[var(--color-text-secondary)]">{subtitle}</p>
-        </div>
+    computeModuleStates()
+      .filter((state) => state.currentLesson !== null)
+      .sort((a, b) => b.progress - a.progress)[0] ?? null
+  );
+}
+
+function capitalizeWords(value: string): string {
+  return value
+    .split(' ')
+    .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : word))
+    .join(' ');
+}
+
+function StatBox({
+  icon,
+  value,
+  label,
+  pillClass,
+}: {
+  icon: React.ReactNode;
+  value: number | string;
+  label: string;
+  pillClass: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-2xl border border-[var(--color-neutral-200)] bg-white p-4 text-center shadow-[var(--shadow-soft)]">
+      <div
+        className={cn(
+          'flex h-10 w-10 items-center justify-center rounded-full [&_svg]:h-5 [&_svg]:w-5',
+          pillClass
+        )}
+      >
+        {icon}
       </div>
-      <Progress value={progress} barClassName={MODULE_BAR[color]} className="mb-2" />
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-[var(--color-text-secondary)]">{progress}% completado</span>
-        <Button size="sm" className={cn(MODULE_BTN[color])}>Ir</Button>
-      </div>
-    </FECard>
+      <p className="text-2xl font-extrabold leading-none">{value}</p>
+      <p className="text-xs font-semibold text-[var(--color-text-secondary)]">{label}</p>
+    </div>
   );
 }
 
 export default function Home() {
   const nav = useNavigate();
-  const mod = useProgress((s) => s.modules);
   const streak = useProgress((s) => s.streak);
   const { user } = useAuth();
-  const { data: gamification } = useGamification();
+  const { xpToday, loaded } = useDailyXp();
+  const { stats: week } = useWeekStats();
+  const goalLevel = useDailyGoal((s) => s.level);
+  const celebratedDay = useDailyGoal((s) => s.celebratedDay);
+  const markCelebrated = useDailyGoal((s) => s.markCelebrated);
+  const xpTarget = resolveDailyXpTarget(goalLevel);
+  const goalReached = loaded && xpTarget > 0 && xpToday >= xpTarget;
+  const [metaCelebradaEnSesion, setMetaCelebradaEnSesion] = useState(false);
+  const [mensajeMeta] = useState(() => fraseAleatoria(FRASES_META_DIARIA));
 
-  const continueCards = useMemo(() => computeContinueCards(), []);
-  const totalCompleted = useMemo(() => computeTotalCompleted(), []);
-  const primaryContinue = continueCards[0] ?? null;
+  useEffect(() => {
+    if (!goalReached) return;
+    useProgress.getState().markDailyGoalReached();
+    const today = localDayKey(new Date());
+    if (celebratedDay !== today) {
+      markCelebrated(today);
+      setMetaCelebradaEnSesion(true);
+      const nivel = useDailyGoal.getState().level;
+      track(EVENTOS.META_DAILY_COMPLETED, {
+        goal: nivel ? DAILY_GOAL_META[nivel].label : DAILY_GOAL_META.regular.label,
+        xp: resolveDailyXpTarget(nivel),
+      });
+    }
+  }, [celebratedDay, goalReached, markCelebrated]);
 
-  const displayName = user?.name
-    ? user.name.split(' ')[0]
-    : user?.email?.split('@')[0] ?? 'Estudiante';
+  const moduleStates = useMemo(() => computeModuleStates(), []);
+  const continueState = useMemo(() => computeContinueState(), []);
 
-  const today = new Date().toLocaleDateString('es-MX', {
-    weekday: 'long', day: 'numeric', month: 'long',
+  const firstName = user?.name?.trim().split(/\s+/)[0];
+  const greeting = firstName ? `Hola, ${firstName}` : 'Hola';
+  const avatarInitial = firstName ? firstName[0].toUpperCase() : 'F';
+
+  const rawDate = new Date().toLocaleDateString('es-MX', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
   });
+  const todayLabel = capitalizeWords(rawDate);
+
+  const goalLabel = goalLevel ? DAILY_GOAL_META[goalLevel].label : DAILY_GOAL_META.regular.label;
+  const tip = getDailyTip();
 
   return (
-    <div className="min-h-screen pb-24 bg-[var(--color-bg-app)] px-4 pt-5">
-
-      {/* Greeting Header */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-xl font-bold text-white">
-            {displayName[0]?.toUpperCase() ?? 'U'}
-          </div>
-          <div>
-            <h1 className="text-lg font-extrabold">Hola, {displayName}</h1>
-            <p className="text-xs capitalize text-[var(--color-text-secondary)]">{today}</p>
-          </div>
+    <div className="min-h-screen bg-[var(--color-bg-app)] px-4 pb-24 pt-5">
+      {/* ── Header: avatar + saludo + fecha (sin campana en el mockup) ──── */}
+      <header data-testid="home-header" className="mb-6 flex items-center gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-xl font-bold text-white">
+          {avatarInitial}
         </div>
-        <div className="flex items-center gap-2">
-          {gamification && <XPChip xp={gamification.xp} />}
-          <StreakBadge streak={streak.current} />
+        <div className="min-w-0">
+          <h1 className="truncate text-lg font-extrabold">{greeting}</h1>
+          <p className="text-xs font-medium text-[var(--color-text-secondary)]">{todayLabel}</p>
         </div>
-      </div>
+      </header>
 
-      {/* ContinueCard */}
-      {primaryContinue && (
-        <FECard variant="hero" className={cn('mb-6 border-2', MODULE_BG[primaryContinue.color])}>
-          <p className={cn('text-xs font-bold uppercase tracking-wide mb-1', MODULE_TEXT[primaryContinue.color])}>
-            {primaryContinue.moduleTitle} · {primaryContinue.progress}% completado
-          </p>
-          <h2 className="font-bold mb-4 truncate">{primaryContinue.lessonTitle}</h2>
-          <Button className={cn('w-full min-h-11', MODULE_BTN[primaryContinue.color])} onClick={() => nav(primaryContinue.path)}>
-            <Play className="h-4 w-4" />
-            Ir ahora
-          </Button>
+      {/* ── Meta diaria ─────────────────────────────────────────────────── */}
+      <section data-testid="section-meta" aria-label="Meta diaria">
+        <FECard variant="hero" className="shadow-[var(--shadow-soft)]">
+          <div className="flex items-center gap-4">
+            <DailyGoalRing xpToday={xpToday} xpTarget={xpTarget} />
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-extrabold">
+                Meta {goalLabel} · {xpTarget} XP
+              </p>
+              <p className="mt-1 text-sm font-medium text-[var(--color-text-secondary)]">
+                {xpToday}/{xpTarget} XP hoy
+              </p>
+            </div>
+          </div>
         </FECard>
-      )}
+        {metaCelebradaEnSesion && (
+          <FinniMessage variant="success" message={mensajeMeta} className="mt-3" />
+        )}
+      </section>
 
-      {/* Tus módulos */}
-      <h2 className="text-base font-bold mb-3">Tus módulos</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-        <ModuleCard title="Presupuestación" subtitle="Organiza ingresos y gastos" progress={mod.presupuesto?.progress ?? 0} color="warning" icon={<PiggyBank />} onOpen={() => nav('/app/presupuesto')} />
-        <ModuleCard title="Ahorro" subtitle="Crea hábitos de ahorro" progress={mod.ahorro?.progress ?? 0} color="success" icon={<School />} onOpen={() => nav('/app/ahorro')} />
-        <ModuleCard title="Inversión" subtitle="Haz crecer tu dinero" progress={mod.inversion?.progress ?? 0} color="info" icon={<TrendingUp />} onOpen={() => nav('/app/inversion')} />
-      </div>
+      {/* ── Continúa aprendiendo ────────────────────────────────────────── */}
+      <section data-testid="section-continue" aria-label="Continúa aprendiendo" className="mt-6">
+        <FECard variant="hero" className="bg-[var(--color-brand-cream)] shadow-[var(--shadow-soft)]">
+          {continueState?.currentLesson ? (
+            <>
+              <p className="text-[11px] font-extrabold uppercase tracking-wide text-[var(--color-brand-secondary-dark)]">
+                {continueState.meta.title} · {continueState.progress}% completado
+              </p>
+              <h3 className="mt-3 truncate text-lg font-extrabold">
+                {continueState.currentLesson.title}
+              </h3>
+              <Button
+                variant="default"
+                onClick={() =>
+                  nav(getLessonPath(continueState.meta.config, continueState.currentLesson!.id))
+                }
+                className="mt-4 min-h-11 rounded-full bg-[var(--color-brand-warning)] px-6 text-white hover:bg-[var(--color-brand-secondary-dark)]"
+              >
+                <Play className="h-4 w-4 fill-current" />
+                Ir ahora
+              </Button>
+            </>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-success-bg)] text-[var(--color-brand-success)]">
+                <Check className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-extrabold">Completaste los 3 módulos</p>
+                <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
+                  Revisa tus logros y sigue construyendo tu hábito.
+                </p>
+              </div>
+            </div>
+          )}
+        </FECard>
+      </section>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-2 mb-6">
-        <StatCard icon={<BookOpen />} label="Lecciones" value={totalCompleted} color="primary" size="sm" />
-        <StatCard icon={<Flame />} label="Racha" value={`${streak.current}d`} color="warning" size="sm" />
-        <StatCard icon={<Trophy />} label="XP" value={gamification?.xp ?? 0} color="success" size="sm" />
-      </div>
-
-      {/* Daily Tip */}
-      <FECard variant="flat">
-        <div className="flex gap-3 items-start">
-          <Lightbulb className="h-5 w-5 shrink-0 mt-0.5 text-[var(--color-brand-warning)]" />
-          <div>
-            <p className="text-sm font-bold mb-1">Tip del día</p>
-            <p className="text-sm text-[var(--color-text-secondary)]">{getDailyTip()}</p>
-          </div>
+      {/* ── Tu camino ───────────────────────────────────────────────────── */}
+      <section data-testid="section-path" aria-label="Tu camino" className="mt-6">
+        <h2 className="text-base font-bold">Tu camino</h2>
+        <div className="mt-3 flex flex-col">
+          {moduleStates.map((state, index) => {
+            const locked = isModuleLocked(moduleStates, index);
+            const completed = !locked && state.currentLesson === null;
+            const currentNodeNumber = state.currentLesson
+              ? state.meta.config.lessons.findIndex((l) => l.id === state.currentLesson!.id) + 1
+              : null;
+            return (
+              <Fragment key={state.meta.config.moduleId}>
+                {index > 0 && (
+                  <div
+                    aria-hidden="true"
+                    className="mx-auto h-5 w-0 border-l-2 border-dashed border-[var(--color-neutral-300)]"
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => nav(MODULE_OVERVIEW[state.meta.config.moduleId])}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-[var(--color-neutral-200)] bg-white p-4 text-left shadow-[var(--shadow-soft)] transition-colors hover:border-[var(--color-brand-primary)]"
+                >
+                  <div
+                    className={cn(
+                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-extrabold',
+                      locked &&
+                        'bg-[var(--color-neutral-100)] text-[var(--color-text-muted)]',
+                      completed &&
+                        'bg-[var(--color-brand-success-bg)] text-[var(--color-brand-success)]',
+                      !locked && !completed && 'bg-[var(--color-brand-primary)] text-white'
+                    )}
+                  >
+                    {locked ? (
+                      <Lock className="h-4 w-4" />
+                    ) : completed ? (
+                      <Check className="h-5 w-5" />
+                    ) : (
+                      currentNodeNumber
+                    )}
+                  </div>
+                  <div
+                    className={cn(
+                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-full [&_svg]:h-5 [&_svg]:w-5',
+                      ACCENT_PILL[state.meta.accent]
+                    )}
+                  >
+                    {state.meta.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold">{state.meta.title}</p>
+                    <p
+                      className={cn(
+                        'text-xs font-bold',
+                        locked
+                          ? 'text-[var(--color-text-muted)]'
+                          : ACCENT_TEXT[state.meta.accent]
+                      )}
+                    >
+                      {state.progress}%
+                    </p>
+                  </div>
+                </button>
+              </Fragment>
+            );
+          })}
         </div>
-      </FECard>
+      </section>
+
+      {/* ── Tus módulos ─────────────────────────────────────────────────── */}
+      <section data-testid="section-modules" aria-label="Tus módulos" className="mt-6">
+        <h2 className="text-base font-bold">Tus módulos</h2>
+        <div className="mt-3 space-y-3">
+          {moduleStates.map((state) => (
+            <div
+              key={state.meta.config.moduleId}
+              onClick={() => nav(MODULE_OVERVIEW[state.meta.config.moduleId])}
+              className="cursor-pointer rounded-2xl border border-[var(--color-neutral-200)] bg-white p-4 shadow-[var(--shadow-soft)] transition-colors hover:border-[var(--color-brand-primary)]"
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-full [&_svg]:h-5 [&_svg]:w-5',
+                    ACCENT_PILL[state.meta.accent]
+                  )}
+                >
+                  {state.meta.icon}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold">{state.meta.title}</p>
+                  <p className="truncate text-xs text-[var(--color-text-secondary)]">
+                    {state.meta.subtitle}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => nav(MODULE_OVERVIEW[state.meta.config.moduleId])}
+                  className={cn(
+                    'min-h-9 shrink-0 rounded-full px-4 text-sm font-bold text-white',
+                    ACCENT_BUTTON[state.meta.accent]
+                  )}
+                >
+                  Ir
+                </button>
+              </div>
+              <div className="mt-3">
+                <Progress
+                  value={state.progress}
+                  barClassName={ACCENT_BAR[state.meta.accent]}
+                />
+                <p className="mt-1 text-xs font-medium text-[var(--color-text-secondary)]">
+                  {state.progress}% completado
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Estadísticas (ventana 7 días) ───────────────────────────────── */}
+      <section data-testid="section-stats" aria-label="Estadísticas" className="mt-6">
+        <div className="grid grid-cols-3 gap-2">
+          <StatBox
+            icon={<BookOpen />}
+            value={week.completed}
+            label="Lecciones"
+            pillClass="bg-[var(--color-brand-info-bg)] text-[var(--color-brand-info)]"
+          />
+          <StatBox
+            icon={<Flame />}
+            value={`${streak.current}d`}
+            label="Racha"
+            pillClass="bg-[var(--color-brand-warning-bg)] text-[var(--color-brand-warning)]"
+          />
+          <StatBox
+            icon={<Trophy />}
+            value={week.xp}
+            label="XP"
+            pillClass="bg-[var(--color-brand-success-bg)] text-[var(--color-brand-success)]"
+          />
+        </div>
+      </section>
+
+      {/* ── Tip del día ─────────────────────────────────────────────────── */}
+      <section data-testid="section-tip" aria-label="Tip del día" className="mt-6">
+        <FECard variant="flat" className="rounded-2xl shadow-[var(--shadow-soft)]">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-warning-bg)] text-[var(--color-brand-warning)]">
+              <Lightbulb className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base font-bold">Tip del día</h2>
+              <p className="mt-1 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                {tip}
+              </p>
+            </div>
+          </div>
+        </FECard>
+      </section>
+
+      <DailyGoalDialog />
     </div>
   );
 }

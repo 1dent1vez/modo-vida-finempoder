@@ -52,3 +52,5 @@ Thumbs.db
 ecc-temp/
 .agent/ecc-install-state.json
 
+.vercel
+.env*

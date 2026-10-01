@@ -1,257 +1,303 @@
-import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
-
-const infoColor    = 'var(--color-brand-info)';
-const infoBg       = 'var(--color-brand-info-bg)';
-const warnColor    = 'var(--color-brand-warning)';
-const warnBg       = 'var(--color-brand-warning-bg)';
-const successColor = 'var(--color-brand-success)';
-const successBg    = 'var(--color-brand-success-bg)';
-
-const FICHAS = [
-  { nombre: 'CETES', frente: { plazo: '28, 91, 182 o 364 días', tasa: '~10% anual (referencial)', minimo: '$100 pesos', donde: 'cetesdirecto.com (sin intermediarios)', riesgo: '⭐⭐☆☆☆ — Muy bajo' }, reverso: 'Desventajas: si retiras antes del plazo puedes perder algo del rendimiento. La tasa es fija — no se beneficia de alzas del mercado.' },
-  { nombre: 'BONDES', frente: { plazo: '3-5 años', tasa: 'Variable (ligada a TIIE)', minimo: '$100 pesos', donde: 'cetesdirecto.com', riesgo: '⭐⭐☆☆☆ — Bajo' }, reverso: 'Tasa variable significa que puede subir o bajar con el mercado. Plazo largo — no ideal si necesitas liquidez pronto.' },
-  { nombre: 'PRLV', frente: { plazo: 'Plazo fijo (días a meses)', tasa: 'Garantizada', minimo: 'Varía por banco', donde: 'Bancos comerciales', riesgo: '⭐⭐☆☆☆ — Bajo (IPAB)' }, reverso: 'Ofrecidos por bancos, no directamente del gobierno. Protegidos por IPAB hasta 400,000 UDIS. Rendimientos algo menores que CETES.' },
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
+import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { LessonRange } from '../../../../module-kit/components/activities';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/investment-foundations.css';
+type Stage = 'read' | 'simulate' | 'verify' | 'review' | 'complete';
+type Draft = {
+  version: 1;
+  stage: Stage;
+  viewed: string[];
+  amount: number;
+  days: number;
+  rate: number;
+  checks: string[];
+};
+const KEY = 'investment_l6:debt-sheet:v1';
+const initial = (): Draft => ({
+  version: 1,
+  stage: 'read',
+  viewed: [],
+  amount: 1000,
+  days: 90,
+  rate: 8,
+  checks: [],
+});
+const FIELDS = [
+  ['Emisor', '¿Quién asume la obligación de pago?'],
+  ['Plazo', '¿Cuándo vence y qué pasa si necesitas salir antes?'],
+  ['Tasa', '¿Es fija, variable, bruta, neta o solo una referencia?'],
+  ['Costos e impuestos', '¿Qué reduce el resultado estimado?'],
+  ['Liquidez', '¿Cómo y cuándo puedes recuperar el dinero?'],
+  ['Riesgos', '¿Qué escenarios pueden cambiar el resultado?'],
 ];
-
-const MONTOS_SIMULACION = [100, 500, 1000];
-const PLAZOS = [28, 91];
-const TASA_ANUAL = 0.10;
-
-function calcRendimiento(monto: number, plazo: number): number {
-  return monto * TASA_ANUAL * (plazo / 365);
+function parse(x: unknown): Draft | null {
+  if (!x || typeof x !== 'object') return null;
+  const v = x as Draft;
+  return v.version === 1 &&
+    ['read', 'simulate', 'verify', 'review', 'complete'].includes(v.stage) &&
+    Array.isArray(v.viewed) &&
+    Array.isArray(v.checks) &&
+    [v.amount, v.days, v.rate].every(Number.isFinite)
+    ? v
+    : null;
 }
-
 export default function L06() {
-  const [step, setStep] = useState(0);
-  const [flipped, setFlipped] = useState<boolean[]>([false, false, false]);
-  const [montoSim, setMontoSim] = useState<number | 'custom'>(100);
-  const [customMonto, setCustomMonto] = useState(200);
-  const [plazoSim, setPlazoSim] = useState(28);
-  const [simulado, setSimulado] = useState(false);
-
-  const allFlipped = flipped.every(Boolean);
-  const montoReal = montoSim === 'custom' ? customMonto : montoSim;
-  const rendimiento = calcRendimiento(montoReal, plazoSim);
-
-  const flipCard = (i: number) => {
-    setFlipped((prev) => prev.map((v, idx) => (idx === i ? !v : v)));
+  const [d, setD] = useState(initial);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    setLoading(true);
+    setFailed(false);
+    void lessonDataRepository
+      .load('inversion', KEY)
+      .then((x) => {
+        if (mounted.current) {
+          setD(parse(x) ?? initial());
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (mounted.current) {
+          setLoading(false);
+          setFailed(true);
+        }
+      });
+    return () => {
+      mounted.current = false;
+    };
+  }, [attempt]);
+  const gross = useMemo(() => d.amount * (d.rate / 100) * (d.days / 365), [d]);
+  const save = async (n: Draft, final = false) => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (final) {
+        await lessonDataRepository.saveBatch('inversion', [
+          {
+            key: 'l06_debt_reading',
+            data: {
+              hypotheticalScenario: {
+                amount: n.amount,
+                days: n.days,
+                annualRate: n.rate,
+                grossEstimate: gross,
+              },
+              verification: n.checks,
+            },
+          },
+          { key: KEY, data: n },
+        ]);
+      } else {
+        await lessonDataRepository.save('inversion', KEY, n);
+      }
+      if (mounted.current) setD(n);
+    } catch {
+      if (mounted.current) setError('No pudimos guardar. El escenario sigue en pantalla.');
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
   };
-
-  const progressPct = (step / 3) * 100;
-
+  const review = d.stage === 'review' || d.stage === 'complete';
+  if (loading)
+    return (
+      <LessonShell id="L06" title="Cómo leer un instrumento de deuda" completion={{ ready: false }}>
+        <ActivityLoading />
+      </LessonShell>
+    );
+  if (failed)
+    return (
+      <LessonShell id="L06" title="Cómo leer un instrumento de deuda" completion={{ ready: false }}>
+        <ActivityLoadError
+          message="No pudimos recuperar tu avance."
+          onRetry={() => setAttempt((x) => x + 1)}
+        />
+      </LessonShell>
+    );
   return (
     <LessonShell
       id="L06"
-      title="CETES, BONDES y PRLV: la inversión del gobierno mexicano"
-      completion={{ ready: simulado }}
+      title="Cómo leer un instrumento de deuda"
+      showGreeting={false}
+      completion={{ ready: d.stage === 'complete' }}
     >
-      <div className="p-1">
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full transition-all" style={{ width: `${progressPct}%`, backgroundColor: infoColor }} />
-        </div>
-
-        {/* Pantalla 0 — CETES en detalle */}
-        {step === 0 && (
-          <div className="space-y-6">
-            <FinniMessage
-              variant="coach"
-              title="Puedes prestarle dinero al gobierno mexicano"
-              message="¿Sabías que puedes prestarle dinero al gobierno mexicano y cobrarle intereses? Eso exactamente son los CETES. Y puedes empezar con $100."
-            />
-            <FECard variant="flat" className="border-2" style={{ backgroundColor: warnBg, borderColor: warnColor }}>
-              <p className="font-extrabold mb-3">CETES — Los datos que importan:</p>
-              <div className="space-y-2">
-                {[
-                  { label: 'Plazos disponibles', valor: '28, 91, 182 o 364 días' },
-                  { label: 'Dónde comprar', valor: 'cetesdirecto.com (sin comisiones)' },
-                  { label: 'Monto mínimo', valor: '$100 pesos' },
-                  { label: 'Riesgo', valor: 'Muy bajo — respaldado por el Banco de México' },
-                  { label: 'Cómo funciona', valor: 'Le prestas dinero al gobierno por X días. Al vencer recibes tu dinero + intereses.' },
-                ].map((row) => (
-                  <div key={row.label} className="flex justify-between border-b border-[var(--color-neutral-200)] pb-1">
-                    <span className="text-xs text-[var(--color-text-secondary)]">{row.label}</span>
-                    <span className="text-xs font-bold text-right max-w-[60%]">{row.valor}</span>
-                  </div>
-                ))}
-              </div>
-            </FECard>
-            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="font-bold mb-2">BONDES y PRLV (variantes)</p>
-              <div className="space-y-3">
-                <div>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold mb-1" style={{ backgroundColor: infoBg, color: infoColor }}>BONDES</span>
-                  <p className="text-sm">Similar a CETES pero a plazos más largos (3-5 años). Tasa variable ligada a TIIE.</p>
-                </div>
-                <div>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold mb-1" style={{ backgroundColor: successBg, color: successColor }}>PRLV</span>
-                  <p className="text-sm">Ofrecidos por bancos. Plazo fijo, tasa garantizada, protegidos por IPAB.</p>
-                </div>
-              </div>
-              <FinniMessage
-                variant="coach"
-                title="Para un primer acercamiento"
-                message="Los CETES son la puerta de entrada más segura y accesible. Empezar con ellos es la decisión correcta."
-              />
-            </FECard>
-            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setStep(1)}>
-              Ver mini-fichas →
-            </button>
-          </div>
-        )}
-
-        {/* Pantalla 1 — Mini-fichas flip */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <p className="text-lg font-bold">Mini-fichas: toca para voltear</p>
-            <div className="space-y-4">
-              {FICHAS.map((ficha, i) => {
-                const isFlipped = flipped[i];
-                return (
-                  <div
-                    key={ficha.nombre}
-                    className="p-4 rounded-2xl cursor-pointer border-2 transition-all duration-300"
-                    style={{
-                      borderColor: isFlipped ? infoColor : warnColor,
-                      backgroundColor: isFlipped ? infoBg : warnBg,
-                    }}
-                    onClick={() => flipCard(i)}
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <p className="font-extrabold">{ficha.nombre}</p>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: isFlipped ? infoBg : warnBg, color: isFlipped ? infoColor : warnColor, border: `1px solid ${isFlipped ? infoColor : warnColor}` }}>
-                        {isFlipped ? 'Desventajas' : 'Características'}
-                      </span>
-                    </div>
-                    {!isFlipped ? (
-                      <div className="space-y-1">
-                        <p className="text-xs"><strong>Plazo:</strong> {ficha.frente.plazo}</p>
-                        <p className="text-xs"><strong>Tasa:</strong> {ficha.frente.tasa}</p>
-                        <p className="text-xs"><strong>Mínimo:</strong> {ficha.frente.minimo}</p>
-                        <p className="text-xs"><strong>Riesgo:</strong> {ficha.frente.riesgo}</p>
-                      </div>
-                    ) : (
-                      <p className="text-sm">{ficha.reverso}</p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {!allFlipped && (
-              <p className="text-xs text-[var(--color-text-secondary)] text-center">Voltea las 3 fichas para continuar</p>
+      <ActivityFrame
+        label="Lector de ficha"
+        className="investment-foundations"
+        busy={busy}
+        title={
+          review
+            ? 'Guarda la lista de verificación.'
+            : d.stage === 'verify'
+              ? 'Separa cálculo y contratación.'
+              : d.stage === 'simulate'
+                ? 'Usa supuestos editables.'
+                : 'Una ficha clara empieza con preguntas.'
+        }
+        description="Aprende a leer deuda sin depender de tasas, mínimos o plataformas que pueden cambiar."
+        progressLabel="Etapas completadas"
+        progressValue={
+          d.stage === 'read' ? 0 : d.stage === 'simulate' ? 1 : d.stage === 'verify' ? 2 : 3
+        }
+        progressMax={3}
+        stepLabel={
+          review
+            ? 'Paso 4 de 4 · Revisar'
+            : d.stage === 'verify'
+              ? 'Paso 3 de 4 · Verificar'
+              : d.stage === 'simulate'
+                ? 'Paso 2 de 4 · Simular'
+                : 'Paso 1 de 4 · Leer'
+        }
+        focusKey={d.stage}
+        advice={{
+          title: 'Finni distingue estimación y oferta',
+          text:
+            cue ??
+            'La simulación usa interés simple y no incluye impuestos, comisiones, reinversión ni cambios de tasa.',
+          tone: d.checks.length === 3 ? 'success' : 'info',
+        }}
+        adviceCue={cue}
+        error={error}
+        status={busy ? 'Guardando…' : 'Tu avance está guardado.'}
+        actions={
+          <div className="if-actions">
+            {d.stage === 'read' && (
+              <button
+                className="ca-primary"
+                disabled={d.viewed.length < 6}
+                onClick={() => void save({ ...d, stage: 'simulate' })}
+              >
+                Abrir simulador
+              </button>
             )}
-            {allFlipped && (
-              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setStep(2)}>
-                Simular compra de CETES →
+            {d.stage === 'simulate' && (
+              <button className="ca-primary" onClick={() => void save({ ...d, stage: 'verify' })}>
+                Preparar verificación
+              </button>
+            )}
+            {d.stage === 'verify' && (
+              <button
+                className="ca-primary"
+                disabled={d.checks.length < 3}
+                onClick={() => void save({ ...d, stage: 'review' })}
+              >
+                Revisar ficha
+              </button>
+            )}
+            {d.stage === 'review' && (
+              <button
+                className="ca-primary"
+                onClick={() => void save({ ...d, stage: 'complete' }, true)}
+              >
+                Guardar y terminar
               </button>
             )}
           </div>
-        )}
-
-        {/* Pantalla 2 — Simulación de compra + alerta fiscal */}
-        {step === 2 && (
-          <div className="space-y-6">
-            <p className="text-lg font-bold">Simulador de compra de CETES</p>
-            <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
-              <p className="font-bold mb-3">Paso 1: Elige tu monto</p>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {MONTOS_SIMULACION.map((m) => (
-                  <button
-                    key={m}
-                    className={cn(
-                      'px-3 py-1 rounded-full text-sm font-semibold border transition-colors',
-                      montoSim === m ? 'text-white' : 'bg-transparent'
-                    )}
-                    style={montoSim === m ? { backgroundColor: warnColor, borderColor: warnColor } : { borderColor: warnColor, color: warnColor }}
-                    onClick={() => setMontoSim(m)}
-                  >
-                    ${m}
-                  </button>
-                ))}
-                <button
-                  className={cn('px-3 py-1 rounded-full text-sm font-semibold border transition-colors', montoSim === 'custom' ? 'text-white' : 'bg-transparent')}
-                  style={montoSim === 'custom' ? { backgroundColor: warnColor, borderColor: warnColor } : { borderColor: warnColor, color: warnColor }}
-                  onClick={() => setMontoSim('custom')}
-                >
-                  Otro monto
-                </button>
-              </div>
-              {montoSim === 'custom' && (
-                <input
-                  type="number"
-                  min={100}
-                  step={100}
-                  value={customMonto}
-                  onChange={(e) => setCustomMonto(Math.max(100, Number(e.target.value)))}
-                  className="w-full border border-[var(--color-neutral-200)] rounded-lg p-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-info)]"
-                  placeholder="Monto (mín. $100)"
-                />
-              )}
-              <p className="font-bold mt-3 mb-2">Paso 2: Elige el plazo</p>
-              <div className="flex gap-2">
-                {PLAZOS.map((p) => (
-                  <button
-                    key={p}
-                    className={cn('px-3 py-1 rounded-full text-sm font-semibold border transition-colors', plazoSim === p ? 'text-white' : 'bg-transparent')}
-                    style={plazoSim === p ? { backgroundColor: warnColor, borderColor: warnColor } : { borderColor: warnColor, color: warnColor }}
-                    onClick={() => setPlazoSim(p)}
-                  >
-                    {p} días
-                  </button>
-                ))}
-              </div>
-            </FECard>
-            <FECard variant="flat" className="border-2" style={{ backgroundColor: successBg, borderColor: successColor }}>
-              <p className="text-sm">Paso 3: Tu rendimiento estimado</p>
-              <p className="text-xs text-[var(--color-text-secondary)]">(Tasa referencial: {(TASA_ANUAL * 100).toFixed(1)}% anual)</p>
-              <div className="flex justify-between mt-2">
-                <div>
-                  <p className="text-xs text-[var(--color-text-secondary)]">Inviertes</p>
-                  <p className="text-base font-extrabold">${montoReal.toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-[var(--color-text-secondary)]">Ganas en {plazoSim} días</p>
-                  <p className="text-base font-extrabold" style={{ color: '#059669' }}>+${rendimiento.toFixed(2)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-[var(--color-text-secondary)]">Recibes al vencimiento</p>
-                  <p className="text-base font-extrabold">${(montoReal + rendimiento).toFixed(2)}</p>
-                </div>
-              </div>
-            </FECard>
-            <div className="p-3 rounded-xl bg-gray-100 flex gap-2 items-start">
-              <span className="text-sm">ℹ️</span>
-              <div>
-                <p className="text-xs font-bold">Alerta fiscal</p>
-                <p className="text-xs text-[var(--color-text-secondary)]">
-                  Los rendimientos de CETES pagan ISR (retención automática ~0.15% en 2024). Ya viene descontado — sin sorpresas.
-                </p>
-              </div>
-            </div>
-            <FinniMessage
-              variant="coach"
-              title="Puedes hacer tu primera inversión real con $100"
-              message="Ve a cetesdirecto.com, crea tu cuenta (es gratis) y haz tu primera compra. Es más fácil de lo que parece."
-            />
-            {!simulado ? (
-              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: infoColor }} onClick={() => setSimulado(true)}>
-                ✅ Confirmar compra virtual
+        }
+      >
+        {d.stage === 'read' && (
+          <section className="if-grid">
+            {FIELDS.map(([x, t]) => (
+              <button
+                key={x}
+                className={d.viewed.includes(x) ? 'is-viewed' : ''}
+                onClick={() => {
+                  setD((v) => ({
+                    ...v,
+                    viewed: v.viewed.includes(x) ? v.viewed : [...v.viewed, x],
+                  }));
+                  setCue(t);
+                }}
+              >
+                <span>{x}</span>
+                <small>{d.viewed.includes(x) ? t : 'Toca para descubrir'}</small>
               </button>
-            ) : (
-              <FECard variant="flat" className="text-center border-2" style={{ backgroundColor: successBg, borderColor: successColor }}>
-                <p className="text-4xl">🎉</p>
-                <p className="font-extrabold">¡Compra virtual completada!</p>
-                <p className="text-sm">
-                  Compraste ${montoReal} en CETES a {plazoSim} días. En el mercado real recibirías ${(montoReal + rendimiento).toFixed(2)}.
-                </p>
-              </FECard>
-            )}
-          </div>
+            ))}
+          </section>
         )}
-      </div>
+        {d.stage === 'simulate' && (
+          <section className="if-simulator">
+            <LessonRange
+              label="Monto hipotético"
+              display={`$${d.amount.toLocaleString('es-MX')}`}
+              min={100}
+              max={10000}
+              step={100}
+              value={d.amount}
+              onChange={(amount) => setD({ ...d, amount })}
+            />
+            <LessonRange
+              label="Plazo hipotético"
+              display={`${d.days} días`}
+              min={30}
+              max={365}
+              step={5}
+              value={d.days}
+              onChange={(days) => setD({ ...d, days })}
+            />
+            <LessonRange
+              label="Tasa anual hipotética"
+              display={`${d.rate}%`}
+              min={0}
+              max={20}
+              value={d.rate}
+              onChange={(rate) => setD({ ...d, rate })}
+            />
+            <div className="if-result">
+              <span>Interés bruto estimado</span>
+              <strong>${gross.toFixed(2)}</strong>
+              <small>Ejercicio con interés simple; no representa una oferta.</small>
+            </div>
+          </section>
+        )}
+        {d.stage === 'verify' && (
+          <section className="if-options">
+            <h3>Antes de contratar, marca las tres acciones</h3>
+            {[
+              'Leer el documento vigente',
+              'Confirmar al emisor y su registro',
+              'Comparar costos, liquidez y riesgos',
+            ].map((x) => (
+              <button
+                key={x}
+                className={d.checks.includes(x) ? 'is-selected' : ''}
+                onClick={() =>
+                  setD((v) => ({
+                    ...v,
+                    checks: v.checks.includes(x)
+                      ? v.checks.filter((y) => y !== x)
+                      : [...v.checks, x],
+                  }))
+                }
+              >
+                {x}
+              </button>
+            ))}
+          </section>
+        )}
+        {review && (
+          <section className="if-review">
+            <span>Lista de verificación</span>
+            <h3>El cálculo ilustra; los documentos definen.</h3>
+            <p>
+              Confirmaré emisor, plazo, tasa, liquidez, riesgos, costos e impuestos con información
+              vigente.
+            </p>
+          </section>
+        )}
+      </ActivityFrame>
     </LessonShell>
   );
 }

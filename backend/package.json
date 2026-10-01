@@ -9,7 +9,9 @@
     "build": "tsc -p .",
     "build:prod": "node --input-type=module -e \"import{rmSync}from'fs';rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.prod.json",
     "start": "node dist/index.js",
-    "test": "cross-env NODE_ENV=test MOCK_GAMIFICATION=true tsx test/all.test.ts",
+    "test": "npm run test:api && npm run test:newsletter",
+    "test:api": "cross-env NODE_ENV=test MOCK_GAMIFICATION=true tsx test/all.test.ts && cross-env NODE_ENV=test tsx test/admin.api.test.ts",
+    "test:newsletter": "cross-env NODE_ENV=test tsx test/newsletter.core.test.ts && cross-env NODE_ENV=test tsx test/newsletter.agents.test.ts && cross-env NODE_ENV=test tsx test/newsletter.api.test.ts",
     "test:unit": "tsx test/gamificationHelpers.test.ts"
   },
   "keywords": [],

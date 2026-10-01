@@ -20,7 +20,6 @@ export const setOnboarded = (userId?: string, email?: string) => {
   if (localStorage.getItem(LEGACY_KEY)) {
     localStorage.removeItem(LEGACY_KEY);
   }
-  import('./analytics').then((m) => m.trackOnboardingCompleted());
 };
 
 export const clearOnboarded = (userId?: string, email?: string) => {

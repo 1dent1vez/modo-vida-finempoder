@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Clock, PiggyBank, Sparkles } from 'lucide-react';
 import { SAVINGS_LESSONS } from './lessonFlow';
 
 const warnColor = 'var(--color-brand-warning)';
@@ -29,7 +30,7 @@ export default function AhorroIndex() {
     <div className="p-4 pb-24 space-y-4">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <span className="text-2xl">💰</span>
+        <PiggyBank className="h-7 w-7 text-[var(--color-brand-success)]" aria-hidden="true" />
         <p className="text-lg font-extrabold">Plan rapido de ahorro</p>
       </div>
 
@@ -75,7 +76,7 @@ export default function AhorroIndex() {
       {/* Depositos */}
       <div className="p-4 rounded-2xl border border-[var(--color-neutral-200)]" style={{ borderLeft: `6px solid ${infoColor}` }}>
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-lg">⏰</span>
+          <Clock className="h-5 w-5 text-[var(--color-brand-info)]" aria-hidden="true" />
           <p className="font-bold">Programa tus depositos</p>
         </div>
         <div className="space-y-3">
@@ -103,7 +104,7 @@ export default function AhorroIndex() {
             className="w-full border border-[var(--color-neutral-200)] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-info)] bg-white"
           >
             <option value="transfer">Transferencia programada</option>
-            <option value="efectivo">Deposito en efectivo con recordatorio</option>
+            <option value="efectivo">Depósito en efectivo</option>
           </select>
           <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2">
             <div
@@ -116,7 +117,7 @@ export default function AhorroIndex() {
             className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold"
             style={{
               backgroundColor: paceOk ? 'var(--color-brand-success-bg)' : 'var(--color-brand-warning-bg)',
-              color: paceOk ? '#059669' : '#D97706',
+              color: paceOk ? successColor : warnColor,
               border: `1px solid ${paceOk ? successColor : warnColor}`,
             }}
           >
@@ -128,7 +129,7 @@ export default function AhorroIndex() {
       {/* Atajos */}
       <div className="p-4 rounded-2xl border border-[var(--color-neutral-200)] space-y-3">
         <div className="flex items-center gap-2">
-          <span className="text-lg">✨</span>
+          <Sparkles className="h-5 w-5 text-[var(--color-brand-warning)]" aria-hidden="true" />
           <p className="font-bold">Atajos</p>
         </div>
         <p className="text-sm text-[var(--color-text-secondary)]">Selecciona un atajo para precargar meta y frecuencia.</p>

@@ -16,7 +16,7 @@ Este documento contiene la especificación de todos los endpoints REST expuestos
 
 ### ⏱️ Control de Tasa de Solicitudes (Rate Limiting)
 1. **Límite Global:** Máximo **100 solicitudes por minuto** por dirección IP (aplica a todas las rutas excepto de autenticación).
-2. **Límite de Autenticación:** Máximo **20 solicitudes cada 15 minutos** por dirección IP (aplica al registro de usuarios).
+2. **Sin límite de autenticación:** El backend no expone rutas de auth; la autenticación ocurre en Supabase Auth directamente desde el frontend (Google OAuth y magic link / email OTP), por lo que `authLimiter` ya no existe.
 
 ---
 
@@ -39,31 +39,7 @@ Este documento contiene la especificación de todos los endpoints REST expuestos
 
 ### 2. Autenticación y Registro
 
-#### `POST /api/auth/register`
-* **Descripción:** Vincula el registro del cliente de Supabase creando un perfil de estudiante en la base de datos central de Postgres.
-* **Autenticación:** No requiere (Protegido por `authLimiter`).
-* **Cuerpo de la Petición:**
-  ```json
-  {
-    "id": "3f8b9e6a-7c2d-4b8a-9f5e-1a2b3c4d5e6f",
-    "name": "Juan Pérez",
-    "career": "Ingeniería Química",
-    "age": 21,
-    "phone": "7221234567"
-  }
-  ```
-* **Respuesta Exitosa (201 Created):**
-  ```json
-  {
-    "ok": true,
-    "user": {
-      "id": "3f8b9e6a-7c2d-4b8a-9f5e-1a2b3c4d5e6f",
-      "name": "Juan Pérez",
-      "career": "Ingeniería Química",
-      "age": 21
-    }
-  }
-  ```
+No existe un endpoint de autenticación en el backend. La autenticación ocurre **directamente desde el frontend** con **Supabase Auth** (Google OAuth y magic link / email OTP); `/api/auth` no existe y no hay `authLimiter`.
 
 ---
 

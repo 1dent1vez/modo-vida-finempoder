@@ -5,12 +5,11 @@ import { Spinner } from '@/shared/components/Spinner';
 import { MODULE_REGISTRY } from '@/content';
 
 // Vite resolves these globs at build time — must be static strings
-const MDX_LESSONS = import.meta.glob<{ default: ComponentType }>(
-  '/src/content/*/*.mdx',
-);
-const TSX_LESSONS = import.meta.glob<{ default: ComponentType }>(
+const MDX_LESSONS = import.meta.glob<{ default: ComponentType }>('/src/content/*/*.mdx');
+const TSX_LESSONS = import.meta.glob<{ default: ComponentType }>([
   '/src/pages/modules/*/lessons/*.tsx',
-);
+  '!/src/pages/modules/*/lessons/*.test.tsx',
+]);
 
 // Module-level cache so lazy() is only called once per lesson path
 const lazyCache = new Map<string, LazyExoticComponent<ComponentType>>();

@@ -1,215 +1,307 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/savings-plan.css';
 
-type SmartGoal = { queQuieres?: string; monto?: number; aportacionMensual?: number } | null;
-
-const successColor = 'var(--color-brand-success)';
-const successBg = 'var(--color-brand-success-bg)';
-const infoColor = 'var(--color-brand-info)';
-const infoBg = 'var(--color-brand-info-bg)';
-
-const CATEGORIAS = [
-  { label: 'Laptop', min: 8000, max: 15000, emoji: '💻' },
-  { label: 'Viaje de graduacion', min: 5000, max: 12000, emoji: '✈️' },
-  { label: 'Fondo de emergencias', min: 3000, max: 6000, emoji: '🛡️' },
-  { label: 'Curso o certificacion', min: 2000, max: 5000, emoji: '📚' },
-  { label: 'Celular', min: 4000, max: 10000, emoji: '📱' },
-  { label: 'La mia (personalizada)', min: 0, max: 0, emoji: '🎯' },
+type Stage = 'purpose' | 'define' | 'review' | 'complete';
+type Draft = { version: 1; stage: Stage; name: string; amount: string; contribution: string };
+type PreviousGoal = { queQuieres?: string; monto?: number; aportacionMensual?: number } | null;
+const KEY = 'savings_l5:goal:v1';
+const IDEAS = [
+  'Fondo para imprevistos',
+  'Herramienta de trabajo',
+  'Curso o certificación',
+  'Viaje o experiencia',
 ];
+const initial = (): Draft => ({
+  version: 1,
+  stage: 'purpose',
+  name: '',
+  amount: '',
+  contribution: '',
+});
+function parse(raw: unknown): Draft | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const value = raw as Draft;
+  if (
+    value.version !== 1 ||
+    !['purpose', 'define', 'review', 'complete'].includes(value.stage) ||
+    typeof value.name !== 'string' ||
+    typeof value.amount !== 'string' ||
+    typeof value.contribution !== 'string' ||
+    (['review', 'complete'].includes(value.stage) &&
+      (value.name.trim().length < 3 ||
+        !(Number(value.amount) > 0) ||
+        !(Number(value.contribution) > 0)))
+  )
+    return null;
+  return value;
+}
 
 export default function L05() {
-  const [step, setStep] = useState(0);
-  const [smartGoal, setSmartGoal] = useState<SmartGoal>(null);
-  const [meta, setMeta] = useState('');
-  const [monto, setMonto] = useState('');
-  const [fechaObj, setFechaObj] = useState('');
-  const [aportacion, setAportacion] = useState('');
+  const [draft, setDraft] = useState<Draft>(initial);
   const [loading, setLoading] = useState(true);
-
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const mounted = useRef(true);
   useEffect(() => {
-    const load = async () => {
-      const prev = await lessonDataRepository.load<SmartGoal>('presupuesto', 'l9_smart_goal');
-      setSmartGoal(prev);
-      if (prev?.queQuieres) setMeta(prev.queQuieres);
-      if (prev?.monto) setMonto(String(prev.monto));
-      if (prev?.aportacionMensual) setAportacion(String(prev.aportacionMensual));
-      setLoading(false);
+    mounted.current = true;
+    setLoading(true);
+    setLoadError(false);
+    void Promise.all([
+      lessonDataRepository.load('ahorro', KEY),
+      lessonDataRepository.load<PreviousGoal>('presupuesto', 'l9_smart_goal'),
+    ])
+      .then(([saved, previous]) => {
+        if (!mounted.current) return;
+        const restored = parse(saved);
+        setDraft(
+          restored ?? {
+            ...initial(),
+            name: previous?.queQuieres ?? '',
+            amount: previous?.monto ? String(previous.monto) : '',
+            contribution: previous?.aportacionMensual ? String(previous.aportacionMensual) : '',
+          },
+        );
+        setLoading(false);
+      })
+      .catch(() => {
+        if (mounted.current) {
+          setLoading(false);
+          setLoadError(true);
+        }
+      });
+    return () => {
+      mounted.current = false;
     };
-    void load();
-  }, []);
-
-  const montoNum = parseFloat(monto) || 0;
-  const aportNum = parseFloat(aportacion) || 0;
-
-  const fechaCalculada = useMemo(() => {
-    if (!montoNum || !aportNum || aportNum <= 0) return null;
-    const meses = Math.ceil(montoNum / aportNum);
-    const fecha = new Date();
-    fecha.setMonth(fecha.getMonth() + meses);
-    return { meses, fecha: fecha.toLocaleDateString('es-MX', { year: 'numeric', month: 'long' }) };
-  }, [montoNum, aportNum]);
-
-  const fechaObjDate = fechaObj ? new Date(fechaObj) : null;
-  const mesesHastaFecha = fechaObjDate ? Math.max(1, Math.ceil((fechaObjDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30))) : null;
-  const aportNecesaria = mesesHastaFecha && montoNum ? Math.ceil(montoNum / mesesHastaFecha) : null;
-
-  const formValid = meta.trim().length >= 3 && montoNum > 0 && aportNum > 0;
-
-  const handleSave = async () => {
-    await lessonDataRepository.save('ahorro', 'l5_meta', { nombre: meta, monto: montoNum, fechaObj, aportacionMensual: aportNum, fechaCalculada: fechaCalculada?.fecha, savedAt: new Date().toISOString() });
-    setStep(3);
+  }, [attempt]);
+  const amount = Number(draft.amount) || 0;
+  const contribution = Number(draft.contribution) || 0;
+  const months = useMemo(
+    () => (amount > 0 && contribution > 0 ? Math.ceil(amount / contribution) : 0),
+    [amount, contribution],
+  );
+  const valid = draft.name.trim().length >= 3 && amount > 0 && contribution > 0;
+  const persist = async (next: Draft, final = false) => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (final) {
+        await lessonDataRepository.saveBatch('ahorro', [
+          {
+            key: 'l5_meta',
+            data: {
+              nombre: next.name.trim(),
+              monto: Number(next.amount),
+              aportacionMensual: Number(next.contribution),
+              mesesEstimados: Math.ceil(Number(next.amount) / Number(next.contribution)),
+            },
+          },
+          { key: KEY, data: next },
+        ]);
+      } else {
+        await lessonDataRepository.save('ahorro', KEY, next);
+      }
+      if (mounted.current) {
+        setDraft(next);
+        setDirty(false);
+      }
+    } catch {
+      if (mounted.current) setError('No pudimos guardar. Tu meta sigue en pantalla.');
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
   };
-
-  const progress = step === 0 ? 0 : step === 1 ? 33 : step === 2 ? 66 : 100;
-
-  if (loading) {
+  if (loading)
     return (
-      <LessonShell id="L05" title="Ponle nombre a tu ahorro: define tu meta" completion={{ ready: false }}>
-        <p className="text-sm text-[var(--color-text-secondary)]">Cargando datos...</p>
+      <LessonShell id="L05" title="Define tu meta" completion={{ ready: false }}>
+        <ActivityLoading />
       </LessonShell>
     );
-  }
-
+  if (loadError)
+    return (
+      <LessonShell id="L05" title="Define tu meta" completion={{ ready: false }}>
+        <ActivityLoadError
+          message="No pudimos recuperar tus datos."
+          onRetry={() => setAttempt((value) => value + 1)}
+        />
+      </LessonShell>
+    );
+  const reviewing = draft.stage === 'review' || draft.stage === 'complete';
   return (
-    <LessonShell id="L05" title="Ponle nombre a tu ahorro: define tu meta" completion={{ ready: formValid }}>
-      <div className="p-1">
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
-        </div>
-
-        {/* Pantalla 0 — Apertura */}
-        {step === 0 && (
-          <div className="space-y-6">
-            <FinniMessage variant="coach" title="El ahorro sin nombre no dura" message="¿Para que estas ahorrando? Si respondes 'para el futuro' o 'por si acaso', necesitamos trabajar eso." />
-            <FECard variant="flat" className="border" style={{ borderColor: successColor, backgroundColor: successBg }}>
-              <p className="font-bold text-sm">Dato:</p>
-              <p className="text-sm">Las personas con una meta especifica ahorran en promedio <b>3 veces mas</b> que quienes ahorran "en general". No es motivacion. Es estructura.</p>
-            </FECard>
-            {smartGoal?.queQuieres && (
-              <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
-                <p className="text-xs font-bold">De tu modulo anterior:</p>
-                <p className="text-sm">Meta: {smartGoal.queQuieres}</p>
-                {smartGoal.monto && <p className="text-sm">Monto: ${smartGoal.monto.toLocaleString()}</p>}
-              </FECard>
-            )}
-            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
-              Ver metas comunes →
-            </button>
-          </div>
-        )}
-
-        {/* Pantalla 1 — Galeria */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <p className="font-bold">Metas comunes entre universitarios — toca una para preseleccionarla:</p>
-            <div className="space-y-2">
-              {CATEGORIAS.map((cat) => {
-                const isSelected = meta === cat.label || (cat.label === 'La mia (personalizada)' && !CATEGORIAS.slice(0, -1).some((c) => c.label === meta));
-                return (
-                  <FECard
-                    key={cat.label}
-                    variant="flat"
-                    className="border cursor-pointer"
-                    style={{ borderColor: isSelected ? successColor : 'var(--color-neutral-200)' }}
-                    onClick={() => {
-                      if (cat.label !== 'La mia (personalizada)') {
-                        setMeta(cat.label);
-                        if (cat.min > 0) setMonto(String(Math.round((cat.min + cat.max) / 2)));
-                      } else {
-                        setMeta('');
-                      }
-                    }}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm font-semibold">{cat.emoji} {cat.label}</p>
-                      {cat.min > 0 && (
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-full border" style={{ borderColor: successColor, color: '#059669' }}>
-                          ${cat.min.toLocaleString()}-${cat.max.toLocaleString()}
-                        </span>
-                      )}
-                    </div>
-                  </FECard>
-                );
-              })}
-            </div>
-            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(2)}>
-              Definir mi meta →
-            </button>
-          </div>
-        )}
-
-        {/* Pantalla 2 — Formulario */}
-        {step === 2 && (
-          <div className="space-y-4">
-            <p className="font-bold">Define tu meta de ahorro:</p>
-            <input
-              type="text"
-              placeholder="¿Cual es tu meta de ahorro? Ej: Laptop para la escuela"
-              value={meta}
-              onChange={(e) => setMeta(e.target.value)}
-              className="w-full border border-[var(--color-neutral-200)] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-success)]"
-            />
-            <input
-              type="number"
-              placeholder="¿Cuanto dinero necesitas exactamente? ($)"
-              min={0}
-              value={monto}
-              onChange={(e) => setMonto(e.target.value)}
-              className="w-full border border-[var(--color-neutral-200)] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-success)]"
-            />
-            <input
-              type="date"
-              value={fechaObj}
-              onChange={(e) => setFechaObj(e.target.value)}
-              className="w-full border border-[var(--color-neutral-200)] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-success)]"
-            />
-            <input
-              type="number"
-              placeholder="¿Cuanto puedes apartar por mes? ($)"
-              min={0}
-              value={aportacion}
-              onChange={(e) => setAportacion(e.target.value)}
-              className="w-full border border-[var(--color-neutral-200)] rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-success)]"
-            />
-
-            {fechaCalculada && aportNum > 0 && (
-              <FECard variant="flat" className="border" style={{ borderColor: successColor, backgroundColor: successBg }}>
-                <p className="font-bold text-sm mb-1">¡A ese ritmo, alcanzas tu meta en {fechaCalculada.meses} meses!</p>
-                <p className="text-xs text-[var(--color-text-secondary)]">Fecha estimada: {fechaCalculada.fecha}</p>
-                {aportNecesaria && aportNecesaria !== aportNum && (
-                  <p className="text-xs mt-1" style={{ color: '#D97706' }}>Para llegar a tu fecha objetivo necesitas apartar ${aportNecesaria.toLocaleString()}/mes.</p>
-                )}
-              </FECard>
-            )}
-
-            {formValid && (
-              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => void handleSave()}>
-                Guardar mi meta →
+    <LessonShell
+      id="L05"
+      title="Ponle nombre a tu ahorro: define tu meta"
+      showGreeting={false}
+      completion={{ ready: draft.stage === 'complete', score: 100 }}
+    >
+      <ActivityFrame
+        label="Constructor de meta de ahorro"
+        className="savings-plan"
+        busy={busy}
+        title={
+          reviewing
+            ? 'Revisa una meta que puedas ajustar.'
+            : draft.stage === 'define'
+              ? 'Convierte el propósito en números.'
+              : 'Dale un propósito concreto a tu ahorro.'
+        }
+        description="Define qué quieres lograr, cuánto requiere y qué aportación puedes probar."
+        progressLabel="Etapas completadas"
+        progressValue={draft.stage === 'purpose' ? 0 : draft.stage === 'define' ? 1 : 2}
+        progressMax={2}
+        stepLabel={
+          reviewing
+            ? 'Paso 3 de 3 · Revisar'
+            : draft.stage === 'define'
+              ? 'Paso 2 de 3 · Definir'
+              : 'Paso 1 de 3 · Elegir propósito'
+        }
+        focusKey={draft.stage}
+        advice={{
+          title: 'Una meta es una referencia, no una deuda',
+          text: 'Si la aportación no cabe en un mes, puedes reducirla o extender el plazo sin abandonar el propósito.',
+          tone: 'info',
+        }}
+        adviceCue={null}
+        error={error}
+        status={busy ? 'Guardando…' : dirty ? 'Cambios sin guardar.' : 'Tu avance está guardado.'}
+        actions={
+          <div className="sp-actions">
+            {draft.stage === 'purpose' && (
+              <button
+                className="ca-primary"
+                disabled={draft.name.trim().length < 3}
+                onClick={() => void persist({ ...draft, stage: 'define' })}
+              >
+                Definir monto y ritmo
               </button>
             )}
+            {draft.stage === 'define' && (
+              <button
+                className="ca-primary"
+                disabled={!valid || busy}
+                onClick={() => void persist({ ...draft, stage: 'review' })}
+              >
+                Revisar mi meta
+              </button>
+            )}
+            {draft.stage === 'review' && (
+              <>
+                <button
+                  className="sp-secondary"
+                  onClick={() => {
+                    setDraft((value) => ({ ...value, stage: 'define' }));
+                    setDirty(true);
+                  }}
+                >
+                  Ajustar
+                </button>
+                <button
+                  className="ca-primary"
+                  onClick={() => void persist({ ...draft, stage: 'complete' }, true)}
+                >
+                  Guardar y terminar
+                </button>
+              </>
+            )}
           </div>
+        }
+      >
+        {draft.stage === 'purpose' && (
+          <section className="sp-purpose">
+            <label htmlFor="goal-name">Mi meta es</label>
+            <input
+              id="goal-name"
+              value={draft.name}
+              maxLength={80}
+              placeholder="Ej. Fondo para imprevistos"
+              onChange={(event) => {
+                setDraft((value) => ({ ...value, name: event.target.value }));
+                setDirty(true);
+              }}
+            />
+            <div className="sp-ideas" aria-label="Ideas de metas">
+              {IDEAS.map((idea) => (
+                <button
+                  key={idea}
+                  type="button"
+                  onClick={() => {
+                    setDraft((value) => ({ ...value, name: idea }));
+                    setDirty(true);
+                  }}
+                >
+                  {idea}
+                </button>
+              ))}
+            </div>
+          </section>
         )}
-
-        {/* Pantalla 3 — Confirmacion */}
-        {step === 3 && (
-          <div className="space-y-6">
-            <FECard variant="flat" className="text-center py-4 border-2" style={{ backgroundColor: successBg, borderColor: successColor }}>
-              <p className="text-2xl font-bold">🎯 Meta guardada</p>
-              <p className="font-bold mt-2">{meta}</p>
-              <div className="flex justify-center gap-2 mt-2 flex-wrap">
-                <span className="px-3 py-1 rounded-full text-sm font-bold text-white" style={{ backgroundColor: successColor }}>${montoNum.toLocaleString()}</span>
-                <span className="px-3 py-1 rounded-full text-sm font-bold border" style={{ borderColor: successColor, color: '#059669' }}>${aportNum.toLocaleString()}/mes</span>
+        {draft.stage === 'define' && (
+          <section className="sp-form">
+            <label>
+              ¿Cuánto requiere tu meta?
+              <span className="sp-money">
+                <b>$</b>
+                <input
+                  aria-label="Monto de la meta"
+                  type="number"
+                  min="1"
+                  value={draft.amount}
+                  onChange={(event) => {
+                    setDraft((value) => ({ ...value, amount: event.target.value }));
+                    setDirty(true);
+                  }}
+                />
+              </span>
+            </label>
+            <label>
+              ¿Cuánto puedes probar por mes?
+              <span className="sp-money">
+                <b>$</b>
+                <input
+                  aria-label="Aportación mensual"
+                  type="number"
+                  min="1"
+                  value={draft.contribution}
+                  onChange={(event) => {
+                    setDraft((value) => ({ ...value, contribution: event.target.value }));
+                    setDirty(true);
+                  }}
+                />
+              </span>
+            </label>
+            {months > 0 && (
+              <div className="sp-result">
+                <span>Tiempo estimado con aportaciones constantes</span>
+                <strong>
+                  {months} {months === 1 ? 'mes' : 'meses'}
+                </strong>
+                <small>Estimación simple; no incluye rendimientos ni pausas.</small>
               </div>
-            </FECard>
-            <FinniMessage variant="success" title="Tu meta esta guardada" message="En la proxima leccion construiremos el plan semana a semana." />
-          </div>
+            )}
+          </section>
         )}
-      </div>
+        {reviewing && (
+          <section className="sp-review">
+            <span>Tu meta</span>
+            <h3>{draft.name}</h3>
+            <strong>${amount.toLocaleString()}</strong>
+            <p>
+              ${contribution.toLocaleString()} al mes · aproximadamente {months}{' '}
+              {months === 1 ? 'mes' : 'meses'}.
+            </p>
+          </section>
+        )}
+      </ActivityFrame>
     </LessonShell>
   );
 }

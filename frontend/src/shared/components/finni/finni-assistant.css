@@ -1,0 +1,193 @@
+.finni-assistant {
+  position: sticky;
+  bottom: 86px;
+  z-index: 5;
+  width: min(470px, calc(100% - 40px));
+  margin: 0 20px 12px auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0;
+  pointer-events: none;
+  font-family: var(--font-sans);
+}
+.finni-launcher {
+  pointer-events: auto;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  flex: 0 0 112px;
+  position: relative;
+  min-height: 100px;
+  color: #0f2f8a;
+  cursor: pointer;
+}
+.finni-launcher img {
+  width: 156px;
+  height: 156px;
+  max-width: none;
+  object-fit: contain;
+  display: block;
+  margin: -24px -22px -30px;
+  filter: drop-shadow(0 8px 6px #0f172a16);
+  transform-origin: 50% 90%;
+}
+.finni-launcher > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: #eef2ff;
+  border: 1px solid #c7d4f5;
+  border-radius: 999px;
+  min-height: 36px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 9px;
+  white-space: nowrap;
+}
+.finni-launcher:hover img {
+  transform: rotate(-5deg);
+}
+.finni-speech {
+  pointer-events: auto;
+  position: relative;
+  margin-bottom: 49px;
+  background: #fff;
+  border: 1px solid #cad5ef;
+  border-radius: 16px;
+  padding: 14px 19px 20px;
+  box-shadow: 0 12px 34px #1437741c;
+  flex: 1;
+  min-width: 0;
+  color: #1e293b;
+  animation: finni-speak 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.finni-speech::after {
+  content: '';
+  position: absolute;
+  right: -7px;
+  bottom: 24px;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-top: 1px solid #cad5ef;
+  border-right: 1px solid #cad5ef;
+  transform: rotate(45deg);
+}
+.finni-speech-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #475569;
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+.finni-speech-top button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  margin: -7px -10px -5px 0;
+  border-radius: 8px;
+}
+.finni-speech-top button:hover {
+  background: #eef2ff;
+}
+.finni-speech strong {
+  font-size: 16px;
+  font-weight: 750;
+  color: #1b4fd8;
+  line-height: 1.35;
+  display: block;
+}
+.finni-speech p {
+  font-size: 14px !important;
+  line-height: 1.6;
+  margin: 8px 0 0 !important;
+  color: #334155;
+}
+.finni-speech.review strong {
+  color: #92400e;
+}
+.finni-speech.success strong {
+  color: #047857;
+}
+.is-open .finni-launcher img {
+  animation: finni-emerge 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes finni-emerge {
+  from {
+    transform: translateY(50px) rotate(12deg);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-6px) rotate(-5deg);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(0) rotate(0);
+    opacity: 1;
+  }
+}
+@keyframes finni-speak {
+  from {
+    transform: translateY(10px) scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@media (max-width: 700px) {
+  .finni-assistant {
+    width: calc(100% - 24px);
+    margin: 0 12px 10px auto;
+    bottom: 98px;
+    gap: 0;
+  }
+  .finni-launcher {
+    flex-basis: 82px;
+  }
+  .finni-launcher img {
+    width: 134px;
+    height: 134px;
+    margin: -13px -26px -29px;
+  }
+  .finni-launcher > span {
+    font-size: 10px;
+    padding: 4px;
+    min-height: 44px;
+  }
+  .finni-launcher > span svg {
+    display: none;
+  }
+  .finni-speech {
+    padding: 10px 14px 15px;
+    margin-bottom: 38px;
+  }
+  .finni-speech strong {
+    font-size: 14px;
+  }
+  .finni-speech p {
+    font-size: 13px !important;
+  }
+  .finni-speech-top > span {
+    font-size: 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .finni-assistant * {
+    animation: none !important;
+    transition: none !important;
+  }
+  .finni-launcher:hover img {
+    transform: none;
+  }
+}

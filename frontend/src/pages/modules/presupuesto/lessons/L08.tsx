@@ -1,283 +1,349 @@
-import { cn } from '@/lib/utils';
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
+import {
+  initialEmotional,
+  parseEmotional,
+  type EmotionalDraft,
+  type SpendingLens,
+} from '../../../../module-kit/activities/emotionalSpendingModel';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
-
-type GastoType = 'racional' | 'emocional' | 'impulsivo';
-
-const SITUACIONES: { id: string; desc: string; correct: GastoType; explicacion: string }[] = [
+import { useAuth } from '../../../../store/auth';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/emotional-spending.css';
+const KEY = 'l8_awareness:v1';
+// eslint-disable-next-line react-refresh/only-export-components -- scenarios exported for lesson contract tests
+export const EMOTIONAL_SCENARIOS = [
   {
-    id: 's1',
-    desc: 'Comprar uniforme de deporte para la clase ($400)',
-    correct: 'racional',
-    explicacion: 'Es una necesidad para la clase. Decisión racional y planificada.',
+    id: 'uniform',
+    title: 'Uniforme para una clase',
+    text: 'Cuesta $400 y se necesita la próxima semana.',
+    lens: 'planned',
+    context:
+      'La necesidad y la fecha permiten anticiparlo. Planearlo evita confundir urgencia con impulso.',
   },
   {
-    id: 's2',
-    desc: 'Comprar café gourmet después de reprobar un examen ($85)',
-    correct: 'emocional',
-    explicacion: 'Es una respuesta emocional al estrés. Puede ser válido si es consciente.',
+    id: 'coffee',
+    title: 'Café después de un examen difícil',
+    text: 'Cuesta $85 y aparece como forma de aliviar el estrés.',
+    lens: 'emotional',
+    context:
+      'La emoción influye en la compra. Puede ser válida si se reconoce y cabe en el presupuesto.',
   },
   {
-    id: 's3',
-    desc: 'Adelantar un regalo de cumpleaños a un amigo porque te sientes mal ($300)',
-    correct: 'impulsivo',
-    explicacion: 'Mezcla de emoción e impulso. Considera si cabe en tu presupuesto.',
+    id: 'offer',
+    title: 'App en oferta que no estaba prevista',
+    text: 'Cuesta $189 y la promoción termina hoy.',
+    lens: 'impulsive',
+    context:
+      'La urgencia de la oferta empuja a decidir rápido. Esperar ayuda a comprobar si existe una necesidad real.',
   },
   {
-    id: 's4',
-    desc: 'Comprar app de productividad en oferta que nunca usarás ($99)',
-    correct: 'impulsivo',
-    explicacion: 'Clásico gasto impulsivo activado por una oferta. La oferta no justifica la compra.',
+    id: 'celebration',
+    title: 'Comida para celebrar un logro',
+    text: 'Cuesta $200 y estaba contemplada en el presupuesto de deseos.',
+    lens: 'planned',
+    context:
+      'Una emoción no convierte automáticamente el gasto en problema. Aquí hubo intención y espacio previsto.',
   },
-  {
-    id: 's5',
-    desc: 'Salir a comer con amigos para celebrar una calificación ($200)',
-    correct: 'emocional',
-    explicacion: 'Gasto emocional planificado. Si entra en tu presupuesto de deseos, está bien.',
-  },
-];
-
-const ESTRATEGIAS = [
-  'Esperar 24 horas antes de cualquier compra no planeada',
-  'Preguntarme: "¿Lo compraría si me sintiera bien?"',
-  'Fijar un límite mensual para gastos emocionales',
-];
-
-const TRIGGERS: { id: string; label: string }[] = [
-  { id: 'estres', label: 'Cuando estoy estresado' },
-  { id: 'aburrido', label: 'Cuando estoy aburrido' },
-  { id: 'celebrando', label: 'Cuando estoy celebrando' },
-  { id: 'amigos', label: 'Con amigos' },
-  { id: 'online', label: 'Comprando en línea' },
-  { id: 'ofertas', label: 'Viendo ofertas' },
-];
-
+] as const;
+const TRIGGERS = [
+  ['stress', 'Estrés'],
+  ['boredom', 'Aburrimiento'],
+  ['celebration', 'Celebración'],
+  ['offers', 'Ofertas'],
+] as const;
+const STRATEGIES = [
+  'Esperar 24 horas antes de una compra no prevista',
+  'Nombrar la emoción antes de pagar',
+  'Definir un monto mensual para gustos',
+] as const;
+const scenarioIds = new Set(EMOTIONAL_SCENARIOS.map((item) => item.id));
+const triggerIds = new Set(TRIGGERS.map(([id]) => id));
+const strategies = new Set<string>(STRATEGIES);
 export default function L08() {
-  const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, GastoType>>({});
-  const [lastFeedback, setLastFeedback] = useState<{ id: string; userAnswer: GastoType } | null>(null);
-  const [triggers, setTriggers] = useState<Set<string>>(new Set());
-  const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null);
-  const [nombre, setNombre] = useState('');
-
-  const quizDone = SITUACIONES.every((s) => answers[s.id] !== undefined);
-  const canComplete = quizDone && selectedStrategy !== null;
-
-  const answerSituacion = (id: string, type: GastoType) => {
-    if (answers[id]) return;
-    setAnswers((prev) => ({ ...prev, [id]: type }));
-    setLastFeedback({ id, userAnswer: type });
+  const userId = useAuth((state) => state.user?.id ?? 'local');
+  return <EmotionalSession key={userId} />;
+}
+function EmotionalSession() {
+  const [draft, setDraft] = useState<EmotionalDraft>(initialEmotional);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
+  const lock = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setLoadError(false);
+    void lessonDataRepository
+      .load('presupuesto', KEY)
+      .then((raw) => {
+        if (!active) return;
+        setDraft(parseEmotional(raw, scenarioIds, triggerIds, strategies) ?? initialEmotional());
+        setLoading(false);
+      })
+      .catch(() => {
+        if (active) {
+          setLoadError(true);
+          setLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [retry]);
+  const current = EMOTIONAL_SCENARIOS[draft.index];
+  const answered = Object.keys(draft.answers).length;
+  const persist = async (next: EmotionalDraft, final = false) => {
+    if (lock.current) return;
+    lock.current = true;
+    setBusy(true);
+    setError(null);
+    try {
+      if (final) {
+        await lessonDataRepository.saveBatch('presupuesto', [
+          {
+            key: 'l8_strategy',
+            data: {
+              strategy: next.strategy,
+              triggers: next.triggers,
+            },
+          },
+          { key: KEY, data: next },
+        ]);
+      } else {
+        await lessonDataRepository.save('presupuesto', KEY, next);
+      }
+      if (mounted.current) {
+        setDraft(next);
+        setDirty(false);
+      }
+    } catch {
+      if (mounted.current) setError('No pudimos guardar. Tus decisiones siguen en pantalla.');
+    } finally {
+      lock.current = false;
+      if (mounted.current) setBusy(false);
+    }
   };
-
-  const toggleTrigger = (id: string) => {
-    setTriggers((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  const confirmScenario = () => {
+    if (!draft.pending) return;
+    const answers = { ...draft.answers, [current.id]: draft.pending };
+    const last = draft.index === EMOTIONAL_SCENARIOS.length - 1;
+    void persist({
+      ...draft,
+      answers,
+      pending: null,
+      index: last ? draft.index : draft.index + 1,
+      stage: last ? 'strategy' : 'scenarios',
     });
   };
-
-  useEffect(() => {
-    if (canComplete) {
-      void lessonDataRepository.save('presupuesto', 'l8_strategy', {
-        strategy: selectedStrategy,
-        triggers: Array.from(triggers),
-      });
-    }
-  }, [canComplete, selectedStrategy, triggers]);
-
-  const getSituacion = (id: string) => SITUACIONES.find((s) => s.id === id);
-  const progressValue = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 60 : step === 3 ? 80 : 100;
-
+  const toggleTrigger = (id: string) => {
+    setDraft((value) => ({
+      ...value,
+      triggers: value.triggers.includes(id)
+        ? value.triggers.filter((item) => item !== id)
+        : [...value.triggers, id],
+    }));
+    setDirty(true);
+  };
+  const reviewing = draft.stage === 'review' || draft.stage === 'complete';
+  const advice = draft.pending
+    ? {
+        title: draft.pending === current.lens ? 'Buena lectura del contexto' : 'Mira el matiz',
+        text: current.context,
+        tone: draft.pending === current.lens ? ('success' as const) : ('review' as const),
+      }
+    : {
+        title: 'La emoción aporta contexto',
+        text: 'Observa necesidad, intención y espacio en el presupuesto antes de etiquetar una compra.',
+        tone: 'info' as const,
+      };
   return (
     <LessonShell
       id="L08"
-      title="Cuando el corazón gasta y la cartera llora"
-      completion={{ ready: canComplete }}
+      title="Reconoce el gasto emocional"
+      showGreeting={false}
+      completion={{ ready: draft.stage === 'complete', score: 100 }}
     >
-      <div className="p-1">
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
-        </div>
-
-        {step === 0 && (
-          <div className="space-y-3">
-            <FinniMessage
-              variant="coach"
-              title="El gasto emocional"
-              message="¿Alguna vez compraste algo solo porque estabas estresado, aburrido o querías 'darte un gusto'? Eso tiene nombre: gasto emocional. Y no es malo en sí… siempre que lo conozcas."
-            />
-            <div className="space-y-2">
-              {[
-                { title: 'Situación 1 — Valeria', desc: 'Reprobó un examen → fue al mall → compró ropa que no necesitaba → culpa post-compra.' },
-                { title: 'Situación 2 — Diego', desc: 'Vio oferta de videojuego → compra impulsiva → lo jugó 2 horas → lo olvidó.' },
-              ].map((s) => (
-                <FECard key={s.title} variant="flat" className="border border-[var(--color-brand-warning)]">
-                  <p className="font-bold text-sm">{s.title}</p>
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-1">{s.desc}</p>
-                </FECard>
-              ))}
-            </div>
-            <FinniMessage
-              variant="coach"
-              title="La pregunta clave"
-              message="No es '¿puedo pagarlo?', sino '¿lo compraría si me sintiera bien?'"
-            />
-            <button
-              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-              onClick={() => setStep(1)}
-            >
-              Quiz: ¿Racional, emocional o impulsivo? →
-            </button>
-          </div>
-        )}
-
-        {step === 1 && (
-          <div className="space-y-3">
-            <p className="text-sm">
-              Para cada situación, elige: <b>Racional</b>, <b>Emocional</b> o <b>Impulsivo</b>.
-              No hay una sola respuesta: Finni explica los matices.
-            </p>
-            <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2">
-              <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${(Object.keys(answers).length / SITUACIONES.length) * 100}%` }} />
-            </div>
-            <div className="space-y-2">
-              {SITUACIONES.map((s) => (
-                <FECard
-                  key={s.id}
-                  variant="flat"
-                  className={cn(
-                    'border',
-                    answers[s.id]
-                      ? 'bg-[var(--color-brand-success)]/10 border-[var(--color-brand-success)]'
-                      : 'border-[var(--color-neutral-200)]'
-                  )}
-                >
-                  <p className="font-bold text-sm mb-2">{s.desc}</p>
-                  {!answers[s.id] ? (
-                    <div className="flex flex-wrap gap-2">
-                      {(['racional', 'emocional', 'impulsivo'] as GastoType[]).map((type) => (
-                        <button
-                          key={type}
-                          onClick={() => answerSituacion(s.id, type)}
-                          className="px-3 py-1 rounded-full text-sm font-semibold border border-[var(--color-neutral-200)] text-[var(--color-text-secondary)] cursor-pointer"
-                        >
-                          {type.charAt(0).toUpperCase() + type.slice(1)}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-[var(--color-text-secondary)] italic">
-                      Tu respuesta: <b>{answers[s.id]}</b> · {s.explicacion}
-                    </p>
-                  )}
-                </FECard>
-              ))}
-            </div>
-
-            {lastFeedback && answers[lastFeedback.id] && (
-              <FECard variant="flat" className="bg-[var(--color-brand-info)]/10 border border-[var(--color-brand-info)]">
-                <p className="font-bold text-sm">Finni explica:</p>
-                <p className="text-sm">{getSituacion(lastFeedback.id)?.explicacion}</p>
-              </FECard>
-            )}
-
-            {quizDone && (
-              <button
-                className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-                onClick={() => setStep(2)}
-              >
-                Autoevaluación →
-              </button>
-            )}
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-3">
-            <p className="font-bold">
-              ¿Cuándo es más probable que hagas gastos emocionales?
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {TRIGGERS.map((t) => (
+      {loading ? (
+        <ActivityLoading message="Recuperando tu práctica…" />
+      ) : loadError ? (
+        <ActivityLoadError
+          message="No pudimos recuperar tus decisiones."
+          onRetry={() => setRetry((value) => value + 1)}
+        />
+      ) : (
+        <ActivityFrame
+          label="Práctica de gasto emocional"
+          className="emotional-spending"
+          busy={busy}
+          title={
+            reviewing
+              ? 'Revisa tu estrategia.'
+              : draft.stage === 'strategy'
+                ? 'Elige una pausa que puedas practicar.'
+                : 'Lee el contexto antes de etiquetar.'
+          }
+          description="Clasifica situaciones ficticias. Tus detonantes personales son opcionales."
+          progressLabel="Escenarios confirmados"
+          progressValue={answered}
+          progressMax={EMOTIONAL_SCENARIOS.length}
+          stepLabel={
+            reviewing
+              ? 'Paso 3 de 3 · Revisar'
+              : draft.stage === 'strategy'
+                ? 'Paso 2 de 3 · Preparar'
+                : `Caso ${draft.index + 1} de ${EMOTIONAL_SCENARIOS.length}`
+          }
+          focusKey={`${draft.stage}-${draft.index}`}
+          advice={advice}
+          adviceCue={cue}
+          error={error}
+          status={
+            busy
+              ? 'Guardando…'
+              : dirty
+                ? 'Cambios sin guardar.'
+                : `${answered} de ${EMOTIONAL_SCENARIOS.length} casos guardados.`
+          }
+          actions={
+            <div className="es-actions">
+              {draft.stage === 'scenarios' && (
                 <button
-                  key={t.id}
-                  onClick={() => toggleTrigger(t.id)}
-                  className={cn(
-                    'px-3 py-1 rounded-full text-sm font-semibold border transition-colors',
-                    triggers.has(t.id)
-                      ? 'bg-[var(--color-brand-warning)] text-white border-[var(--color-brand-warning)]'
-                      : 'border-[var(--color-neutral-200)] text-[var(--color-text-secondary)]'
-                  )}
+                  className="ca-primary"
+                  disabled={busy || !draft.pending}
+                  onClick={confirmScenario}
                 >
-                  {t.label}
+                  Confirmar lectura
                 </button>
-              ))}
-            </div>
-            <button
-              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-              onClick={() => setStep(3)}
-            >
-              Elegir mi estrategia →
-            </button>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-3">
-            <FinniMessage
-              variant="coach"
-              title="Estrategias anti-gasto-impulsivo"
-              message="Elige 1 estrategia para practicar esta semana. La que más resuene contigo."
-            />
-            <div className="space-y-2">
-              {ESTRATEGIAS.map((e) => (
-                <FECard
-                  key={e}
-                  variant="flat"
-                  className={cn(
-                    'border-2 cursor-pointer transition-colors',
-                    selectedStrategy === e
-                      ? 'border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10'
-                      : 'border-[var(--color-neutral-200)]'
-                  )}
-                  onClick={() => setSelectedStrategy(e)}
-                  role="button"
-                  tabIndex={0}
+              )}
+              {draft.stage === 'strategy' && (
+                <button
+                  className="ca-primary"
+                  disabled={busy || !draft.strategy}
+                  onClick={() => void persist({ ...draft, stage: 'review' })}
                 >
-                  <p className={selectedStrategy === e ? 'font-bold text-sm' : 'text-sm'}>
-                    {selectedStrategy === e ? '✓ ' : ''}{e}
-                  </p>
-                </FECard>
-              ))}
+                  Guardar y revisar
+                </button>
+              )}
+              {draft.stage === 'review' && (
+                <>
+                  <button
+                    className="es-secondary"
+                    onClick={() => {
+                      setDraft((value) => ({ ...value, stage: 'strategy' }));
+                      setDirty(true);
+                    }}
+                  >
+                    Ajustar estrategia
+                  </button>
+                  <button
+                    className="ca-primary"
+                    disabled={busy}
+                    onClick={() => void persist({ ...draft, stage: 'complete' }, true)}
+                  >
+                    Guardar y terminar
+                  </button>
+                </>
+              )}
             </div>
-            {selectedStrategy && (
-              <div className="space-y-2">
-                <p className="text-sm">
-                  Escribe tu nombre para "firmar" tu compromiso (opcional):
-                </p>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-[var(--color-text-secondary)]">Tu nombre</label>
-                  <input
-                    value={nombre}
-                    onChange={(e) => setNombre(e.target.value)}
-                    className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm"
-                  />
-                </div>
-                <FinniMessage
-                  variant="success"
-                  title="Conocerte es el primer paso"
-                  message={`${nombre ? nombre + ', c' : 'C'}onocerte es el primer paso para gastar mejor.`}
-                />
+          }
+        >
+          {draft.stage === 'scenarios' && (
+            <article className="es-card">
+              <h3>{current.title}</h3>
+              <p>{current.text}</p>
+              <div className="es-options">
+                {(
+                  [
+                    ['planned', 'Planeado'],
+                    ['emotional', 'Influido por la emoción'],
+                    ['impulsive', 'Impulsivo'],
+                  ] as [SpendingLens, string][]
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    className="es-option"
+                    aria-pressed={draft.pending === value}
+                    onClick={() => {
+                      setDraft((state) => ({ ...state, pending: value }));
+                      setDirty(true);
+                      setCue(`${current.id}-${value}`);
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
-            )}
-          </div>
-        )}
-      </div>
+            </article>
+          )}
+          {draft.stage === 'strategy' && (
+            <>
+              <p>Si quieres, marca situaciones que reconoces. Puedes continuar sin compartirlas.</p>
+              <div className="es-tags">
+                {TRIGGERS.map(([id, label]) => (
+                  <button
+                    key={id}
+                    className="es-option"
+                    aria-pressed={draft.triggers.includes(id)}
+                    onClick={() => toggleTrigger(id)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <h3>Elige una estrategia</h3>
+              <div className="es-options">
+                {STRATEGIES.map((strategy) => (
+                  <button
+                    key={strategy}
+                    className="es-option"
+                    aria-pressed={draft.strategy === strategy}
+                    onClick={() => {
+                      setDraft((value) => ({ ...value, strategy }));
+                      setDirty(true);
+                    }}
+                  >
+                    {strategy}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          {reviewing && (
+            <div className="es-review">
+              <div>
+                <strong>Estrategia</strong>
+                <p>{draft.strategy}</p>
+              </div>
+              <div>
+                <strong>Detonantes compartidos</strong>
+                <p>
+                  {draft.triggers.length
+                    ? draft.triggers
+                        .map((id) => TRIGGERS.find(([value]) => value === id)?.[1])
+                        .join(', ')
+                    : 'Ninguno; esta parte era opcional.'}
+                </p>
+              </div>
+            </div>
+          )}
+        </ActivityFrame>
+      )}
     </LessonShell>
   );
 }

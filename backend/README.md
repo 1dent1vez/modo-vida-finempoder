@@ -5,9 +5,8 @@ Endpoints simples (SELECT por user_id) van directo a Supabase desde el frontend.
 
 ## Endpoints activos
 
-### `POST /api/auth/register`
-Crea usuario en Supabase Auth y luego inserta fila en `profiles` con nombre, carrera, edad y teléfono.
-Requiere service role porque el INSERT a `profiles` ocurre antes de que el usuario tenga sesión.
+### Autenticación (Supabase Auth)
+La autenticación ocurre **directamente desde el frontend** con Supabase Auth (Google OAuth y magic link / email OTP). El backend no expone rutas de auth: `/api/auth` no existe y `authLimiter` fue eliminado.
 
 ### `POST /api/progress/lesson-completed`
 Registra lección completada y actualiza gamificación del usuario:

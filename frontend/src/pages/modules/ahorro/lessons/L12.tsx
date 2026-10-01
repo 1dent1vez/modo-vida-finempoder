@@ -1,213 +1,370 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { LessonRange } from '../../../../module-kit/components/activities';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/savings-progress.css';
 
-type MetaData = { nombre?: string; monto?: number; aportacionMensual?: number } | null;
-
-const TASAS = [
-  { label: 'Cuenta ahorro basica', value: 3 },
-  { label: 'CETES', value: 8 },
-  { label: 'Fondos de inversion', value: 10 },
-  { label: 'Acciones (estimado)', value: 15 },
-];
-
-const successColor = 'var(--color-brand-success)';
-const successBg = 'var(--color-brand-success-bg)';
-const warnColor = 'var(--color-brand-warning)';
-const infoColor = 'var(--color-brand-info)';
-const infoBg = 'var(--color-brand-info-bg)';
-
-function calcCompuesto(capital: number, mensual: number, tasaAnual: number, anos: number): number {
-  const r = tasaAnual / 100 / 12;
-  const n = anos * 12;
-  if (r === 0) return capital + mensual * n;
-  return capital * Math.pow(1 + r, n) + mensual * ((Math.pow(1 + r, n) - 1) / r);
+type Stage = 'learn' | 'simulate' | 'check' | 'review' | 'complete';
+type Draft = {
+  version: 1;
+  stage: Stage;
+  capital: number;
+  monthly: number;
+  rate: number;
+  years: number;
+  answer: number | null;
+};
+const KEY = 'savings_l12:compound:v1';
+const initial = (): Draft => ({
+  version: 1,
+  stage: 'learn',
+  capital: 1000,
+  monthly: 200,
+  rate: 5,
+  years: 5,
+  answer: null,
+});
+function parse(raw: unknown): Draft | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const v = raw as Draft;
+  if (
+    v.version !== 1 ||
+    !['learn', 'simulate', 'check', 'review', 'complete'].includes(v.stage) ||
+    ![v.capital, v.monthly, v.rate, v.years].every(Number.isFinite) ||
+    v.capital < 0 ||
+    v.monthly < 0 ||
+    v.rate < 0 ||
+    v.rate > 15 ||
+    v.years < 1 ||
+    v.years > 20 ||
+    (v.answer !== null && ![0, 1, 2].includes(v.answer))
+  )
+    return null;
+  return v;
 }
-
-function calcSimple(capital: number, mensual: number, tasaAnual: number, anos: number): number {
-  return capital * (1 + tasaAnual / 100 * anos) + mensual * anos * 12;
+function compound(capital: number, monthly: number, rate: number, years: number) {
+  const months = years * 12;
+  const r = rate / 1200;
+  if (!r) return capital + monthly * months;
+  return capital * (1 + r) ** months + monthly * (((1 + r) ** months - 1) / r);
 }
-
-const fmt = (n: number) => n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const money = (value: number) => Math.round(value).toLocaleString('es-MX');
 
 export default function L12() {
-  const [step, setStep] = useState(0);
-  const [metaData, setMetaData] = useState<MetaData>(null);
-  const [capital, setCapital] = useState(1000);
-  const [aportMensual, setAportMensual] = useState(200);
-  const [tasaIdx, setTasaIdx] = useState(1);
-  const [anos, setAnos] = useState(5);
-  const [used, setUsed] = useState(false);
-
+  const [draft, setDraft] = useState<Draft>(initial);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
   useEffect(() => {
-    const load = async () => {
-      const meta = await lessonDataRepository.load<MetaData>('ahorro', 'l5_meta');
-      setMetaData(meta);
+    mounted.current = true;
+    setLoading(true);
+    setLoadError(false);
+    void lessonDataRepository
+      .load('ahorro', KEY)
+      .then((raw) => {
+        if (mounted.current) {
+          setDraft(parse(raw) ?? initial());
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (mounted.current) {
+          setLoading(false);
+          setLoadError(true);
+        }
+      });
+    return () => {
+      mounted.current = false;
     };
-    void load();
-  }, []);
-
-  const tasa = TASAS[tasaIdx]?.value ?? 8;
-
-  const resultado1 = useMemo(() => calcCompuesto(capital, aportMensual, tasa, 1), [capital, aportMensual, tasa]);
-  const resultado3 = useMemo(() => calcCompuesto(capital, aportMensual, tasa, 3), [capital, aportMensual, tasa]);
-  const resultado5 = useMemo(() => calcCompuesto(capital, aportMensual, tasa, anos), [capital, aportMensual, tasa, anos]);
-  const simple5 = useMemo(() => calcSimple(capital, aportMensual, tasa, anos), [capital, aportMensual, tasa, anos]);
-
-  const mesesMeta = useMemo(() => {
-    if (!metaData?.monto || metaData.monto <= capital) return null;
-    const r = tasa / 100 / 12;
-    if (r === 0) return Math.ceil((metaData.monto - capital) / aportMensual);
-    let n = 0;
-    let total = capital;
-    while (total < metaData.monto && n < 600) {
-      total = total * (1 + r) + aportMensual;
-      n++;
+  }, [attempt]);
+  const persist = async (next: Draft, final = false) => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (final) {
+        await lessonDataRepository.saveBatch('ahorro', [
+          {
+            key: 'l12_compound_scenario',
+            data: {
+              capital: next.capital,
+              monthly: next.monthly,
+              illustrativeAnnualRate: next.rate,
+              years: next.years,
+              projectedBalance: compound(next.capital, next.monthly, next.rate, next.years),
+              assumptions: ['monthly-compounding', 'constant-rate', 'before-fees-taxes-inflation'],
+            },
+          },
+          { key: KEY, data: next },
+        ]);
+      } else {
+        await lessonDataRepository.save('ahorro', KEY, next);
+      }
+      if (mounted.current) {
+        setDraft(next);
+        setDirty(false);
+      }
+    } catch {
+      if (mounted.current) setError('No pudimos guardar. Tu escenario sigue en pantalla.');
+    } finally {
+      if (mounted.current) setBusy(false);
     }
-    return n;
-  }, [metaData, capital, aportMensual, tasa]);
-
-  const progress = step === 0 ? 0 : step === 1 ? 33 : step === 2 ? 66 : 100;
-
+  };
+  const projected = useMemo(
+    () => compound(draft.capital, draft.monthly, draft.rate, draft.years),
+    [draft],
+  );
+  const contributed = draft.capital + draft.monthly * draft.years * 12;
+  const growth = Math.max(0, projected - contributed);
+  const reviewing = draft.stage === 'review' || draft.stage === 'complete';
+  const correct = draft.answer === 1;
+  const update = (field: 'capital' | 'monthly' | 'rate' | 'years', value: number) => {
+    setDraft((current) => ({ ...current, [field]: value }));
+    setDirty(true);
+  };
+  if (loading)
+    return (
+      <LessonShell id="L12" title="Interés compuesto" completion={{ ready: false }}>
+        <ActivityLoading />
+      </LessonShell>
+    );
+  if (loadError)
+    return (
+      <LessonShell id="L12" title="Interés compuesto" completion={{ ready: false }}>
+        <ActivityLoadError
+          message="No pudimos recuperar tu escenario."
+          onRetry={() => setAttempt((v) => v + 1)}
+        />
+      </LessonShell>
+    );
   return (
-    <LessonShell id="L12" title="El dinero que se multiplica: interes compuesto" completion={{ ready: used }}>
-      <div className="p-1">
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
-        </div>
-
-        {/* Pantalla 0 — Explicacion visual */}
-        {step === 0 && (
-          <div className="space-y-6">
-            <FinniMessage variant="coach" title="La octava maravilla del mundo" message='Einstein dijo que el interes compuesto es la octava maravilla del mundo. Quien lo entiende, lo gana. Quien no, lo paga.' />
-            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <p className="text-sm font-bold mb-2">Interes simple:</p>
-              <p className="text-sm">Ganas interes solo sobre tu capital original.</p>
-              <p className="text-xs text-[var(--color-text-secondary)]">$1,000 al 5% anual = $50 al año, siempre.</p>
-            </FECard>
-            <FECard variant="flat" className="border-2" style={{ borderColor: successColor, backgroundColor: successBg }}>
-              <p className="text-sm font-bold mb-2">Interes compuesto:</p>
-              <p className="text-sm">Ganas interes sobre tu capital MAS los intereses anteriores.</p>
-              <div className="mt-2 space-y-0.5">
-                <p className="text-xs">Año 1: $1,000 → +$50 → total <b>$1,050</b></p>
-                <p className="text-xs">Año 2: $1,050 → +$52.50 → total <b>$1,102.50</b></p>
-                <p className="text-xs">Año 3: $1,102.50 → +$55.13 → total <b>$1,157.63</b></p>
-              </div>
-            </FECard>
-            <FECard variant="flat" className="border" style={{ borderColor: infoColor }}>
-              <p className="text-sm font-bold mb-2">$1,000 al 5% — comparacion:</p>
-              <div className="space-y-2">
-                {[1, 5, 10].map((yr) => {
-                  const comp = calcCompuesto(1000, 0, 5, yr);
-                  const simp = calcSimple(1000, 0, 5, yr);
-                  return (
-                    <div key={yr} className="flex justify-between items-center">
-                      <p className="text-xs">{yr} {yr === 1 ? 'año' : 'años'}:</p>
-                      <div className="flex gap-2">
-                        <span className="px-2 py-0.5 rounded-full text-xs font-bold border" style={{ borderColor: warnColor, color: warnColor }}>Simple ${simp.toFixed(0)}</span>
-                        <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>Compuesto ${comp.toFixed(0)}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </FECard>
-            <FinniMessage variant="coach" title="El ingrediente secreto es el tiempo" message="Entre mas pronto empieces, mas trabaja el compuesto por ti." />
-            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
-              Usar el simulador →
-            </button>
-          </div>
-        )}
-
-        {/* Pantalla 1 — Simulador */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <p className="text-base font-bold">Simulador de interes compuesto:</p>
-            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs mb-1">Capital inicial: <b>${capital.toLocaleString()}</b></p>
-                  <input type="range" min={0} max={50000} step={500} value={capital} onChange={(e) => { setCapital(Number(e.target.value)); setUsed(true); }} className="w-full accent-[var(--color-brand-success)]" />
-                </div>
-                <div>
-                  <p className="text-xs mb-1">Aportacion mensual: <b>${aportMensual.toLocaleString()}</b></p>
-                  <input type="range" min={0} max={5000} step={100} value={aportMensual} onChange={(e) => { setAportMensual(Number(e.target.value)); setUsed(true); }} className="w-full accent-[var(--color-brand-success)]" />
-                </div>
-                <div>
-                  <p className="text-xs mb-1">Plazo: <b>{anos} {anos === 1 ? 'año' : 'años'}</b></p>
-                  <input type="range" min={1} max={20} step={1} value={anos} onChange={(e) => { setAnos(Number(e.target.value)); setUsed(true); }} className="w-full accent-[var(--color-brand-success)]" />
-                </div>
-                <div>
-                  <p className="text-xs mb-2">Tasa de rendimiento:</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {TASAS.map((t, i) => (
-                      <button
-                        key={i}
-                        onClick={() => { setTasaIdx(i); setUsed(true); }}
-                        className="px-2 py-0.5 rounded-full text-xs font-bold transition-colors"
-                        style={{
-                          backgroundColor: tasaIdx === i ? successColor : 'transparent',
-                          color: tasaIdx === i ? 'white' : 'inherit',
-                          border: `2px solid ${successColor}`,
-                        }}
-                      >
-                        {t.value}% — {t.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </FECard>
-
-            <FECard variant="flat" className="border-2" style={{ borderColor: successColor, backgroundColor: successBg }}>
-              <p className="text-sm font-bold mb-2">Con interes compuesto al {tasa}%:</p>
-              <div className="space-y-1.5">
-                <div className="flex justify-between"><p className="text-sm">1 año:</p><p className="text-sm font-bold">${fmt(resultado1)}</p></div>
-                <div className="flex justify-between"><p className="text-sm">3 años:</p><p className="text-sm font-bold">${fmt(resultado3)}</p></div>
-                <div className="flex justify-between"><p className="text-sm">{anos} años:</p><p className="text-sm font-bold" style={{ color: '#059669' }}>${fmt(resultado5)}</p></div>
-              </div>
-              <div className="flex justify-between mt-3 pt-2 border-t border-[var(--color-neutral-200)]">
-                <p className="text-xs text-[var(--color-text-secondary)]">Vs interes simple ({anos}a):</p>
-                <p className="text-xs">${fmt(simple5)}</p>
-              </div>
-              <p className="text-xs" style={{ color: '#059669' }}>Diferencia: +${fmt(resultado5 - simple5)} solo por el compuesto</p>
-            </FECard>
-
-            {metaData?.nombre && mesesMeta !== null && (
-              <FECard variant="flat" className="border" style={{ borderColor: infoColor, backgroundColor: infoBg }}>
-                <p className="text-sm">Con {tasa}% de rendimiento, alcanzas tu meta de "{metaData.nombre}" (${metaData.monto?.toLocaleString()}) en <b>~{mesesMeta} meses</b>.</p>
-              </FECard>
-            )}
-
-            {used && (
-              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(2)}>
-                Ver el cierre →
+    <LessonShell
+      id="L12"
+      title="El dinero que se multiplica: interés compuesto"
+      showGreeting={false}
+      completion={{ ready: draft.stage === 'complete', score: 100 }}
+    >
+      <ActivityFrame
+        label="Laboratorio de interés compuesto"
+        className="savings-progress"
+        busy={busy}
+        title={
+          reviewing
+            ? 'Guarda el escenario y sus supuestos.'
+            : draft.stage === 'check'
+              ? 'Comprueba qué significa el resultado.'
+              : draft.stage === 'simulate'
+                ? 'Mueve una variable a la vez.'
+                : 'El rendimiento también puede generar rendimiento.'
+        }
+        description="Explora una proyección educativa con una tasa hipotética, sin promesas de resultado."
+        progressLabel="Etapas completadas"
+        progressValue={
+          draft.stage === 'learn'
+            ? 0
+            : draft.stage === 'simulate'
+              ? 1
+              : draft.stage === 'check'
+                ? 2
+                : 3
+        }
+        progressMax={3}
+        stepLabel={
+          reviewing
+            ? 'Paso 4 de 4 · Revisar'
+            : draft.stage === 'check'
+              ? 'Paso 3 de 4 · Interpretar'
+              : draft.stage === 'simulate'
+                ? 'Paso 2 de 4 · Simular'
+                : 'Paso 1 de 4 · Comprender'
+        }
+        focusKey={draft.stage}
+        advice={{
+          title:
+            draft.stage === 'check' && draft.answer !== null
+              ? correct
+                ? 'Lectura correcta'
+                : 'Revisa los supuestos'
+              : 'Finni pone la proyección en contexto',
+          text:
+            draft.stage === 'check' && draft.answer !== null
+              ? 'Una proyección depende de sus supuestos. El resultado real puede cambiar por tasas, comisiones, impuestos, inflación y movimientos del mercado.'
+              : 'Prueba escenarios, pero verifica las condiciones reales del producto antes de tomar una decisión.',
+          tone:
+            draft.stage === 'check' && draft.answer !== null
+              ? correct
+                ? 'success'
+                : 'review'
+              : 'info',
+        }}
+        adviceCue={cue}
+        error={error}
+        status={busy ? 'Guardando…' : dirty ? 'Cambios sin guardar.' : 'Tu avance está guardado.'}
+        actions={
+          <div className="spg-actions">
+            {draft.stage === 'learn' && (
+              <button
+                className="ca-primary"
+                onClick={() => void persist({ ...draft, stage: 'simulate' })}
+              >
+                Abrir simulador
               </button>
             )}
+            {draft.stage === 'simulate' && (
+              <button
+                className="ca-primary"
+                onClick={() => void persist({ ...draft, stage: 'check' })}
+              >
+                Interpretar resultado
+              </button>
+            )}
+            {draft.stage === 'check' && (
+              <button
+                className="ca-primary"
+                disabled={draft.answer === null || busy}
+                onClick={() => void persist({ ...draft, stage: 'review' })}
+              >
+                Revisar escenario
+              </button>
+            )}
+            {draft.stage === 'review' && (
+              <>
+                <button
+                  className="spg-secondary"
+                  onClick={() => {
+                    setDraft((v) => ({ ...v, stage: 'simulate' }));
+                    setDirty(true);
+                  }}
+                >
+                  Ajustar
+                </button>
+                <button
+                  className="ca-primary"
+                  onClick={() => void persist({ ...draft, stage: 'complete' }, true)}
+                >
+                  Guardar y terminar
+                </button>
+              </>
+            )}
           </div>
+        }
+      >
+        {draft.stage === 'learn' && (
+          <section className="spg-concept">
+            <article>
+              <span>Sin rendimiento</span>
+              <strong>$1,000 + aportaciones</strong>
+              <p>El saldo crece con lo que tú agregas.</p>
+            </article>
+            <article>
+              <span>Con capitalización</span>
+              <strong>Saldo + rendimiento</strong>
+              <p>Cada periodo parte del saldo acumulado.</p>
+            </article>
+            <p>
+              Una tasa constante sirve para explorar. No describe por sí sola un producto ni
+              garantiza un resultado.
+            </p>
+          </section>
         )}
-
-        {/* Pantalla 2 — Cierre */}
-        {step === 2 && (
-          <div className="space-y-6">
-            <FinniMessage variant="success" title="El mejor momento para empezar fue ayer" message="El segundo mejor momento es hoy. Con los numeros que ves, cada mes que pasa sin empezar es dinero que no trabajara para ti." />
-            <FECard variant="flat" className="border text-center py-4" style={{ borderColor: successColor, backgroundColor: successBg }}>
-              <p className="text-2xl font-bold">Tu simulacion:</p>
-              <p className="text-base">${capital.toLocaleString()} capital + ${aportMensual.toLocaleString()}/mes al {tasa}% durante {anos} años</p>
-              <p className="text-2xl font-bold mt-2" style={{ color: '#059669' }}>= ${fmt(resultado5)}</p>
-            </FECard>
-            <FECard variant="flat" className="border border-[var(--color-neutral-200)]">
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-[var(--color-text-primary)]">Capital inicial</label>
-                <input type="number" value={capital} min={0} onChange={(e) => setCapital(Number(e.target.value))} className="w-full border border-[var(--color-neutral-200)] rounded-xl px-4 py-2.5 text-sm" />
-                <p className="text-xs text-[var(--color-text-secondary)]">Ajusta para explorar diferentes escenarios</p>
-              </div>
-            </FECard>
-          </div>
+        {draft.stage === 'simulate' && (
+          <section className="spg-simulator">
+            <LessonRange
+              label="Capital inicial"
+              display={`$${money(draft.capital)}`}
+              min={0}
+              max={50000}
+              step={500}
+              value={draft.capital}
+              onChange={(value) => update('capital', value)}
+            />
+            <LessonRange
+              label="Aportación mensual"
+              display={`$${money(draft.monthly)}`}
+              min={0}
+              max={5000}
+              step={100}
+              value={draft.monthly}
+              onChange={(value) => update('monthly', value)}
+            />
+            <LessonRange
+              label="Tasa anual hipotética"
+              display={`${draft.rate}%`}
+              min={0}
+              max={15}
+              step={0.5}
+              value={draft.rate}
+              onChange={(value) => update('rate', value)}
+            />
+            <LessonRange
+              label="Plazo"
+              display={`${draft.years} años`}
+              min={1}
+              max={20}
+              value={draft.years}
+              onChange={(value) => update('years', value)}
+            />
+            <div className="spg-result">
+              <span>Saldo proyectado</span>
+              <strong>${money(projected)}</strong>
+              <small>
+                ${money(contributed)} aportados · ${money(growth)} de crecimiento hipotético
+              </small>
+            </div>
+            <p className="spg-note">
+              Supone tasa constante y capitalización mensual. No incluye comisiones, impuestos,
+              inflación ni variaciones de mercado.
+            </p>
+          </section>
         )}
-      </div>
+        {draft.stage === 'check' && (
+          <section className="spg-question">
+            <h3>¿Qué afirma esta proyección?</h3>
+            {[
+              'Que recibiré exactamente ese monto',
+              'Que ese sería el resultado si se cumplieran los supuestos',
+              'Que cualquier producto ofrece esa tasa',
+            ].map((option, index) => (
+              <button
+                key={option}
+                className={draft.answer === index ? 'is-selected' : ''}
+                aria-pressed={draft.answer === index}
+                onClick={() => {
+                  setDraft((v) => ({ ...v, answer: index }));
+                  setCue(option);
+                  setDirty(true);
+                }}
+              >
+                {option}
+              </button>
+            ))}
+          </section>
+        )}
+        {reviewing && (
+          <section className="spg-review">
+            <span>Escenario educativo</span>
+            <h3>
+              ${money(projected)} en {draft.years} años
+            </h3>
+            <p>
+              ${money(draft.capital)} iniciales + ${money(draft.monthly)} al mes · tasa anual
+              hipotética de {draft.rate}%.
+            </p>
+            <small>
+              Resultado condicionado a los supuestos mostrados; no es una promesa de rendimiento.
+            </small>
+          </section>
+        )}
+      </ActivityFrame>
     </LessonShell>
   );
 }

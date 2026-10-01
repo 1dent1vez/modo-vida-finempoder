@@ -1,15 +1,21 @@
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CheckCircle } from 'lucide-react';
+import { BarChart3, Circle, GraduationCap, Landmark, Link } from 'lucide-react';
 import LessonShell from '../LessonShell';
+import ActivityFrame from '../../../../module-kit/activities/ActivityFrame';
 import FECard from '../../../../components/FECard';
 import FinniMessage from '../../../../components/FinniMessage';
+import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { useLessonResume } from '../../../../features/lessons/hooks/useLessonResume';
+import { LessonResumeBanner } from '../../../../features/lessons/components/LessonResumeBanner';
+import '../../../../module-kit/activities/classification.css';
 
 const HERRAMIENTAS = [
   {
     id: 'condusef',
     nombre: 'App Presupuesto Familiar CONDUSEF',
-    emoji: '🏛️',
+    icon: Landmark,
     tipo: 'Oficial',
     descripcion: 'Oficial del gobierno, gratuita, sin publicidad, sin datos bancarios.',
     pros: ['Gratuita', 'Sin publicidad', 'Oficial y confiable'],
@@ -17,7 +23,7 @@ const HERRAMIENTAS = [
   {
     id: 'fintonic',
     nombre: 'Fintonic',
-    emoji: '🔗',
+    icon: Link,
     tipo: 'Sincronización bancaria',
     descripcion: 'Se conecta a tu cuenta bancaria y categoriza automáticamente tus gastos.',
     pros: ['Automático', 'Análisis avanzado', 'Alertas de gastos'],
@@ -25,7 +31,7 @@ const HERRAMIENTAS = [
   {
     id: 'sheets',
     nombre: 'Google Sheets con plantilla',
-    emoji: '📊',
+    icon: BarChart3,
     tipo: 'Flexible',
     descripcion: 'Flexible, sin datos personales en una app, personalizable al 100%.',
     pros: ['Total control', 'Sin app', 'Personalizable'],
@@ -33,7 +39,7 @@ const HERRAMIENTAS = [
   {
     id: 'finempoder',
     nombre: 'FinEmpoder (esta PWA)',
-    emoji: '🎓',
+    icon: GraduationCap,
     tipo: 'Integrada',
     descripcion: 'Integra tu aprendizaje con tu registro real. Disponible offline.',
     pros: ['Integra aprendizaje', 'Offline', 'Gamificada'],
@@ -41,133 +47,237 @@ const HERRAMIENTAS = [
 ];
 
 const PASOS_TUTORIAL = [
-  { id: 'ingreso', desc: 'Agregar un ingreso real al registro', finni: '¡Bien! Tu primer ingreso está registrado.' },
-  { id: 'gasto', desc: 'Registrar un gasto de hoy', finni: 'Perfecto. Un gasto en el registro.' },
-  { id: 'categoria', desc: 'Categorizarlo correctamente (ej: Alimentación)', finni: '¡Bien categorizado!' },
-  { id: 'balance', desc: 'Ver el balance actual de tu cuenta', finni: 'Ves el resumen de entradas y salidas.' },
-  { id: 'recordatorio', desc: 'Activar un recordatorio de registro', finni: '¡Listo! El recordatorio está activo.' },
+  {
+    id: 'herramientas',
+    desc: 'Elige al menos una herramienta para registrar tus gastos',
+    finni: '¡Bien! Con esa herramienta tendrás tu registro a la mano.',
+  },
+  {
+    id: 'metodo',
+    desc: 'Elige tu método: ¿qué app usarás primero?',
+    finni: 'Perfecto. Ese será tu punto de partida para registrar.',
+  },
+  {
+    id: 'senal',
+    desc: 'Define tu señal de registro diario',
+    finni: '¡Listo! Tu señal queda guardada.',
+  },
 ];
+
+const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+const HORAS = ['8:00 AM', '10:00 AM', '12:00 PM', '6:00 PM', '8:00 PM', '10:00 PM'];
+
+type Opciones = {
+  herramientas: string[];
+  metodo: string;
+  senal: { dia: string; hora: string } | null;
+};
+
+const OPCIONES_VACIAS: Opciones = { herramientas: [], metodo: '', senal: null };
 
 export default function L11() {
   const [step, setStep] = useState(0);
-  const [favoritas, setFavoritas] = useState<Set<string>>(new Set());
+
+  const resume = useLessonResume('presupuesto', 'L11');
+  const [resumeHandled, setResumeHandled] = useState(false);
+
+  useEffect(() => {
+    if (step > 0) resume.save({ step });
+  }, [step, resume]);
+  const [opciones, setOpciones] = useState<Opciones>(OPCIONES_VACIAS);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [loaded, setLoaded] = useState(false);
+  const [finniCue, setFinniCue] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const data = await lessonDataRepository.load<Opciones & { updatedAt?: string }>(
+        'presupuesto',
+        'l11_opciones',
+      );
+      if (data) {
+        setOpciones({
+          herramientas: Array.isArray(data.herramientas) ? data.herramientas : [],
+          metodo: typeof data.metodo === 'string' ? data.metodo : '',
+          senal: data.senal?.dia && data.senal?.hora ? data.senal : null,
+        });
+        const done = new Set<string>();
+        if (Array.isArray(data.herramientas) && data.herramientas.length > 0)
+          done.add('herramientas');
+        if (typeof data.metodo === 'string' && data.metodo.trim().length > 0) done.add('metodo');
+        if (data.senal?.dia && data.senal?.hora) done.add('senal');
+        setCompletedSteps(done);
+      }
+      setLoaded(true);
+    };
+    void load();
+  }, []);
 
   const allTutorialDone = PASOS_TUTORIAL.every((p) => completedSteps.has(p.id));
 
-  const toggleFavorita = (id: string) => {
-    setFavoritas((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const toggleHerramienta = (id: string) => {
+    setOpciones((prev) => ({
+      ...prev,
+      herramientas: prev.herramientas.includes(id)
+        ? prev.herramientas.filter((h) => h !== id)
+        : [...prev.herramientas, id],
+    }));
   };
 
-  const completarPaso = () => {
+  const validaPaso = (id: string): boolean => {
+    if (id === 'herramientas') return opciones.herramientas.length >= 1;
+    if (id === 'metodo') return opciones.metodo.trim().length > 0;
+    if (id === 'senal') return !!opciones.senal?.dia && !!opciones.senal?.hora;
+    return false;
+  };
+
+  const avanzarPaso = async () => {
     const paso = PASOS_TUTORIAL[tutorialStep];
-    if (!paso) return;
-    setCompletedSteps((prev) => new Set([...prev, paso.id]));
-    if (tutorialStep < PASOS_TUTORIAL.length - 1) {
-      setTutorialStep((i) => i + 1);
-    } else {
-      setStep(3);
+    if (!paso || !validaPaso(paso.id)) return;
+    setSaving(true);
+    setSaveError('');
+    try {
+      await lessonDataRepository.save('presupuesto', 'l11_opciones', {
+        ...opciones,
+        metodo: opciones.metodo.trim(),
+        updatedAt: new Date().toISOString(),
+      });
+      const next = new Set(completedSteps);
+      next.add(paso.id);
+      setCompletedSteps(next);
+      setFinniCue(paso.id);
+      if (tutorialStep < PASOS_TUTORIAL.length - 1) {
+        setTutorialStep((i) => i + 1);
+      } else {
+        setStep(2);
+      }
+    } catch {
+      setSaveError('No pudimos guardar tus opciones. Intenta de nuevo.');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const progressValue = step === 0 ? 0 : step === 1 ? 25 : step === 2 ? 55 : 100;
+  const progressValue = step === 0 ? 0 : step === 1 ? 55 : 100;
+  const finish = async () => {
+    setSaving(true);
+    setSaveError('');
+    try {
+      await lessonDataRepository.save('presupuesto', 'l11_opciones', {
+        ...opciones,
+        metodo: opciones.metodo.trim(),
+        completed: true,
+        updatedAt: new Date().toISOString(),
+      });
+      setStep(3);
+      setFinniCue('complete');
+    } catch {
+      setSaveError('No pudimos guardar el cierre. Tus opciones siguen en pantalla.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!loaded) {
+    return (
+      <LessonShell
+        id="L11"
+        title="Tu presupuesto en la palma de la mano"
+        completion={{ ready: false }}
+      >
+        <p className="text-sm text-[var(--color-text-secondary)]">Cargando tus opciones...</p>
+      </LessonShell>
+    );
+  }
 
   return (
     <LessonShell
       id="L11"
       title="Tu presupuesto en la palma de la mano"
-      completion={{ ready: allTutorialDone }}
+      completion={{ ready: allTutorialDone && step === 3 }}
     >
-      <div className="p-1">
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
-        </div>
+      <ActivityFrame
+        label="Tutorial para elegir una herramienta de registro"
+        busy={saving}
+        title={
+          step < 2 ? 'Prepara un registro que puedas sostener.' : 'Revisa tu plan de registro.'
+        }
+        description="Elige una herramienta, un método y una señal. FinEmpoder no activará recordatorios en tu teléfono."
+        progressLabel="Pasos del tutorial completados"
+        progressValue={completedSteps.size}
+        progressMax={PASOS_TUTORIAL.length}
+        stepLabel={`${Math.min(completedSteps.size + 1, 3)} de 3 pasos`}
+        focusKey={`${step}-${tutorialStep}`}
+        advice={{
+          title: step >= 2 ? 'Tu señal debe ser concreta' : 'Elige lo que sí usarás',
+          text:
+            step >= 2
+              ? 'Asocia el registro con un momento de tu rutina y configura una alarma si la necesitas.'
+              : (PASOS_TUTORIAL[tutorialStep]?.finni ?? 'Completa un paso a la vez.'),
+          tone: step >= 2 ? 'success' : 'info',
+        }}
+        adviceCue={finniCue}
+        error={saveError}
+        status={
+          saving
+            ? 'Guardando…'
+            : step === 3
+              ? 'Plan de registro guardado.'
+              : 'Cada paso se guarda antes de avanzar.'
+        }
+        actions={
+          step === 2 ? (
+            <button className="ca-primary" disabled={saving} onClick={() => void finish()}>
+              Guardar y terminar
+            </button>
+          ) : undefined
+        }
+      >
+        {resume.hasSaved && !resumeHandled && (
+          <LessonResumeBanner
+            step={resume.savedStep ?? 0}
+            onContinue={() => {
+              const snapshot = resume.accept();
+              if (snapshot) setStep(snapshot.step);
+              setResumeHandled(true);
+            }}
+            onRestart={() => {
+              resume.ignore();
+              setResumeHandled(true);
+            }}
+          />
+        )}
+        <span className="sr-only">Avance general: {progressValue}%</span>
 
         {step === 0 && (
           <div className="space-y-3">
-            <FinniMessage
-              variant="coach"
-              title="Tu smartphone, tu mejor aliado"
-              message="Registrar gastos en papel está bien. Pero si tienes un smartphone, puedes hacer algo más poderoso: que tu dinero se registre y analice casi solo."
-            />
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              No existe una herramienta universal. Empieza con la que requiera menos esfuerzo en tu
+              rutina.
+            </p>
             <button
               className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
               onClick={() => setStep(1)}
             >
-              Ver herramientas disponibles →
+              Comenzar tutorial →
             </button>
           </div>
         )}
 
         {step === 1 && (
           <div className="space-y-3">
-            <p className="font-bold">Opciones gratuitas en México:</p>
+            <p className="font-bold">Tutorial: tu registro en 3 pasos</p>
             <p className="text-sm text-[var(--color-text-secondary)]">
-              Toca las que te llamen la atención para marcarlas como favoritas.
-            </p>
-            <div className="space-y-2">
-              {HERRAMIENTAS.map((h) => (
-                <FECard
-                  key={h.id}
-                  variant="flat"
-                  className={cn(
-                    'border-2 cursor-pointer transition-all',
-                    favoritas.has(h.id)
-                      ? 'border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10'
-                      : 'border-[var(--color-neutral-200)]'
-                  )}
-                  onClick={() => toggleFavorita(h.id)}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className="flex items-start gap-3">
-                    <p className="text-4xl">{h.emoji}</p>
-                    <div className="flex-1">
-                      <div className="flex justify-between items-center">
-                        <p className="font-bold">{h.nombre}</p>
-                        {favoritas.has(h.id) && <CheckCircle className="text-[var(--color-brand-warning)]" size={18} />}
-                      </div>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-[var(--color-neutral-200)] font-semibold mt-1 mb-1">
-                        {h.tipo}
-                      </span>
-                      <p className="text-sm text-[var(--color-text-secondary)]">{h.descripcion}</p>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {h.pros.map((p) => (
-                          <span key={p} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs border border-[var(--color-neutral-200)] font-semibold">
-                            {p}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </FECard>
-              ))}
-            </div>
-            <button
-              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-              onClick={() => setStep(2)}
-            >
-              Tutorial de FinEmpoder →
-            </button>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-3">
-            <p className="font-bold">
-              Tutorial interactivo de FinEmpoder
-            </p>
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              Completa las 5 acciones para desbloquear la lección.
+              Completa los 3 pasos para desbloquear la lección.
             </p>
             <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2">
-              <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${(completedSteps.size / PASOS_TUTORIAL.length) * 100}%` }} />
+              <div
+                className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all"
+                style={{ width: `${(completedSteps.size / PASOS_TUTORIAL.length) * 100}%` }}
+              />
             </div>
             <div className="space-y-3">
               {PASOS_TUTORIAL.map((p, i) => {
@@ -179,31 +289,181 @@ export default function L11() {
                     variant="flat"
                     className={cn(
                       'border-2 transition-colors',
-                      done ? 'border-[var(--color-brand-success)] bg-[var(--color-brand-success)]/10'
-                        : isCurrent ? 'border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10'
-                        : 'border-[var(--color-neutral-200)] opacity-50'
+                      done
+                        ? 'border-[var(--color-brand-success)] bg-[var(--color-brand-success)]/10'
+                        : isCurrent
+                          ? 'border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10'
+                          : 'border-[var(--color-neutral-200)] opacity-50',
                     )}
                   >
                     <div className="flex items-center gap-3">
                       <p className="text-sm font-bold min-w-6">
-                        {done ? '✅' : isCurrent ? '👉' : `${i + 1}.`}
+                        {done ? (
+                          <CheckCircle
+                            className="h-4 w-4 text-[var(--color-brand-success)]"
+                            aria-hidden="true"
+                          />
+                        ) : isCurrent ? (
+                          <Circle
+                            className="h-4 w-4 text-[var(--color-brand-warning)]"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          `${i + 1}.`
+                        )}
                       </p>
-                      <p className={cn('text-sm', isCurrent ? 'font-bold' : '')}>
-                        {p.desc}
-                      </p>
+                      <p className={cn('text-sm', isCurrent ? 'font-bold' : '')}>{p.desc}</p>
                     </div>
                     {isCurrent && (
-                      <div className="space-y-2 mt-3">
+                      <div className="space-y-3 mt-3">
+                        {p.id === 'herramientas' && (
+                          <>
+                            <p className="text-xs text-[var(--color-text-secondary)]">
+                              Toca al menos una herramienta:
+                            </p>
+                            <div className="space-y-2">
+                              {HERRAMIENTAS.map((h) => (
+                                <FECard
+                                  key={h.id}
+                                  variant="flat"
+                                  className={cn(
+                                    'border-2 cursor-pointer transition-all',
+                                    opciones.herramientas.includes(h.id)
+                                      ? 'border-[var(--color-brand-warning)] bg-[var(--color-brand-warning)]/10'
+                                      : 'border-[var(--color-neutral-200)]',
+                                  )}
+                                  onClick={() => toggleHerramienta(h.id)}
+                                  role="button"
+                                  tabIndex={0}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <h.icon
+                                      className="h-9 w-9 mx-auto text-[var(--color-brand-primary)]"
+                                      aria-hidden="true"
+                                    />
+                                    <div className="flex-1">
+                                      <div className="flex justify-between items-center">
+                                        <p className="font-bold">{h.nombre}</p>
+                                        {opciones.herramientas.includes(h.id) && (
+                                          <CheckCircle
+                                            className="text-[var(--color-brand-warning)]"
+                                            size={18}
+                                          />
+                                        )}
+                                      </div>
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-[var(--color-neutral-200)] font-semibold mt-1 mb-1">
+                                        {h.tipo}
+                                      </span>
+                                      <p className="text-sm text-[var(--color-text-secondary)]">
+                                        {h.descripcion}
+                                      </p>
+                                      <div className="flex flex-wrap gap-1 mt-1">
+                                        {h.pros.map((pro) => (
+                                          <span
+                                            key={pro}
+                                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs border border-[var(--color-neutral-200)] font-semibold"
+                                          >
+                                            {pro}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </FECard>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        {p.id === 'metodo' && (
+                          <div className="flex flex-col gap-1">
+                            <label
+                              htmlFor="l11-metodo"
+                              className="text-xs text-[var(--color-text-secondary)]"
+                            >
+                              ¿Qué app usarás primero?
+                            </label>
+                            <input
+                              id="l11-metodo"
+                              value={opciones.metodo}
+                              maxLength={80}
+                              onChange={(e) =>
+                                setOpciones((prev) => ({ ...prev, metodo: e.target.value }))
+                              }
+                              placeholder="Ej: Google Sheets"
+                              className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-warning)]"
+                            />
+                          </div>
+                        )}
+                        {p.id === 'senal' && (
+                          <>
+                            <FinniMessage
+                              variant="coach"
+                              title="Tu señal, no un aviso nuestro"
+                              message="Elige cuándo registrarás tus gastos. Es tu señal, no la nuestra: si quieres que te avise, pon una alarma en tu teléfono. FinEmpoder no envía notificaciones todavía."
+                            />
+                            <div className="flex flex-col gap-1">
+                              <label
+                                htmlFor="l11-senal-dia"
+                                className="text-xs text-[var(--color-text-secondary)]"
+                              >
+                                Día de la semana
+                              </label>
+                              <select
+                                id="l11-senal-dia"
+                                value={opciones.senal?.dia ?? ''}
+                                onChange={(e) =>
+                                  setOpciones((prev) => ({
+                                    ...prev,
+                                    senal: { dia: e.target.value, hora: prev.senal?.hora ?? '' },
+                                  }))
+                                }
+                                className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm"
+                              >
+                                <option value="">Seleccionar...</option>
+                                {DIAS_SEMANA.map((d) => (
+                                  <option key={d} value={d}>
+                                    {d}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label
+                                htmlFor="l11-senal-hora"
+                                className="text-xs text-[var(--color-text-secondary)]"
+                              >
+                                Hora
+                              </label>
+                              <select
+                                id="l11-senal-hora"
+                                value={opciones.senal?.hora ?? ''}
+                                onChange={(e) =>
+                                  setOpciones((prev) => ({
+                                    ...prev,
+                                    senal: { dia: prev.senal?.dia ?? '', hora: e.target.value },
+                                  }))
+                                }
+                                className="w-full rounded-xl border border-[var(--color-neutral-200)] px-3 py-2 text-sm"
+                              >
+                                <option value="">Seleccionar...</option>
+                                {HORAS.map((h) => (
+                                  <option key={h} value={h}>
+                                    {h}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </>
+                        )}
                         <FECard variant="flat" className="bg-[var(--color-brand-info)]/10">
-                          <p className="text-xs">
-                            💡 Finni: "{p.finni}"
-                          </p>
+                          <p className="text-xs">Finni: "{p.finni}"</p>
                         </FECard>
                         <button
-                          className="w-full min-h-9 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-                          onClick={completarPaso}
+                          className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={() => void avanzarPaso()}
+                          disabled={saving || !validaPaso(p.id)}
                         >
-                          ✓ Marcar como hecho
+                          {i === PASOS_TUTORIAL.length - 1 ? 'Terminar tutorial →' : 'Siguiente →'}
                         </button>
                       </div>
                     )}
@@ -214,23 +474,24 @@ export default function L11() {
           </div>
         )}
 
-        {step === 3 && (
+        {step === 2 && (
           <div className="space-y-3">
-            <FinniMessage
-              variant="success"
-              title="¡5/5 acciones completadas!"
-              message="Ya tienes tus primeros registros reales en FinEmpoder. ¡Eso es un hábito que empieza hoy!"
-            />
+            <p className="font-bold">3/3 pasos preparados</p>
             <FECard variant="flat" className="border border-[var(--color-brand-warning)]">
               <p className="font-bold mb-2">Mini-reto:</p>
               <p className="text-sm">
-                Registra <b>todos tus gastos de mañana</b> usando tu herramienta favorita.
-                Vuelve a FinEmpoder al final del día y compara.
+                Registra <b>todos tus gastos de mañana</b> usando tu herramienta favorita. Vuelve a
+                FinEmpoder al final del día y compara.
               </p>
             </FECard>
           </div>
         )}
-      </div>
+        {step === 3 && (
+          <p className="rounded-xl bg-[var(--color-brand-success)]/10 p-4 font-semibold">
+            Tu plan quedó guardado. Ya puedes completar la lección y continuar.
+          </p>
+        )}
+      </ActivityFrame>
     </LessonShell>
   );
 }

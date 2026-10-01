@@ -1,4 +1,7 @@
 import express from 'express';
+import { ZodError } from 'zod';
+import { newsletterRouter, stripeWebhook } from './newsletter/router.js';
+import { adminRouter } from './admin/router.js';
 import { Sentry } from './lib/sentry.js';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -6,7 +9,6 @@ import rateLimit from 'express-rate-limit';
 import { pinoHttp } from 'pino-http';
 import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
-import { authRouter } from './routes/auth.js';
 import { progressRouter } from './routes/progress.js';
 import { questionnaireRouter } from './routes/questionnaire.js';
 import { researchRouter } from './routes/research.js';
@@ -40,6 +42,7 @@ app.use(cors({
 }));
 
 // ── Body parsing ───────────────────────────────────────
+app.post('/api/newsletter/webhook/stripe', express.raw({ type: 'application/json', limit: '100kb' }), stripeWebhook);
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
@@ -72,16 +75,6 @@ const globalLimiter = rateLimit({
   skip: () => env.NODE_ENV === 'test',
 });
 
-// Auth: más estricto — 20 intentos/15min
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Demasiados intentos, intenta de nuevo más tarde.' },
-  skip: () => env.NODE_ENV === 'test',
-});
-
 app.use('/api', globalLimiter);
 
 // ── Healthcheck ────────────────────────────────────────
@@ -90,7 +83,8 @@ app.get('/api/health', (_req, res) => {
 });
 
 // ── Rutas ──────────────────────────────────────────────
-app.use('/api/auth', authLimiter, authRouter);
+app.use('/api/newsletter', newsletterRouter);
+app.use('/api/admin', adminRouter);
 app.use('/api/progress', progressRouter);
 app.use('/api/questionnaire', questionnaireRouter);
 app.use('/api/research', researchRouter);
@@ -102,6 +96,7 @@ app.use('/api', (_req, res) => {
 
 // ── Error handler diferenciado ────────────────────────
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (err instanceof ZodError) return res.status(400).json({ error: err.issues[0]?.message ?? 'Revisa los datos enviados.' });
   Sentry.captureException(err);
   logger.error({ err }, '[api] unhandled error');
 

@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { track, EVENTOS } from '@/lib/analytics';
 import { useNotifications } from '../store/notifications';
+import { useProgress } from '../store/progress';
+import { FRASES_RECUPERACION_RACHA, fraseAleatoria } from '../lib/finniFrases';
 
 const variantClass: Record<string, string> = {
   success: 'bg-[var(--color-brand-success)]',
@@ -13,6 +16,17 @@ export default function GlobalSnackbar() {
   const queue = useNotifications((s) => s.queue);
   const dequeue = useNotifications((s) => s.dequeue);
   const [visible, setVisible] = useState(false);
+
+  // F2-GAMIFICACION: al perder la racha (evento del store de progreso), Finni
+  // acompaña con una frase de ánimo constructivo vía el snackbar global.
+  useEffect(() => {
+    const onStreakLost = () => {
+      useNotifications.getState().enqueue(fraseAleatoria(FRASES_RECUPERACION_RACHA), 'info');
+      track(EVENTOS.STREAK_LOST, { best: useProgress.getState().streak.best ?? 0 });
+    };
+    window.addEventListener('fe:streak-lost', onStreakLost);
+    return () => window.removeEventListener('fe:streak-lost', onStreakLost);
+  }, []);
 
   const current = queue[0];
 

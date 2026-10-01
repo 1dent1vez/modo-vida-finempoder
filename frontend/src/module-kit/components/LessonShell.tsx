@@ -1,4 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import confetti from 'canvas-confetti';
 import { ArrowRight, ArrowLeft, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import FECard from '../../shared/components/FECard';
@@ -6,8 +7,13 @@ import FinniMessage from '../../shared/components/FinniMessage';
 import { PageHeader } from '../../shared/components/PageHeader';
 import { Button } from '../../shared/components/ui/button';
 import { cn } from '@/lib/utils';
+import { track, EVENTOS } from '@/lib/analytics';
+import { localDayKey } from '@/lib/localDate';
 import { lessonProgressRepository } from '../../db/lessonProgress.repository';
+import { lessonResumeRepository } from '../../db/lessonResume.repository';
 import { resolveLessonCompletion, type LessonCompletion } from '../lessonContract';
+import { COMPLETION_MESSAGES } from './lessonCompletionMessages';
+import { FRASES_SALUDO_DIA, fraseAleatoria } from '../../lib/finniFrases';
 import { LockedLessonScreen } from './LockedLessonScreen';
 import { useLessons } from '../../store/lessons';
 import { useProgress } from '../../store/progress';
@@ -25,6 +31,9 @@ import {
   type ModuleFlowConfig,
 } from '../moduleFlow';
 
+/** Flag de "saludo del día ya mostrado" (F2-GAMIFICACION, una vez por día local). */
+const DAY_GREETING_KEY = 'fe_finni_day_greeting';
+
 const MODULE_COLOR_MAP: Record<string, 'warning' | 'success' | 'info'> = {
   presupuesto: 'warning',
   ahorro: 'success',
@@ -37,6 +46,30 @@ const MODULE_BUTTON_CLASS: Record<string, string> = {
   info: '',
 };
 
+function useReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = () => setReduced(mq.matches);
+    if (typeof mq.addEventListener === 'function') {
+      mq.addEventListener('change', onChange);
+      return () => mq.removeEventListener('change', onChange);
+    }
+    if (typeof mq.addListener === 'function') {
+      mq.addListener(onChange);
+      return () => mq.removeListener(onChange);
+    }
+    return undefined;
+  }, []);
+
+  return reduced;
+}
+
 export type LessonShellCoreProps = {
   id: string;
   title: string;
@@ -44,6 +77,7 @@ export type LessonShellCoreProps = {
   completeWhen?: boolean;
   score?: number;
   completion?: LessonCompletion;
+  showGreeting?: boolean;
 };
 
 export type LessonShellProps = LessonShellCoreProps & {
@@ -64,6 +98,36 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
   const [requiredLessonId, setRequiredLessonId] = useState<string | null>(null);
   const [persisting, setPersisting] = useState(false);
   const once = useRef(false);
+  const confettiFired = useRef(false);
+  // F5-PROMESAS: guard de unmount. persistCompletion es async y puede terminar
+  // después de desmontar (p.ej. al navegar antes de que Dexie resuelva); ningún
+  // setState debe correr sobre un componente desmontado.
+  const mounted = useRef(true);
+  const reducedMotion = useReducedMotion();
+  const [xp, setXp] = useState(0);
+  const [showDayGreeting, setShowDayGreeting] = useState(false);
+  const [dayGreeting] = useState(() => fraseAleatoria(FRASES_SALUDO_DIA));
+
+  useEffect(() => {
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  // F2-GAMIFICACION: saludo de Finni en la primera lección del día cuando aún
+  // no hay actividad hoy (streak.lastActiveISO !== hoy). Una vez por día
+  // (flag 'fe_finni_day_greeting' con la fecha local).
+  useEffect(() => {
+    try {
+      const today = localDayKey(new Date());
+      if (localStorage.getItem(DAY_GREETING_KEY) === today) return;
+      localStorage.setItem(DAY_GREETING_KEY, today);
+      const streak = useProgress.getState().streak;
+      if (streak.lastActiveISO !== today) setShowDayGreeting(true);
+    } catch {
+      // localStorage no disponible: sin saludo, sin error.
+    }
+  }, []);
 
   const completion = useMemo(
     () => resolveLessonCompletion({
@@ -74,8 +138,17 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
     [props.completeWhen, props.score, props.completion]
   );
 
+  const completionMessage = useMemo(
+    () =>
+      completed
+        ? COMPLETION_MESSAGES[Math.floor(Math.random() * COMPLETION_MESSAGES.length)]
+        : null,
+    [completed]
+  );
+
   const hydrateFromRepository = useCallback(async () => {
     const rows = await lessonProgressRepository.getModuleProgress(moduleId);
+    if (!mounted.current) return;
     const completedMap = toCompletionMap(rows);
     const moduleProgress = buildModuleProgress(config, completedMap);
     const requiredId = getRequiredLessonId(config, props.id, completedMap);
@@ -94,6 +167,7 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
     const init = async () => {
       try {
         await hydrateFromRepository();
+        track(EVENTOS.LESSON_STARTED, { moduleId, lessonId: props.id });
       } catch (err) {
         console.error(`[${moduleId}-progress] error hydrating lesson state`, err);
       } finally {
@@ -102,7 +176,7 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
     };
     void init();
     return () => { cancelled = true; };
-  }, [hydrateFromRepository, moduleId]);
+  }, [hydrateFromRepository, moduleId, props.id]);
 
   useEffect(() => {
     if (checkingAccess || !completion.ready || completed || isLocked || once.current) return;
@@ -114,6 +188,7 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
     const persistCompletion = async () => {
       try {
         await lessonProgressRepository.setCompleted(moduleId, props.id);
+        await lessonResumeRepository.clear(moduleId, props.id);
 
         const alreadyLegacy = useLessons
           .getState()
@@ -125,15 +200,29 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
         recordActivity(moduleId, 0);
         await hydrateFromRepository();
 
+        // F2-GAMIFICACION: avisa a la celebración global de logros para que el
+        // modal espere ~2.5s tras el confetti/XP de esta lección (evento
+        // mínimo y documentado en F2_GAMIFICACION.md).
+        if (mounted.current && typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('fe:lesson-completed', {
+              detail: { moduleId, lessonId: props.id, completedAt: Date.now() },
+            })
+          );
+        }
+        track(EVENTOS.LESSON_COMPLETED, { moduleId, lessonId: props.id, xp: completion.score ?? 100 });
+
         if (import.meta.env.DEV) {
           console.info(`[${moduleId}-progress] lesson completed`, { moduleId, lessonId: props.id });
         }
       } catch (err) {
         console.error(`[${moduleId}-progress] error persisting lesson completion`, err);
-        setCompleted(false);
-        once.current = false;
+        if (mounted.current) {
+          setCompleted(false);
+          once.current = false;
+        }
       } finally {
-        setPersisting(false);
+        if (mounted.current) setPersisting(false);
       }
     };
 
@@ -150,6 +239,55 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
     props.id,
     recordActivity,
   ]);
+
+  useEffect(() => {
+    if (!completed || confettiFired.current) return;
+    confettiFired.current = true;
+    if (reducedMotion) return;
+    confetti({ particleCount: 120, spread: 70, origin: { y: 0.7 } });
+  }, [completed, reducedMotion]);
+
+  useEffect(() => {
+    if (!completed) return;
+    const target = completion.score ?? 100;
+    if (reducedMotion) {
+      setXp(target);
+      return;
+    }
+
+    const duration = 800;
+    const start = performance.now();
+    let frameId: number | null = null;
+    let cancelled = false;
+
+    const schedule = (cb: FrameRequestCallback) => {
+      if (typeof window.requestAnimationFrame === 'function') {
+        frameId = window.requestAnimationFrame(cb);
+      } else {
+        frameId = window.setTimeout(() => cb(performance.now()), 16);
+      }
+    };
+
+    const step = () => {
+      if (cancelled) return;
+      const t = Math.min(1, (performance.now() - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setXp(Math.round(eased * target));
+      if (t < 1) schedule(step);
+    };
+
+    schedule(step);
+    return () => {
+      cancelled = true;
+      if (frameId !== null && typeof window !== 'undefined') {
+        if (typeof window.cancelAnimationFrame === 'function') {
+          window.cancelAnimationFrame(frameId);
+        } else {
+          window.clearTimeout(frameId);
+        }
+      }
+    };
+  }, [completed, completion.score, reducedMotion]);
 
   const previousPath = useMemo(() => getPreviousLessonPath(config, props.id), [config, props.id]);
   const nextPath = useMemo(() => getNextLessonPath(config, props.id), [config, props.id]);
@@ -197,20 +335,40 @@ export function LessonShell({ moduleId, config, ...props }: LessonShellProps) {
       <PageHeader title={props.title} onBack={goOverview} moduleColor={moduleColor} />
       <div className="p-4 pb-20">
         <FECard variant="flat" className="mt-3">
+          {props.showGreeting !== false && showDayGreeting && !completed && (
+            <FinniMessage variant="coach" message={dayGreeting} className="mb-4" />
+          )}
           {props.children}
         </FECard>
 
         {completed && (
           <div className="mt-6 animate-[fadeIn_200ms_ease-in]">
+            <div className="mb-4 flex items-center justify-center gap-3">
+              <span
+                data-testid="xp-counter"
+                className="rounded-full bg-[var(--color-brand-success)]/10 px-4 py-2 text-lg font-extrabold text-[var(--color-brand-success)]"
+              >
+                +{xp} XP
+              </span>
+              {!reducedMotion && (
+                <span
+                  data-testid="xp-float"
+                  className="finni-xp-float text-sm font-bold text-[var(--color-brand-success)]"
+                >
+                  +{completion.score ?? 100} XP
+                </span>
+              )}
+            </div>
             <FinniMessage
               variant="success"
               title="Lección completada"
-              message={
-                nextLessonId
-                  ? `Desbloqueaste ${nextLessonId}. Puedes continuar cuando quieras.`
-                  : 'Completaste este bloque del módulo.'
-              }
+              message={completionMessage ?? '¡Lección completada!'}
             />
+            <p className="mt-2 text-center text-xs text-[var(--color-text-secondary)]">
+              {nextLessonId
+                ? `Desbloqueaste ${nextLessonId}. Puedes continuar cuando quieras.`
+                : 'Completaste este bloque del módulo.'}
+            </p>
             {persisting && (
               <p className="mt-2 text-xs text-[var(--color-text-secondary)]">Guardando progreso...</p>
             )}

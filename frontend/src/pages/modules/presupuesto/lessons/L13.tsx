@@ -1,250 +1,369 @@
-import { cn } from '@/lib/utils';
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import { useAuth } from '../../../../store/auth';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/budgetFeedback.css';
 
-type BudgetData = {
+type Budget = {
   pctFijos?: number;
   pctVariables?: number;
   pctAhorro?: number;
   balance?: number;
   totalIngresos?: number;
-} | null;
-
-type SemaforoItem = {
+};
+export type BudgetInsight = {
+  id: string;
   label: string;
   value: string;
-  color: 'success' | 'warning' | 'error';
-  consejo: string;
+  explanation: string;
+  action: string;
 };
+const EXAMPLE: Budget = {
+  pctFijos: 52,
+  pctVariables: 28,
+  pctAhorro: 10,
+  balance: 300,
+  totalIngresos: 5000,
+};
+const KEY = 'l13_feedback:v1';
 
-function calcSemaforo(data: BudgetData): SemaforoItem[] {
-  if (!data) {
-    return [
-      { label: 'Gastos fijos', value: 'Sin datos', color: 'warning', consejo: 'Completa la lección 12 para obtener tu análisis.' },
-      { label: 'Gastos variables', value: 'Sin datos', color: 'warning', consejo: 'Completa la lección 12 para obtener tu análisis.' },
-      { label: 'Ahorro', value: 'Sin datos', color: 'warning', consejo: 'Completa la lección 12 para obtener tu análisis.' },
-      { label: 'Entretenimiento', value: 'Sin datos', color: 'warning', consejo: 'Completa la lección 12 para obtener tu análisis.' },
-      { label: 'Balance general', value: 'Sin datos', color: 'warning', consejo: 'Completa la lección 12 para obtener tu análisis.' },
-    ];
-  }
-
-  const fijos = data.pctFijos ?? 0;
-  const variables = data.pctVariables ?? 0;
-  const ahorro = data.pctAhorro ?? 0;
-  const balance = data.balance ?? 0;
-
+// eslint-disable-next-line react-refresh/only-export-components -- pure builder exported for lesson contract tests
+export function buildBudgetInsights(data: Budget): BudgetInsight[] {
+  const income = Math.max(0, Number(data.totalIngresos) || 0);
+  const balance = Number(data.balance) || 0;
+  const fixed = Math.max(0, Number(data.pctFijos) || 0);
+  const variable = Math.max(0, Number(data.pctVariables) || 0);
+  const saving = Math.max(0, Number(data.pctAhorro) || 0);
   return [
     {
-      label: 'Gastos fijos',
-      value: `${fijos}% del ingreso`,
-      color: fijos <= 50 ? 'success' : fijos <= 60 ? 'warning' : 'error',
-      consejo:
-        fijos <= 50
-          ? '¡Excelente! Tus gastos fijos están dentro del 50% recomendado.'
-          : fijos <= 60
-          ? 'Tus gastos fijos son un poco altos. Considera renegociar algún servicio.'
-          : 'Tus gastos fijos superan el 50%. Revisa si hay suscripciones o compromisos que puedas reducir.',
-    },
-    {
-      label: 'Gastos variables',
-      value: `${variables}% del ingreso`,
-      color: variables <= 30 ? 'success' : variables <= 40 ? 'warning' : 'error',
-      consejo:
-        variables <= 30
-          ? 'Bien controlado. Tus variables están dentro del 30% ideal.'
-          : variables <= 40
-          ? 'Un poco por encima del 30%. Identifica qué categoría puedes recortar.'
-          : 'Tus gastos variables son altos. Revisa el ítem más grande y pregunta si es realmente necesario.',
-    },
-    {
-      label: 'Ahorro',
-      value: `${ahorro}% del ingreso`,
-      color: ahorro >= 20 ? 'success' : ahorro >= 10 ? 'warning' : 'error',
-      consejo:
-        ahorro >= 20
-          ? '¡Perfecto! Estás ahorrando el 20% o más. Así se construye patrimonio.'
-          : ahorro >= 10
-          ? 'Buen inicio. Intenta llegar al 20% aumentando poco a poco.'
-          : ahorro > 0
-          ? 'Cualquier ahorro cuenta. Sube gradualmente hasta llegar al 10% primero.'
-          : 'No tienes ahorro contemplado. Aunque sea $100 al mes ya marca la diferencia.',
-    },
-    {
-      label: 'Entretenimiento / ocio',
-      value: variables <= 15 ? 'Razonable' : variables <= 25 ? 'Moderado' : 'Alto',
-      color: variables <= 15 ? 'success' : variables <= 25 ? 'warning' : 'error',
-      consejo:
-        variables <= 15
-          ? 'Tu nivel de ocio es adecuado para un contexto estudiantil.'
-          : 'Considera si todo el gasto variable es entretenimiento o si hay necesidades mezcladas.',
-    },
-    {
-      label: 'Balance general',
-      value: `${balance >= 0 ? '+' : ''}$${balance.toLocaleString()}`,
-      color: balance >= 0 ? 'success' : balance >= -200 ? 'warning' : 'error',
-      consejo:
+      id: 'balance',
+      label: 'Margen del mes',
+      value: `${balance >= 0 ? '+' : '−'}$${Math.abs(balance).toLocaleString()}`,
+      explanation:
         balance >= 0
-          ? '¡Tu presupuesto está en superávit! Ese excedente va directo al ahorro.'
-          : balance >= -200
-          ? 'Pequeño déficit. Con 1-2 ajustes puedes llegar al equilibrio.'
-          : 'Déficit significativo. Revisa los 2-3 gastos más grandes y pregunta si se pueden reducir.',
+          ? 'Tus ingresos cubren lo registrado y dejan margen.'
+          : 'Lo registrado supera el ingreso del mes.',
+      action:
+        balance >= 0
+          ? 'Decide cuánto del margen quieres conservar.'
+          : 'Revisa primero un gasto aplazable o una cantidad ajustable.',
+    },
+    {
+      id: 'fixed',
+      label: 'Compromisos fijos',
+      value: `${fixed}% del ingreso`,
+      explanation: 'Esta proporción muestra cuánto ingreso ya tiene un destino recurrente.',
+      action:
+        fixed > 60
+          ? 'Comprueba si algún servicio o compromiso admite ajuste.'
+          : 'Anota qué pagos cambiarían si tu ingreso bajara.',
+    },
+    {
+      id: 'variable',
+      label: 'Gastos variables',
+      value: `${variable}% del ingreso`,
+      explanation:
+        'Aquí pueden convivir necesidades y deseos; el porcentaje por sí solo no los distingue.',
+      action: 'Revisa la categoría variable más grande antes de decidir un recorte.',
+    },
+    {
+      id: 'saving',
+      label: 'Ahorro planeado',
+      value: `${saving}% del ingreso`,
+      explanation:
+        saving > 0
+          ? 'Ya reservaste una parte del ingreso dentro del plan.'
+          : 'Este presupuesto todavía no reserva una cantidad para ahorro.',
+      action:
+        saving > 0
+          ? 'Valida que la cantidad sea sostenible durante el mes.'
+          : `Prueba una cantidad pequeña sin dejar el balance negativo${income ? ` sobre tus $${income.toLocaleString()} de ingreso` : ''}.`,
     },
   ];
 }
 
-const COLOR_MAP = {
-  success: { border: 'border-[var(--color-brand-success)]', bg: 'bg-[var(--color-brand-success)]/10', chip: 'bg-[var(--color-brand-success)]/10 text-[var(--color-brand-success)]' },
-  warning: { border: 'border-[var(--color-brand-warning)]', bg: 'bg-[var(--color-brand-warning)]/10', chip: 'bg-[var(--color-brand-warning)]/10 text-[var(--color-brand-warning)]' },
-  error: { border: 'border-[var(--color-brand-error)]', bg: 'bg-[var(--color-brand-error)]/10', chip: 'bg-[var(--color-brand-error)]/10 text-[var(--color-brand-error)]' },
+type Draft = {
+  version: 1;
+  stage: 'insights' | 'priority' | 'review' | 'complete';
+  index: number;
+  priority: string | null;
+  example: boolean;
 };
+const initial = (): Draft => ({
+  version: 1,
+  stage: 'insights',
+  index: 0,
+  priority: null,
+  example: false,
+});
+function parse(raw: unknown): Draft | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const v = raw as Draft;
+  if (
+    v.version !== 1 ||
+    !['insights', 'priority', 'review', 'complete'].includes(v.stage) ||
+    !Number.isInteger(v.index) ||
+    v.index < 0 ||
+    v.index > 3 ||
+    (v.priority !== null && !['balance', 'fixed', 'variable', 'saving'].includes(v.priority)) ||
+    (['review', 'complete'].includes(v.stage) && !v.priority)
+  )
+    return null;
+  return v;
+}
 
 export default function L13() {
-  const [step, setStep] = useState(0);
-  const [semaforo, setSemaforo] = useState<SemaforoItem[]>([]);
-  const [expanded, setExpanded] = useState<Set<number>>(new Set());
-  const [allViewed, setAllViewed] = useState(false);
+  const userId = useAuth((state) => state.user?.id ?? 'local');
+  return <FeedbackSession key={userId} />;
+}
+function FeedbackSession() {
+  const [budget, setBudget] = useState<Budget | null>(null);
+  const [missing, setMissing] = useState(false);
+  const [draft, setDraft] = useState<Draft>(initial);
   const [loading, setLoading] = useState(true);
-
+  const [loadError, setLoadError] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
+  const lock = useRef(false);
   useEffect(() => {
-    const load = async () => {
-      const data = await lessonDataRepository.load<BudgetData>('presupuesto', 'l12_budget');
-      setSemaforo(calcSemaforo(data));
-      setLoading(false);
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
     };
-    void load();
   }, []);
-
-  const toggleExpanded = (i: number) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(i)) next.delete(i);
-      else next.add(i);
-      return next;
-    });
-    if (expanded.size + 1 >= semaforo.length) {
-      setAllViewed(true);
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setLoadError(false);
+    void Promise.all([
+      lessonDataRepository.load<Budget>('presupuesto', 'l12_budget'),
+      lessonDataRepository.load('presupuesto', KEY),
+    ])
+      .then(([savedBudget, savedDraft]) => {
+        if (!active) return;
+        const restored = parse(savedDraft) ?? initial();
+        setDraft(restored);
+        if (savedBudget) setBudget(savedBudget);
+        else if (restored.example) setBudget(EXAMPLE);
+        else setMissing(true);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (active) {
+          setLoadError(true);
+          setLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [retry]);
+  const persist = async (next: Draft, final = false) => {
+    if (lock.current) return;
+    lock.current = true;
+    setBusy(true);
+    setError(null);
+    try {
+      if (final) {
+        await lessonDataRepository.saveBatch('presupuesto', [
+          {
+            key: 'l13_feedback',
+            data: {
+              priority: next.priority,
+              example: next.example,
+            },
+          },
+          { key: KEY, data: next },
+        ]);
+      } else {
+        await lessonDataRepository.save('presupuesto', KEY, next);
+      }
+      if (mounted.current) {
+        setDraft(next);
+        setDirty(false);
+      }
+    } catch {
+      if (mounted.current) setError('No pudimos guardar. Tu selección sigue en pantalla.');
+    } finally {
+      lock.current = false;
+      if (mounted.current) setBusy(false);
     }
   };
-
-  const stars = semaforo.filter((s) => s.color === 'success').length;
-  const starMsg =
-    stars === 5
-      ? '¡Presupuesto impecable! Eres de los pocos que realmente planea.'
-      : stars >= 3
-      ? 'Muy buen trabajo. Con estos ajustes, tu presupuesto será sólido.'
-      : '¡Un primer presupuesto siempre es así! Lo importante es que ya empezaste.';
-
-  if (loading) {
+  if (loading)
     return (
-      <LessonShell id="L13" title="Finni te da su veredicto" completion={{ ready: false }}>
-        <p className="text-sm text-[var(--color-text-secondary)]">Cargando tu presupuesto...</p>
+      <LessonShell id="L13" title="Finni analiza tu presupuesto" completion={{ ready: false }}>
+        <ActivityLoading message="Preparando tus señales…" />
       </LessonShell>
     );
-  }
-
-  const progressValue = step === 0 ? 0 : step === 1 ? 40 : 100;
-
+  if (loadError)
+    return (
+      <LessonShell id="L13" title="Finni analiza tu presupuesto" completion={{ ready: false }}>
+        <ActivityLoadError
+          message="No pudimos recuperar el presupuesto."
+          onRetry={() => setRetry((v) => v + 1)}
+        />
+      </LessonShell>
+    );
+  if (missing || !budget)
+    return (
+      <LessonShell id="L13" title="Finni analiza tu presupuesto" completion={{ ready: false }}>
+        <div className="ca-load">
+          <p>No encontramos un presupuesto guardado de L12.</p>
+          <button
+            onClick={() => {
+              setMissing(false);
+              setBudget(EXAMPLE);
+              setDraft((v) => ({ ...v, example: true }));
+              setDirty(true);
+            }}
+          >
+            Practicar con un ejemplo ficticio
+          </button>
+        </div>
+      </LessonShell>
+    );
+  const insights = buildBudgetInsights(budget);
+  const insight = insights[draft.index];
+  const reviewing = draft.stage === 'review' || draft.stage === 'complete';
+  const priority = insights.find((item) => item.id === draft.priority);
+  const advice = {
+    title: draft.stage === 'insights' ? insight.label : 'Una prioridad a la vez',
+    text:
+      draft.stage === 'insights'
+        ? insight.action
+        : 'Elige la señal que te resulte más útil revisar; no hay una calificación universal para todos los presupuestos.',
+    tone: 'info' as const,
+  };
   return (
     <LessonShell
       id="L13"
-      title="Finni te da su veredicto: ¿cómo vas?"
-      completion={{ ready: allViewed || expanded.size >= semaforo.length }}
+      title="Finni analiza tu presupuesto"
+      showGreeting={false}
+      completion={{ ready: draft.stage === 'complete', score: 100 }}
     >
-      <div className="p-1">
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all" style={{ width: `${progressValue}%` }} />
-        </div>
-
-        {step === 0 && (
-          <div className="space-y-3">
-            <FinniMessage
-              variant="coach"
-              title="¡Ya tienes tu presupuesto!"
-              message="Déjame analizarlo. Voy a ser honesto contigo: lo que funciona bien, lo celebramos. Lo que necesita ajuste, te lo digo con respeto."
-            />
-            <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 border border-[var(--color-brand-warning)] text-center py-4">
-              <p className="text-sm text-[var(--color-text-secondary)]">Analizando...</p>
-              <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mt-2">
-                <div className="h-2 rounded-full bg-[var(--color-brand-warning)] transition-all w-3/4" />
-              </div>
-            </FECard>
-            <button
-              className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-              onClick={() => setStep(1)}
-            >
-              Ver el reporte semáforo →
-            </button>
-          </div>
-        )}
-
-        {step === 1 && (
-          <div className="space-y-3">
-            <p className="font-bold">
-              Reporte semáforo de Finni 🚦
-            </p>
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              Toca cada indicador para ver el análisis completo.
-            </p>
-            <div className="space-y-2">
-              {semaforo.map((s, i) => {
-                const colors = COLOR_MAP[s.color];
-                return (
-                  <FECard
-                    key={i}
-                    variant="flat"
-                    className={cn('border-2 cursor-pointer transition-colors', colors.border, expanded.has(i) ? colors.bg : '')}
-                    onClick={() => { toggleExpanded(i); if (expanded.size + 1 >= semaforo.length) setAllViewed(true); }}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <div className="flex justify-between items-center">
-                      <p className="font-bold text-sm">{s.label}</p>
-                      <div className="flex items-center gap-2">
-                        <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold', colors.chip)}>
-                          {s.value}
-                        </span>
-                        <p className="text-xs">{expanded.has(i) ? '▲' : '▼'}</p>
-                      </div>
-                    </div>
-                    {expanded.has(i) && (
-                      <p className="text-sm mt-2 italic">
-                        {s.consejo}
-                      </p>
-                    )}
-                  </FECard>
-                );
-              })}
-            </div>
-            {(allViewed || expanded.size >= semaforo.length) && (
+      <ActivityFrame
+        label="Lectura guiada del presupuesto"
+        className="budget-feedback"
+        busy={busy}
+        title={
+          reviewing
+            ? 'Revisa la señal que elegiste.'
+            : draft.stage === 'priority'
+              ? 'Elige dónde quieres empezar.'
+              : 'Lee una señal a la vez.'
+        }
+        description={
+          draft.example
+            ? 'Estás practicando con un presupuesto ficticio.'
+            : 'Finni usa el presupuesto que guardaste en L12.'
+        }
+        progressLabel="Señales revisadas"
+        progressValue={draft.stage === 'insights' ? draft.index : 4}
+        progressMax={4}
+        stepLabel={
+          reviewing
+            ? 'Paso 3 de 3 · Revisar'
+            : draft.stage === 'priority'
+              ? 'Paso 2 de 3 · Priorizar'
+              : `Paso 1 de 3 · Señal ${draft.index + 1} de 4`
+        }
+        focusKey={`${draft.stage}-${draft.index}`}
+        advice={advice}
+        adviceCue={cue}
+        error={error}
+        status={busy ? 'Guardando…' : dirty ? 'Cambios sin guardar.' : 'Tu avance está guardado.'}
+        actions={
+          <div className="bf-actions">
+            {draft.stage === 'insights' && (
               <button
-                className="w-full min-h-11 bg-[var(--color-brand-warning)] text-white rounded-xl font-semibold text-sm"
-                onClick={() => setStep(2)}
+                className="ca-primary"
+                disabled={busy}
+                onClick={() =>
+                  void persist({
+                    ...draft,
+                    index: draft.index === 3 ? 3 : draft.index + 1,
+                    stage: draft.index === 3 ? 'priority' : 'insights',
+                  })
+                }
               >
-                Ver calificación final →
+                {draft.index === 3 ? 'Elegir una prioridad' : 'Siguiente señal'}
               </button>
             )}
+            {draft.stage === 'priority' && (
+              <button
+                className="ca-primary"
+                disabled={busy || !draft.priority}
+                onClick={() => void persist({ ...draft, stage: 'review' })}
+              >
+                Guardar y revisar
+              </button>
+            )}
+            {draft.stage === 'review' && (
+              <>
+                <button
+                  className="bf-secondary"
+                  onClick={() => {
+                    setDraft((v) => ({ ...v, stage: 'priority' }));
+                    setDirty(true);
+                  }}
+                >
+                  Cambiar prioridad
+                </button>
+                <button
+                  className="ca-primary"
+                  disabled={busy}
+                  onClick={() => void persist({ ...draft, stage: 'complete' }, true)}
+                >
+                  Guardar y terminar
+                </button>
+              </>
+            )}
+          </div>
+        }
+      >
+        {draft.stage === 'insights' && (
+          <section className="bf-panel">
+            <span className="bf-value">{insight.value}</span>
+            <h3>{insight.label}</h3>
+            <p>{insight.explanation}</p>
+          </section>
+        )}
+        {draft.stage === 'priority' && (
+          <div className="bf-grid">
+            {insights.map((item) => (
+              <button
+                key={item.id}
+                className="bf-card"
+                aria-pressed={draft.priority === item.id}
+                onClick={() => {
+                  setDraft((v) => ({ ...v, priority: item.id }));
+                  setDirty(true);
+                  setCue(item.id);
+                }}
+              >
+                <strong>{item.label}</strong>
+                <span>{item.action}</span>
+              </button>
+            ))}
           </div>
         )}
-
-        {step === 2 && (
-          <div className="space-y-3">
-            <FECard variant="flat" className="bg-[var(--color-brand-warning)]/10 border-2 border-[var(--color-brand-warning)] text-center py-4">
-              <p className="text-4xl">
-                {'⭐'.repeat(stars)}{'☆'.repeat(5 - stars)}
-              </p>
-              <p className="font-bold text-base mt-2">{stars}/5 indicadores en verde</p>
-            </FECard>
-            <FinniMessage
-              variant="success"
-              title="Veredicto de Finni"
-              message={starMsg}
-            />
-          </div>
+        {reviewing && (
+          <section className="bf-panel">
+            <span className="bf-value">{priority?.value}</span>
+            <h3>{priority?.label}</h3>
+            <p>{priority?.action}</p>
+          </section>
         )}
-      </div>
+      </ActivityFrame>
     </LessonShell>
   );
 }

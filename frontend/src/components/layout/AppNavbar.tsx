@@ -1,25 +1,23 @@
-import { Home, Trophy, User, Settings } from 'lucide-react';
+import { Home, Trophy, User, Mail } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
+import { newsletterEnabled } from '@/lib/newsletterFeature';
 
 type NavItem = { label: string; icon: React.ReactNode; path: string };
-
-const items: NavItem[] = [
-  { label: 'Inicio',  icon: <Home size={22} />,    path: '/app' },
-  { label: 'Logros',  icon: <Trophy size={22} />,  path: '/app/achievements' },
-  { label: 'Perfil',  icon: <User size={22} />,    path: '/app/profile' },
-  { label: 'Ajustes', icon: <Settings size={22} />, path: '/app/settings' },
-];
 
 export function AppNavbar() {
   const location = useLocation();
   const navigate = useNavigate();
-
-  const current = useMemo(() => {
-    const found = items.findIndex((i) => location.pathname.startsWith(i.path));
-    return found === -1 ? 0 : found;
-  }, [location.pathname]);
+  const items: NavItem[] = [
+    { label: 'Inicio', icon: <Home size={22} />, path: '/app' },
+    { label: 'Logros', icon: <Trophy size={22} />, path: '/app/achievements' },
+    ...(newsletterEnabled() ? [{ label: 'Billete', icon: <Mail size={22} />, path: '/app/newsletter' }] : []),
+    { label: 'Yo', icon: <User size={22} />, path: '/app/profile' },
+  ];
+  const found = items.findIndex((i) =>
+    i.path === '/app' ? location.pathname === '/app' : location.pathname.startsWith(i.path),
+  );
+  const current = found === -1 ? 0 : found;
 
   return (
     <nav
@@ -38,7 +36,7 @@ export function AppNavbar() {
               'flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs font-medium transition-colors',
               current === idx
                 ? 'text-[var(--color-brand-primary)]'
-                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
             )}
           >
             {item.icon}

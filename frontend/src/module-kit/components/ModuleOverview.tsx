@@ -6,6 +6,7 @@ import FECard from '../../shared/components/FECard';
 import { PageHeader } from '../../shared/components/PageHeader';
 import { XPChip } from '../../shared/components/gamification/XPChip';
 import { StreakBadge } from '../../shared/components/gamification/StreakBadge';
+import { ShieldBadge } from '../../shared/components/gamification/ShieldBadge';
 import { Button } from '../../shared/components/ui/button';
 import { Progress } from '../../shared/components/ui/progress';
 import { lessonProgressRepository } from '../../db/lessonProgress.repository';
@@ -25,6 +26,7 @@ import {
   type ModuleProgress,
 } from '../moduleFlow';
 import { ModuleLessonList } from './ModuleLessonList';
+import { LessonPath } from './LessonPath';
 
 const MODULE_COLOR_MAP: Record<string, 'warning' | 'success' | 'info'> = {
   presupuesto: 'warning',
@@ -65,7 +67,7 @@ export function ModuleOverview({ config, moduleTitle }: ModuleOverviewProps) {
   const { data: gamification } = useGamification();
   const setModuleProgress = useProgress((s) => s.setModuleProgress);
   const hydrateLessons = useLessons((s) => s.hydrateFromCompletionMap);
-  const streak = useProgress((s) => s.streak.current);
+  const streak = useProgress((s) => s.streak);
 
   const [moduleState, setModuleState] = useState<ModuleProgress>(() =>
     loadModuleProgressSnapshot(config)
@@ -140,7 +142,8 @@ export function ModuleOverview({ config, moduleTitle }: ModuleOverviewProps) {
         rightSlot={
           <div className="flex items-center gap-1">
             {gamification && <XPChip xp={gamification.xp} />}
-            <StreakBadge streak={streak} />
+            <StreakBadge streak={streak.current} />
+            <ShieldBadge shields={streak.shields} />
           </div>
         }
       />
@@ -196,8 +199,20 @@ export function ModuleOverview({ config, moduleTitle }: ModuleOverviewProps) {
           </FECard>
         )}
 
-        {/* Lista de lecciones */}
+        {/* Sendero de lecciones */}
         <FECard variant="flat">
+          <LessonPath
+            config={config}
+            completedMap={completedMap}
+            onNavigate={(lessonId) => nav(getLessonPath(config, lessonId))}
+          />
+        </FECard>
+
+        {/* Lista detallada (se conserva: badges PROBAR de admin y acceso directo) */}
+        <FECard variant="flat">
+          <h3 className="mb-2 text-sm font-bold text-[var(--color-text-secondary)]">
+            Lista de lecciones
+          </h3>
           <ModuleLessonList
             lessons={config.lessons}
             lessonStatuses={moduleState.lessons as Record<string, LessonStatus>}

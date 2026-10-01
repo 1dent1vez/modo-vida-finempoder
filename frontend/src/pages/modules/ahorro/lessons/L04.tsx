@@ -1,225 +1,378 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import LessonShell from '../LessonShell';
-import FECard from '../../../../components/FECard';
-import FinniMessage from '../../../../components/FinniMessage';
+import ActivityFrame, {
+  ActivityLoadError,
+  ActivityLoading,
+} from '../../../../module-kit/activities/ActivityFrame';
 import { lessonDataRepository } from '../../../../db/lessonData.repository';
+import '../../../../module-kit/activities/classification.css';
+import '../../../../module-kit/activities/savings-habits.css';
 
-type Classification = 'aliado' | 'saboteador' | null;
-
-const successColor = 'var(--color-brand-success)';
-const successBg = 'var(--color-brand-success-bg)';
-const errorColor = 'var(--color-brand-error)';
-const errorBg = 'var(--color-brand-error-bg)';
-const warnColor = 'var(--color-brand-warning)';
-const warnBg = 'var(--color-brand-warning-bg)';
-
-const CARDS: { id: string; label: string; correct: 'aliado' | 'saboteador'; tip: string }[] = [
-  { id: 'c1', label: 'Transferencia automatica el dia de cobro', correct: 'aliado', tip: 'Si lo haces manual, es mas probable que lo pospongas.' },
-  { id: 'c2', label: 'Meta clara y visible (foto en pantalla de bloqueo)', correct: 'aliado', tip: 'Una imagen concreta activa la motivacion de continuar.' },
-  { id: 'c3', label: 'Notificaciones de progreso de ahorro', correct: 'aliado', tip: 'Ver que llevas $500 de $2,000 activa la motivacion.' },
-  { id: 'c4', label: 'Amigos con cultura de ahorro', correct: 'aliado', tip: 'El entorno social influye mas de lo que creemos.' },
-  { id: 'c5', label: 'Cuenta de ahorro separada de la del gasto diario', correct: 'aliado', tip: 'Lo que no ves facilmente, no lo gastas.' },
-  { id: 'c6', label: 'Notificaciones de ofertas y compras en linea', correct: 'saboteador', tip: 'Activan el gasto impulsivo. Desactivarlas ayuda mucho.' },
-  { id: 'c7', label: 'Amigos que siempre proponen planes costosos', correct: 'saboteador', tip: 'La presion social puede boicotear el mejor plan.' },
-  { id: 'c8', label: 'No tener una meta concreta ("ahorro para algo algun dia")', correct: 'saboteador', tip: 'El ahorro sin nombre no dura. Necesita proposito.' },
-  { id: 'c9', label: 'Mezclar el ahorro con el dinero del gasto cotidiano', correct: 'saboteador', tip: 'El dinero mezclado siempre termina en gasto.' },
-  { id: 'c10', label: 'Revisar el saldo del ahorro muy seguido', correct: 'saboteador', tip: 'La tentacion de tocarlo aumenta cada vez que lo ves.' },
-];
-
-const ACCIONES: Record<string, string> = {
-  c6: 'Desactiva las notificaciones de apps de compra en tu celular hoy.',
-  c7: 'Propone al menos una alternativa economica cuando salgas con amigos.',
-  c8: 'Completa la Leccion 5 hoy para darle nombre a tu meta.',
-  c9: 'Abre una cuenta separada exclusiva para ahorro esta semana.',
-  c10: 'Revisa tu saldo de ahorro solo una vez por semana.',
+type Stage = 'observe' | 'classify' | 'choose' | 'review' | 'complete';
+type Kind = 'ally' | 'friction';
+type Draft = {
+  version: 1;
+  stage: Stage;
+  item: number;
+  pending: Kind | null;
+  answers: Record<number, Kind>;
+  friction: string | null;
+  ally: string | null;
 };
+const KEY = 'savings_l4:habits:v1';
+const ITEMS: { id: string; label: string; correct: Kind; feedback: string }[] = [
+  {
+    id: 'auto',
+    label: 'Separar una cantidad planeada al recibir ingresos',
+    correct: 'ally',
+    feedback: 'Una regla ligada al momento de ingreso reduce decisiones repetidas.',
+  },
+  {
+    id: 'offers',
+    label: 'Mantener activas alertas de ofertas que no buscas',
+    correct: 'friction',
+    feedback: 'Las señales de compra pueden interrumpir una meta; silenciarlas crea distancia.',
+  },
+  {
+    id: 'visible',
+    label: 'Tener una meta clara y revisar su avance con una frecuencia definida',
+    correct: 'ally',
+    feedback: 'Una meta visible y una revisión acordada ayudan a sostener el propósito.',
+  },
+  {
+    id: 'mixed',
+    label: 'Mezclar el ahorro con el dinero de uso cotidiano',
+    correct: 'friction',
+    feedback:
+      'Sin una separación clara es más difícil saber qué cantidad está disponible para gastar.',
+  },
+];
+const FRICTIONS = [
+  { id: 'offers', label: 'Alertas y compras impulsivas' },
+  { id: 'mixed', label: 'Dinero mezclado' },
+  { id: 'social', label: 'Planes sociales fuera de presupuesto' },
+];
+const ALLIES = [
+  { id: 'silence', label: 'Silenciar alertas de compra' },
+  { id: 'separate', label: 'Separar el ahorro al recibir ingresos' },
+  { id: 'alternative', label: 'Proponer una alternativa de menor costo' },
+];
+const initial = (): Draft => ({
+  version: 1,
+  stage: 'observe',
+  item: 0,
+  pending: null,
+  answers: {},
+  friction: null,
+  ally: null,
+});
+function parse(raw: unknown): Draft | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const value = raw as Draft;
+  if (
+    value.version !== 1 ||
+    !['observe', 'classify', 'choose', 'review', 'complete'].includes(value.stage) ||
+    !Number.isInteger(value.item) ||
+    value.item < 0 ||
+    value.item >= ITEMS.length ||
+    (value.pending !== null && !['ally', 'friction'].includes(value.pending)) ||
+    !value.answers ||
+    (value.friction !== null && !FRICTIONS.some((item) => item.id === value.friction)) ||
+    (value.ally !== null && !ALLIES.some((item) => item.id === value.ally)) ||
+    (['review', 'complete'].includes(value.stage) && (!value.friction || !value.ally))
+  )
+    return null;
+  return value;
+}
 
 export default function L04() {
-  const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, Classification>>({});
-  const [showFeedback, setShowFeedback] = useState<Record<string, boolean>>({});
-  const [saboteadoresCheck, setSaboteadoresCheck] = useState<Set<string>>(new Set());
-  const [aliadoElegido, setAliadoElegido] = useState('');
-
-  const answered = Object.values(answers).filter(Boolean).length;
-  const allClassified = answered === CARDS.length;
-  const aliadosCards = CARDS.filter((c) => c.correct === 'aliado');
-
-  const classify = (id: string, val: Classification) => {
-    if (answers[id]) return;
-    setAnswers((prev) => ({ ...prev, [id]: val }));
-    setShowFeedback((prev) => ({ ...prev, [id]: true }));
+  const [draft, setDraft] = useState<Draft>(initial);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    setLoading(true);
+    setLoadError(false);
+    void lessonDataRepository
+      .load('ahorro', KEY)
+      .then((raw) => {
+        if (mounted.current) {
+          setDraft(parse(raw) ?? initial());
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (mounted.current) {
+          setLoading(false);
+          setLoadError(true);
+        }
+      });
+    return () => {
+      mounted.current = false;
+    };
+  }, [attempt]);
+  const persist = async (next: Draft, final = false) => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (final) {
+        await lessonDataRepository.saveBatch('ahorro', [
+          {
+            key: 'l4_aliados',
+            data: {
+              answers: next.answers,
+              saboteador: next.friction,
+              aliadoElegido: next.ally,
+            },
+          },
+          { key: KEY, data: next },
+        ]);
+      } else {
+        await lessonDataRepository.save('ahorro', KEY, next);
+      }
+      if (mounted.current) {
+        setDraft(next);
+        setDirty(false);
+      }
+    } catch {
+      if (mounted.current) setError('No pudimos guardar. Tus elecciones siguen en pantalla.');
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
   };
-
-  const toggleSaboteador = (id: string) => {
-    setSaboteadoresCheck((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
+  if (loading)
+    return (
+      <LessonShell id="L04" title="Aliados y fricciones" completion={{ ready: false }}>
+        <ActivityLoading />
+      </LessonShell>
+    );
+  if (loadError)
+    return (
+      <LessonShell id="L04" title="Aliados y fricciones" completion={{ ready: false }}>
+        <ActivityLoadError
+          message="No pudimos recuperar tu avance."
+          onRetry={() => setAttempt((value) => value + 1)}
+        />
+      </LessonShell>
+    );
+  const current = ITEMS[draft.item];
+  const feedback = draft.pending === null ? null : draft.pending === current.correct;
+  const reviewing = draft.stage === 'review' || draft.stage === 'complete';
+  const confirm = () => {
+    if (!draft.pending) return;
+    const answers = { ...draft.answers, [draft.item]: draft.pending };
+    const last = draft.item === ITEMS.length - 1;
+    void persist({
+      ...draft,
+      answers,
+      pending: null,
+      item: last ? draft.item : draft.item + 1,
+      stage: last ? 'choose' : 'classify',
     });
   };
-
-  const mySaboteadores = Array.from(saboteadoresCheck).filter((id) => ACCIONES[id]);
-  const canComplete = allClassified && aliadoElegido.trim().length > 0;
-
-  const handleSave = async () => {
-    await lessonDataRepository.save('ahorro', 'l4_aliados', { aliadoElegido, saboteadores: Array.from(saboteadoresCheck), savedAt: new Date().toISOString() });
-    setStep(3);
-  };
-
-  const progress = step === 0 ? 0 : step === 1 ? 33 : step === 2 ? 66 : 100;
-
   return (
-    <LessonShell id="L04" title="Aliados y saboteadores del ahorro" completion={{ ready: canComplete }}>
-      <div className="p-1">
-        <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2 mb-6">
-          <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: successColor }} />
-        </div>
-
-        {/* Pantalla 0 — Apertura */}
-        {step === 0 && (
-          <div className="space-y-6">
-            <FinniMessage variant="coach" title="Ahorrar es una decision de comportamiento" message="Hay cosas en tu vida que te ayudan a ahorrar… y otras que trabajan en tu contra sin que lo notes." />
-            <FECard variant="flat" className="border" style={{ borderColor: successColor }}>
-              <p className="text-sm">En esta leccion vas a clasificar 10 tarjetas: <b>aliados</b> (te ayudan) vs <b>saboteadores</b> (te boicotean). Luego veras cuales tienes en tu vida.</p>
-            </FECard>
-            <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(1)}>
-              Clasificar las 10 tarjetas →
-            </button>
-          </div>
-        )}
-
-        {/* Pantalla 1 — Clasificar tarjetas */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <p className="font-bold">Clasifica cada tarjeta:</p>
-              <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: successColor }}>{answered}/{CARDS.length}</span>
-            </div>
-            <div className="w-full bg-[var(--color-neutral-100)] rounded-full h-2">
-              <div className="h-2 rounded-full transition-all" style={{ width: `${(answered / CARDS.length) * 100}%`, backgroundColor: successColor }} />
-            </div>
-            <div className="space-y-3">
-              {CARDS.map((c) => {
-                const ans = answers[c.id];
-                const isCorrect = ans === c.correct;
-                return (
-                  <FECard
-                    key={c.id}
-                    variant="flat"
-                    className="border"
-                    style={{
-                      borderColor: ans ? (isCorrect ? successColor : errorColor) : 'var(--color-neutral-200)',
-                      backgroundColor: ans ? (isCorrect ? successBg : errorBg) : 'white',
-                    }}
-                  >
-                    <p className="text-sm font-semibold mb-2">{c.label}</p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => classify(c.id, 'aliado')}
-                        disabled={!!ans}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold border-2 disabled:cursor-default transition-colors"
-                        style={{ borderColor: successColor, backgroundColor: ans === 'aliado' ? successColor : 'transparent', color: ans === 'aliado' ? 'white' : '#059669' }}
-                      >
-                        ✅ Aliado
-                      </button>
-                      <button
-                        onClick={() => classify(c.id, 'saboteador')}
-                        disabled={!!ans}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold border-2 disabled:cursor-default transition-colors"
-                        style={{ borderColor: errorColor, backgroundColor: ans === 'saboteador' ? errorColor : 'transparent', color: ans === 'saboteador' ? 'white' : '#DC2626' }}
-                      >
-                        ❌ Saboteador
-                      </button>
-                    </div>
-                    {showFeedback[c.id] && (
-                      <p className="text-xs mt-1" style={{ color: isCorrect ? '#059669' : '#DC2626' }}>
-                        {isCorrect ? '✅ Correcto. ' : `❌ Es un ${c.correct}. `}{c.tip}
-                      </p>
-                    )}
-                  </FECard>
-                );
-              })}
-            </div>
-            {allClassified && (
-              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => setStep(2)}>
-                Mi autoevaluacion →
+    <LessonShell
+      id="L04"
+      title="Aliados y saboteadores del ahorro"
+      showGreeting={false}
+      completion={{ ready: draft.stage === 'complete', score: 100 }}
+    >
+      <ActivityFrame
+        label="Diseñador de hábitos de ahorro"
+        className="savings-habits"
+        busy={busy}
+        title={
+          reviewing
+            ? 'Revisa tu ajuste.'
+            : draft.stage === 'choose'
+              ? 'Diseña una respuesta pequeña.'
+              : draft.stage === 'classify'
+                ? 'Detecta qué facilita o dificulta.'
+                : 'Tu entorno también decide.'
+        }
+        description="Reconoce señales de tu entorno y elige un ajuste que puedas probar esta semana."
+        progressLabel="Etapas completadas"
+        progressValue={
+          draft.stage === 'observe'
+            ? 0
+            : draft.stage === 'classify'
+              ? 1 + Object.keys(draft.answers).length
+              : draft.stage === 'choose'
+                ? 5
+                : 6
+        }
+        progressMax={6}
+        stepLabel={
+          reviewing
+            ? 'Paso 4 de 4 · Revisar'
+            : draft.stage === 'choose'
+              ? 'Paso 3 de 4 · Elegir un ajuste'
+              : draft.stage === 'classify'
+                ? `Paso 2 de 4 · Señal ${draft.item + 1} de ${ITEMS.length}`
+                : 'Paso 1 de 4 · Observar'
+        }
+        focusKey={`${draft.stage}-${draft.item}`}
+        advice={{
+          title:
+            feedback === null
+              ? 'Cambia el entorno, no solo la intención'
+              : feedback
+                ? 'Buena lectura'
+                : 'Mira el efecto',
+          text:
+            feedback === null
+              ? 'Un aliado vuelve la conducta más fácil; una fricción la interrumpe o la vuelve confusa.'
+              : current.feedback,
+          tone: feedback === null ? 'info' : feedback ? 'success' : 'review',
+        }}
+        adviceCue={cue}
+        error={error}
+        status={busy ? 'Guardando…' : dirty ? 'Cambios sin guardar.' : 'Tu avance está guardado.'}
+        actions={
+          <div className="sh-actions">
+            {draft.stage === 'observe' && (
+              <button
+                className="ca-primary"
+                onClick={() => void persist({ ...draft, stage: 'classify' })}
+              >
+                Detectar señales
               </button>
             )}
-          </div>
-        )}
-
-        {/* Pantalla 2 — Autoevaluacion + compromiso */}
-        {step === 2 && (
-          <div className="space-y-6">
-            <p className="font-bold">¿Cuales saboteadores tienes en tu vida ahora?</p>
-            <div className="space-y-2">
-              {CARDS.filter((c) => c.correct === 'saboteador').map((c) => (
-                <FECard
-                  key={c.id}
-                  variant="flat"
-                  className="border cursor-pointer"
-                  style={{
-                    borderColor: saboteadoresCheck.has(c.id) ? errorColor : 'var(--color-neutral-200)',
-                    backgroundColor: saboteadoresCheck.has(c.id) ? errorBg : 'white',
-                  }}
-                  onClick={() => toggleSaboteador(c.id)}
-                  role="checkbox"
-                  tabIndex={0}
-                >
-                  <p className="text-sm">{saboteadoresCheck.has(c.id) ? '☑' : '☐'} {c.label}</p>
-                </FECard>
-              ))}
-            </div>
-
-            {mySaboteadores.length > 0 && (
-              <FECard variant="flat" className="border" style={{ borderColor: warnColor, backgroundColor: warnBg }}>
-                <p className="font-bold text-sm mb-2">Plan de accion de Finni:</p>
-                <div className="space-y-1">
-                  {mySaboteadores.map((id) => (
-                    <p key={id} className="text-sm">→ {ACCIONES[id]}</p>
-                  ))}
-                </div>
-              </FECard>
+            {draft.stage === 'classify' && (
+              <button className="ca-primary" disabled={!draft.pending || busy} onClick={confirm}>
+                {draft.item === ITEMS.length - 1 ? 'Confirmar y elegir ajuste' : 'Confirmar señal'}
+              </button>
             )}
-
-            <p className="font-bold mt-2">Elige 1 aliado que vas a activar esta semana:</p>
-            <div className="space-y-2">
-              {aliadosCards.map((c) => (
+            {draft.stage === 'choose' && (
+              <button
+                className="ca-primary"
+                disabled={!draft.friction || !draft.ally || busy}
+                onClick={() => void persist({ ...draft, stage: 'review' })}
+              >
+                Revisar mi ajuste
+              </button>
+            )}
+            {draft.stage === 'review' && (
+              <>
                 <button
-                  key={c.id}
-                  onClick={() => setAliadoElegido(c.id)}
-                  className="w-full text-left px-4 py-2.5 rounded-xl border-2 text-sm font-semibold transition-colors"
-                  style={{
-                    borderColor: successColor,
-                    backgroundColor: aliadoElegido === c.id ? successColor : 'transparent',
-                    color: aliadoElegido === c.id ? 'white' : 'inherit',
+                  className="sh-secondary"
+                  onClick={() => {
+                    setDraft((value) => ({ ...value, stage: 'choose' }));
+                    setDirty(true);
                   }}
                 >
-                  {c.label}
+                  Cambiar ajuste
                 </button>
-              ))}
-            </div>
-
-            {aliadoElegido && (
-              <button className="w-full min-h-11 text-white rounded-xl font-semibold text-sm" style={{ backgroundColor: successColor }} onClick={() => void handleSave()}>
-                Guardar mi compromiso →
-              </button>
+                <button
+                  className="ca-primary"
+                  onClick={() => void persist({ ...draft, stage: 'complete' }, true)}
+                >
+                  Guardar y terminar
+                </button>
+              </>
             )}
           </div>
+        }
+      >
+        {draft.stage === 'observe' && (
+          <section className="sh-observe">
+            <strong>Intención</strong>
+            <span aria-hidden="true">→</span>
+            <strong>Señal del entorno</strong>
+            <span aria-hidden="true">→</span>
+            <strong>Acción más fácil o más difícil</strong>
+            <p>
+              La práctica consiste en modificar una señal concreta, sin culparte por tener que usar
+              fuerza de voluntad.
+            </p>
+          </section>
         )}
-
-        {/* Pantalla 3 — Cierre */}
-        {step === 3 && (
-          <div className="space-y-6">
-            <FinniMessage variant="success" title="Tu perfil de ahorrador esta guardado" message="Conoces tus aliados y tus saboteadores. Eso ya es una ventaja enorme sobre quien ni siquiera los identifica." />
-            <FECard variant="flat" className="border" style={{ borderColor: successColor, backgroundColor: successBg }}>
-              <p className="font-bold text-sm">Tu aliado esta semana:</p>
-              <p className="text-sm">{aliadosCards.find((c) => c.id === aliadoElegido)?.label ?? aliadoElegido}</p>
-            </FECard>
-          </div>
+        {draft.stage === 'classify' && (
+          <section className="sh-card">
+            <span>Señal</span>
+            <h3>{current.label}</h3>
+            <div role="group" aria-label="Clasifica la señal">
+              <button
+                aria-pressed={draft.pending === 'ally'}
+                className={draft.pending === 'ally' ? 'is-selected' : ''}
+                onClick={() => {
+                  setDraft((value) => ({ ...value, pending: 'ally' }));
+                  setCue(`${current.id}: aliado`);
+                  setDirty(true);
+                }}
+              >
+                Aliado
+              </button>
+              <button
+                aria-pressed={draft.pending === 'friction'}
+                className={draft.pending === 'friction' ? 'is-selected' : ''}
+                onClick={() => {
+                  setDraft((value) => ({ ...value, pending: 'friction' }));
+                  setCue(`${current.id}: fricción`);
+                  setDirty(true);
+                }}
+              >
+                Fricción
+              </button>
+            </div>
+          </section>
         )}
-      </div>
+        {draft.stage === 'choose' && (
+          <section className="sh-choose">
+            <fieldset>
+              <legend>Una fricción que reconozco:</legend>
+              {FRICTIONS.map((item) => (
+                <label key={item.id}>
+                  <input
+                    type="radio"
+                    name="friction"
+                    checked={draft.friction === item.id}
+                    onChange={() => {
+                      setDraft((value) => ({ ...value, friction: item.id }));
+                      setDirty(true);
+                    }}
+                  />
+                  {item.label}
+                </label>
+              ))}
+            </fieldset>
+            <fieldset>
+              <legend>Un aliado que probaré esta semana:</legend>
+              {ALLIES.map((item) => (
+                <label key={item.id}>
+                  <input
+                    type="radio"
+                    name="ally"
+                    checked={draft.ally === item.id}
+                    onChange={() => {
+                      setDraft((value) => ({ ...value, ally: item.id }));
+                      setDirty(true);
+                    }}
+                  />
+                  {item.label}
+                </label>
+              ))}
+            </fieldset>
+          </section>
+        )}
+        {reviewing && (
+          <section className="sh-review">
+            <span>Tu experimento de una semana</span>
+            <h3>{ALLIES.find((item) => item.id === draft.ally)?.label}</h3>
+            <p>
+              Lo probarás frente a:{' '}
+              {FRICTIONS.find((item) => item.id === draft.friction)?.label.toLowerCase()}. Al final
+              de la semana podrás decidir si te ayudó o necesitas otro ajuste.
+            </p>
+          </section>
+        )}
+      </ActivityFrame>
     </LessonShell>
   );
 }

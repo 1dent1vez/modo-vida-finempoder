@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Spinner } from '@/shared/components/Spinner';
 import { PrivateRoute } from './routes/PrivateRoute';
@@ -6,32 +6,43 @@ import { useAuth } from './store/auth';
 import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
 import OfflineBanner from './components/OfflineBanner';
 import GlobalSnackbar from './components/GlobalSnackbar';
+import AdminBanner from './components/AdminBanner';
+import { AchievementModal } from './shared/components/gamification/AchievementModal';
+import { NamePromptDialog } from './shared/components/auth/NamePromptDialog';
+import { isAdminMode } from './lib/adminMode';
+import { isOnboarded } from '@/shared/utils/onboarding';
 import { LessonWrapper } from '@/features/lessons/components/LessonWrapper';
+import { newsletterEnabled } from '@/lib/newsletterFeature';
 
 // ── Auth (static — needed at first load) ──────────────
 import LoginPage from './pages/auth/Login';
-import SignUpPage from './pages/auth/SignUp';
+import AuthCallback from './pages/auth/AuthCallback';
 
 // ── Lazy-loaded pages ─────────────────────────────────
 const Screen1 = lazy(() => import('./pages/onboarding/Screen1'));
 const Screen2 = lazy(() => import('./pages/onboarding/Screen2'));
 const Screen3 = lazy(() => import('./pages/onboarding/Screen3'));
 
-const Terms    = lazy(() => import('./pages/legal/Terms'));
-const Privacy  = lazy(() => import('./pages/legal/Privacy'));
+const Terms = lazy(() => import('./pages/legal/Terms'));
+const Privacy = lazy(() => import('./pages/legal/Privacy'));
+const AdminPage = lazy(() => import('./pages/admin/AdminPage'));
+const AdminConsole = lazy(() => import('./pages/admin/AdminConsole'));
 
-const Home         = lazy(() => import('./pages/home/Home'));
-const PreTest      = lazy(() => import('./pages/research/PreTest'));
-const PostTest     = lazy(() => import('./pages/research/PostTest'));
-const Profile      = lazy(() => import('./pages/profile/Profile'));
-const Settings     = lazy(() => import('./pages/settings/Settings'));
+const NotFound = lazy(() => import('./pages/errors/NotFound'));
+const Home = lazy(() => import('./pages/home/Home'));
+const PreTest = lazy(() => import('./pages/research/PreTest'));
+const PostTest = lazy(() => import('./pages/research/PostTest'));
+const Profile = lazy(() => import('./pages/profile/Profile'));
+const Newsletter = lazy(() => import('./pages/newsletter/Newsletter'));
+const NewsletterAdmin = lazy(() => import('./pages/newsletter/NewsletterAdmin'));
+const Settings = lazy(() => import('./pages/settings/Settings'));
 const Achievements = lazy(() => import('./pages/achievements/Achievements'));
 
 // ── Module overviews ──────────────────────────────────
 const PresupuestoOverview = lazy(() => import('./pages/modules/presupuesto/Overview'));
-const AhorroOverview      = lazy(() => import('./pages/modules/ahorro/Overview'));
-const InversionIndex      = lazy(() => import('./pages/modules/inversion/Index'));
-const InversionOverview   = lazy(() => import('./pages/modules/inversion/Overview'));
+const AhorroOverview = lazy(() => import('./pages/modules/ahorro/Overview'));
+const InversionIndex = lazy(() => import('./pages/modules/inversion/Index'));
+const InversionOverview = lazy(() => import('./pages/modules/inversion/Overview'));
 
 function PageLoader() {
   return (
@@ -41,21 +52,38 @@ function PageLoader() {
   );
 }
 
-function RootGate() {
-  const token = useAuth((s) => s.token);
-  return token ? <Navigate to="/app" replace /> : <Navigate to="/login" replace />;
+export function RootGate() {
+  // F7-ONBOARDING: puerta de entrada al primer uso (guest y sesión). Es el
+  // punto real donde se decide entrar a /app desde la raíz: si aún no hizo
+  // onboarding (userId 'local' sin sesión) va al flujo, si ya lo hizo entra.
+  const user = useAuth((s) => s.user);
+  const userId = user?.id ?? 'local';
+  if (!isOnboarded(userId, user?.email)) {
+    return <Navigate to="/onboarding/1" replace />;
+  }
+  return <Navigate to="/app" replace />;
 }
 
 export default function App() {
   const hasHydrated = useAuth((s) => s.hydrated);
   const online = useOnlineStatus();
+  const [admin, setAdmin] = useState(isAdminMode());
+
+  useEffect(() => {
+    const handleAdminChange = () => setAdmin(isAdminMode());
+    window.addEventListener('fe:admin-mode', handleAdminChange);
+    return () => window.removeEventListener('fe:admin-mode', handleAdminChange);
+  }, []);
 
   if (!hasHydrated) return <PageLoader />;
 
   return (
     <>
       {!online && <OfflineBanner dense />}
+      {admin && <AdminBanner />}
       <GlobalSnackbar />
+      <AchievementModal />
+      <NamePromptDialog />
 
       <Suspense fallback={<PageLoader />}>
         <Routes>
@@ -65,8 +93,10 @@ export default function App() {
           <Route path="/onboarding/3" element={<Screen3 />} />
 
           {/* Auth público */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/login" element={<Navigate to="/auth" replace />} />
+          <Route path="/auth" element={<LoginPage />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="/research/pretest" element={<PreTest />} />
           <Route path="/research/posttest" element={<PostTest />} />
 
@@ -82,6 +112,10 @@ export default function App() {
             <Route path="/app" element={<Home />} />
             <Route path="/app/achievements" element={<Achievements />} />
             <Route path="/app/profile" element={<Profile />} />
+            <Route path="/app/newsletter" element={newsletterEnabled() ? <Newsletter /> : <Navigate to="/app" replace />} />
+            <Route path="/app/newsletter/editor" element={newsletterEnabled() ? <NewsletterAdmin /> : <Navigate to="/app" replace />} />
+            <Route path="/app/admin" element={<AdminConsole />} />
+            <Route path="/app/admin/newsletter" element={newsletterEnabled() ? <NewsletterAdmin /> : <Navigate to="/app/admin" replace />} />
             <Route path="/app/settings" element={<Settings />} />
 
             {/* Overviews de módulos */}
@@ -95,7 +129,7 @@ export default function App() {
           </Route>
 
           {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
     </>
